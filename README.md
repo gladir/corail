@@ -1,0 +1,1 @@
+Les logiciels contenu dans Corail sont une séries de logiciels autonomes écrit en Pascal et n'ayant pas de dépendances avec d'autres fichiers Pascal mais uniquement d'un compilateur, comme par exemple Free Pascal.
