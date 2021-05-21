@@ -1,3 +1,9 @@
+{ @author: Sylvain Maltais (support@gladir.com)
+  @created: 2021
+  @website(https://www.gladir.com/corail)
+  @abstract(Target: Free Pascal)
+}
+
 Program Eval;
 
 Var
@@ -180,7 +186,7 @@ End;
 
 BEGIN
  IF ParamStr(1)='/?'Then Begin
-  WriteLn('Cette commande permet d''evaluer la valeur d''une formule math‚matique');
+  WriteLn('Cette commande permet d''evaluer la valeur d''une formule mathematique');
   WriteLn;
   WriteLn('Syntaxe: EVAL [/?]');
   WriteLn('         EVAL formule');
