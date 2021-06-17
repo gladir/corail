@@ -1,4 +1,8 @@
+<h2>Introduction</h2>
+
 Les logiciels contenu dans Corail sont une séries de logiciels autonomes écrit en Pascal et n'ayant pas de dépendances avec d'autres fichiers Pascal mais uniquement d'un compilateur, comme par exemple Free Pascal.
+
+<h2>Liste des fichiers</h2>
 
 Voici la liste des différents fichiers proposés dans Corail :
 
@@ -32,3 +36,9 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de visualiser un fichier binaire en mode hexadécimal.</td>
 		</tr>		
 	</table>
+	
+<h2>Compilation</h2>
+	
+Les fichiers Pascal n'ont aucune dépendances, il suffit de télécharger le fichier désiré et de le compiler avec Free Pascal avec la commande  :
+
+<b>fpc</b> <i>LEFICHIER.PAS</i>
