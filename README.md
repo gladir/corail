@@ -28,7 +28,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher le contenu de l'entête d'un exécutable.</td>
 		</tr>		
 		<tr>
-			<td><b>HEAD</b>
+			<td><b>HEAD.PAS</b>
 			<td>Cette commande permet d'afficher le début d'un fichier texte. C'est commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
  		<tr>
