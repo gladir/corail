@@ -38,7 +38,10 @@ BEGIN
    End
     Else
    If ParamStr(I)='--lines'Then OptionFlag:=_Lines Else
-   If ParamStr(I)='--bytes'Then OptionFlag:=_Bytes
+   If ParamStr(I)='--bytes'Then OptionFlag:=_Bytes Else
+   If((Length(ParamStr(I))>=2) and (ParamStr(I)[1]='-')and(ParamStr(I)[2] in['0'..'9']))Then Begin
+    Val(Copy(ParamStr(I),2,255),MaxLine,Err);
+   End
     Else
    Begin
     FileName:=ParamStr(I);
