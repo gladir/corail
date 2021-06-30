@@ -57,7 +57,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	</table>
 	
-Aperçu de la commande HEXVIEW :
+Aperçu de la commande VIEWHEX :
 
 ![image](https://user-images.githubusercontent.com/11842176/123694681-a0523b80-d827-11eb-9314-14661688945d.png)
 
