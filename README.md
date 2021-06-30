@@ -43,6 +43,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>TEE.PAS</b></td>
 			<td>Cette commande permet d'envoyer l'entrée standard vers la sortie standard. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
+	 	<tr>
+			<td><b>TRUNCATE.PAS</b></td>
+			<td>Cette commande permet de réduire ou augmenter la taille d'un fichier.</td>
+		</tr>
 		<tr>
 			<td><b>VIEWHEX.PAS</b></td>
 			<td>Cette commande permet de visualiser un fichier binaire en mode hexadécimal.</td>
