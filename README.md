@@ -29,12 +29,20 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>		
 		<tr>
 			<td><b>HEAD.PAS</b>
-			<td>Cette commande permet d'afficher le début d'un fichier texte. C'est commande est un équivalent de UNIX ou Linux.</td>
+			<td>Cette commande permet d'afficher le début d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
  		<tr>
 			<td><b>GEODELTA.PAS</b></td>
 			<td>Cette commande permet de demander la distance entre deux villes, soit par coordonnée géographique, soit par son nom s'il est répertorié.</td>
-		</tr>		
+		</tr>
+	        <tr>
+			<td><b>NUMBER.PAS</b></td>
+			<td>Cette commande permet de retourner en texte un nombre. Similaire à la commande AIX.</td>
+		</tr>
+	        <tr>
+			<td><b>TEE.PAS</b></td>
+			<td>Cette commande permet d'envoyer l'entrée standard vers la sortie standard. Cette commande est un équivalent de UNIX ou Linux.</td>
+		</tr>
 		<tr>
 			<td><b>VIEWHEX.PAS</b></td>
 			<td>Cette commande permet de visualiser un fichier binaire en mode hexadécimal.</td>
