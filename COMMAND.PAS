@@ -260,7 +260,7 @@ Begin
  End
   Else
  If Length(FirstParam)>0Then Begin
-  {$I-} ChDir(FirstParam);{$+}
+  {$I-} ChDir(FirstParam);{$I+}
   Error:=IoResult;
   If Error<>0Then WriteLn(GetErrorMessage(Error));
  End
@@ -480,7 +480,8 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('ECHO   Cette commande permet d''activer ou desactiver le prompt de commande ou d''afficher un message sur le console du systeme d''exploitation.');
+  WriteLn('ECHO   Cette commande permet d''activer ou desactiver le prompt de commande ',
+          'ou d''afficher un message sur le console du systeme d''exploitation.');
   WriteLn;
   WriteLn('Syntaxe:');
   WriteLn;
@@ -602,7 +603,8 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('PAUSE   Cette commande permet d''afficher un message de pause et une attente d''une action utilisateur pour poursuivre.');
+  WriteLn('PAUSE   Cette commande permet d''afficher un message de pause et une ',
+          'attente d''une action utilisateur pour poursuivre.');
   WriteLn;
   WriteLn('Syntaxe:');
   WriteLn;
@@ -723,7 +725,8 @@ Begin
  Pause:=False;
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('SET   Cette commande permet de fixer ou demander le contenu des variables d''environnement du systeme d''exploitation');
+  WriteLn('SET   Cette commande permet de fixer ou demander le contenu des ',
+          'variables d''environnement du systeme d''exploitation');
   WriteLn;
   WriteLn('Syntaxe:');
   WriteLn;
@@ -870,7 +873,8 @@ Procedure VerifyCommand;Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('VERIFY   Cette commande permet de fixer ou de demander l''etat du drapeau de verification de lecture de secteur d''unite d''allocation du systeme d''exploitation.');
+  WriteLn('VERIFY   Cette commande permet de fixer ou de demander l''etat du ',
+          'drapeau de verification de lecture de secteur d''unite d''allocation du systeme d''exploitation.');
   WriteLn;
   WriteLn('Syntaxe:');
   WriteLn;
