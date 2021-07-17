@@ -12,6 +12,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<th>Description</th>	
 		</tr>
 		<tr>
+			<td><b>ASM6502.PAS</b></td>
+			<td>Cette commande permet de lancer le compilateur de langage de programmation assembleur pour les microprocesseur 6502.</td>
+		</tr>
+		<tr>
 			<td><b>ATTRIB.PAS</b></td>
 			<td>Cette commande permet de demander ou de changer les attributs d'un fichier.</td>
 		</tr>		
