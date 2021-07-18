@@ -13,7 +13,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>APPEND.PAS</b></td>
-			<td>Cette commande permet d'ajouter un fichier ASCII à la fin d'un autre fichier. Cette commande est originaire du LDOS pour TRS-80.</td>
+			<td>Cette commande permet d'ajouter un fichier ASCII à la fin d'un autre fichier. Cette commande est originaire du <a href="https://www.gladir.com/OS/LDOS/intro.htm">LDOS</a> pour TRS-80.</td>
 		</tr>	
 		<tr>
 			<td><b>ASM6502.PAS</b></td>
@@ -37,7 +37,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>COMMAND.PAS</b></td>
-			<td>Logiciel clone d'un <i>COMMAND.COM</i> du système d'exploitation <a href="http://www.gladir.com/OS/DOS/intro.htm"><i>DOS</i></a>.</td>
+			<td>Logiciel clone d'un <i>COMMAND.COM</i> du système d'exploitation <a href="https://www.gladir.com/OS/DOS/intro.htm"><i>DOS</i></a>.</td>
 		</tr>		
 		<tr>
 			<td><b>EVAL.PAS</b></td>
@@ -51,13 +51,13 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>FIND.PAS</b></td>
 			<td>Cette commande permet de rechercher une chaine de caractères dans des fichiers. Cette commande est un équivalent du DOS.</td>
 		</tr>
-		<tr>
-			<td><b>HEAD.PAS</b>
-			<td>Cette commande permet d'afficher le début d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
-		</tr>
  		<tr>
 			<td><b>GEODELTA.PAS</b></td>
 			<td>Cette commande permet de demander la distance entre deux villes, soit par coordonnée géographique, soit par son nom s'il est répertorié.</td>
+		</tr>	
+		<tr>
+			<td><b>HEAD.PAS</b>
+			<td>Cette commande permet d'afficher le début d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
 		<tr>
 			<td><b>LS.PAS</b></td>
