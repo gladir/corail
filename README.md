@@ -68,6 +68,9 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher le chemin du répertoire courant. Cette commande est un équivalent de UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>SLEEP.PAS</b></td>
+			<td>Cette commande permet d'attendre le nombre de secondes spécifiés. Cette commande est un équivalent de UNIX et LINUX.</td>
+		<tr>
 			<td><b>SPLIT.PAS</b></td>
 			<td>Cette commande permet de séparer un fichier en plusieurs fichiers. Cette commande est un équivalent de UNIX.</td>
 		</tr>
