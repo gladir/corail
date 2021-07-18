@@ -69,7 +69,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>SPLIT.PAS</b></td>
-			<td>Cette commande permet de séparer un fichier en plusieurs fichiers. Cette comamdne est un équivalent de UNIX.</td>
+			<td>Cette commande permet de séparer un fichier en plusieurs fichiers. Cette commande est un équivalent de UNIX.</td>
 		</tr>
 	        <tr>
 			<td><b>TEE.PAS</b></td>
