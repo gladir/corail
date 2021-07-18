@@ -59,6 +59,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>GEODELTA.PAS</b></td>
 			<td>Cette commande permet de demander la distance entre deux villes, soit par coordonnée géographique, soit par son nom s'il est répertorié.</td>
 		</tr>
+		<tr>
+			<td><b>LS.PAS</b></td>
+			<td>Cette commande permet d'afficher les fichiers d'un répertoire. Cette commande est équivalent de UNIX.</td>
+		</tr>
 	        <tr>
 			<td><b>NUMBER.PAS</b></td>
 			<td>Cette commande permet de retourner en texte un nombre. Similaire à la commande AIX.</td>
