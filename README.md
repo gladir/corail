@@ -22,7 +22,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>ATTRIB.PAS</b></td>
 			<td>Cette commande permet de demander ou de changer les attributs d'un fichier.</td>
-		</tr>		
+		</tr>
+		<tr>
+			<td><b>BASENAME.PAS</b></td>
+			<td>Cette commande permet de retourner le nom du fichier seulement à partir d'un chemin complet de nom de fichier.</td>
+		</tr>
 		<tr>
 			<td><b>CAL.PAS</b></td>
 			<td>Cette commande permet d'afficher un calendrier.</td>
