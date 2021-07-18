@@ -38,7 +38,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>EXEHEAD.PAS</b></td>
 			<td>Cette commande permet d'afficher le contenu de l'entête d'un exécutable.</td>
-		</tr>		
+		</tr>
+		<tr>
+			<td><b>FIND.PAS</b></td>
+			<td>Cette commande permet de rechercher une chaine de caractères dans des fichiers.</td>
+		</tr>
 		<tr>
 			<td><b>HEAD.PAS</b>
 			<td>Cette commande permet d'afficher le début d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
