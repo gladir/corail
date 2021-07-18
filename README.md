@@ -31,6 +31,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>CAL.PAS</b></td>
 			<td>Cette commande permet d'afficher un calendrier.</td>
 		</tr>
+	        <tr>
+			<td><b>CAT.PAS</b></td>
+			<td>Cette commande permet d'afficher le contenu d'un/des fichiers.</td>
+		</tr>
 		<tr>
 			<td><b>COMMAND.PAS</b></td>
 			<td>Logiciel clone d'un <i>COMMAND.COM</i> du système d'exploitation <a href="http://www.gladir.com/OS/DOS/intro.htm"><i>DOS</i></a>.</td>
