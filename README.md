@@ -63,6 +63,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>NUMBER.PAS</b></td>
 			<td>Cette commande permet de retourner en texte un nombre. Similaire à la commande AIX.</td>
 		</tr>
+		<tr>
+			<td><b>PWD.PAS</b></td>
+			<td>Cette commande permet d'afficher le chemin du répertoire courant.</td>
+		</tr>
 	        <tr>
 			<td><b>TEE.PAS</b></td>
 			<td>Cette commande permet d'envoyer l'entrée standard vers la sortie standard. Cette commande est un équivalent de UNIX ou Linux.</td>
