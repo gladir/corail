@@ -25,15 +25,15 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>BASENAME.PAS</b></td>
-			<td>Cette commande permet de retourner le nom du fichier seulement à partir d'un chemin complet de nom de fichier.</td>
+			<td>Cette commande permet de retourner le nom du fichier seulement à partir d'un chemin complet de nom de fichier. Cette commande est un équivalent de UNIX.</td>
 		</tr>
 		<tr>
 			<td><b>CAL.PAS</b></td>
-			<td>Cette commande permet d'afficher un calendrier.</td>
+			<td>Cette commande permet d'afficher un calendrier. Cette commande est un équivalent de MSX-DOS ou UNIX.</td>
 		</tr>
 	        <tr>
 			<td><b>CAT.PAS</b></td>
-			<td>Cette commande permet d'afficher le contenu d'un/des fichiers.</td>
+			<td>Cette commande permet d'afficher le contenu d'un/des fichiers. Cette commande est un équivalent de UNIX.</td>
 		</tr>
 		<tr>
 			<td><b>COMMAND.PAS</b></td>
@@ -49,7 +49,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>FIND.PAS</b></td>
-			<td>Cette commande permet de rechercher une chaine de caractères dans des fichiers.</td>
+			<td>Cette commande permet de rechercher une chaine de caractères dans des fichiers. Cette commande est un équivalent du DOS.</td>
 		</tr>
 		<tr>
 			<td><b>HEAD.PAS</b>
@@ -65,7 +65,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>PWD.PAS</b></td>
-			<td>Cette commande permet d'afficher le chemin du répertoire courant.</td>
+			<td>Cette commande permet d'afficher le chemin du répertoire courant. Cette commande est un équivalent de UNIX.</td>
+		</tr>
+		<tr>
+			<td><b>SPLIT.PAS</b></td>
+			<td>Cette commande permet de séparer un fichier en plusieurs fichiers. Cette comamdne est un équivalent de UNIX.</td>
 		</tr>
 	        <tr>
 			<td><b>TEE.PAS</b></td>
