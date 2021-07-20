@@ -46,6 +46,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>DELTREE.PAS</b></td>
 			<td>Cette commande permet d'effectuer la suppression d'un répertoire avec tous ses fichiers et répertoires inclusivement sur une unité de disque. Cette commande est un équivalent de la commande <a href="https://www.gladir.com/OS/MSDOS/deltree.htm">DELTREE</a> du MS-DOS.</td>
+		</tr>
+		<tr>
+			<td><b>DOS2UNIX.PAS</b></td>
+			<td>Cette commande permet d'effectuer la conversion des caractères de saut de ligne du système d'exploitation DOS en leur équivalent UNIX.</td>
+		</tr>
 		<tr>
 			<td><b>EQUIP.PAS</b></td>
 			<td>Cette commande permet d'afficher une liste de l'équipement installé et indique la quantité de mémoire, le type de mémoire, le microprocesseur, le moniteur, les unités de disque et les composantes d'entrée/sorties. Cette commande est originaire de la commande <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/equip.htm">EQUIP</a> du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/intro.htm">MS-DOS 3.21 Enhanced Amdek</a>.</td>
