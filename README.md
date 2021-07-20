@@ -14,7 +14,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>APPEND.PAS</b></td>
 			<td>Cette commande permet d'ajouter un fichier ASCII à la fin d'un autre fichier. Cette commande est originaire du <a href="https://www.gladir.com/OS/LDOS/intro.htm">LDOS</a> pour TRS-80.</td>
-		</tr>	
+		</tr>
+		<tr>
+			<td><b>ASC2PAS.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier ASCII en code source Pascal.</td>
+		</tr>
 		<tr>
 			<td><b>ASM6502.PAS</b></td>
 			<td>Cette commande permet de lancer le compilateur de langage de programmation assembleur pour les microprocesseur 6502.</td>
