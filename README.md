@@ -52,7 +52,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>EVAL.PAS</b></td>
 			<td>Cette commande permet d'évaluer des expressions mathématiques</td>
-		</tr>		
+		</tr>
+		<tr>
+			<td><b>EXE2BIN.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier EXE en binaire (COM).</td>
+		</tr>
 		<tr>
 			<td><b>EXEHEAD.PAS</b></td>
 			<td>Cette commande permet d'afficher le contenu de l'entête d'un exécutable.</td>
