@@ -38,7 +38,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>COMMAND.PAS</b></td>
 			<td>Logiciel clone d'un <i>COMMAND.COM</i> du système d'exploitation <a href="https://www.gladir.com/OS/DOS/intro.htm"><i>DOS</i></a>.</td>
-		</tr>		
+		</tr>
+		<tr>
+			<td><b>EQUIP.PAS</b></td>
+			<td>Cette commande permet d'afficher une liste de l'équipement installé et indique la quantité de mémoire, le type de mémoire, le microprocesseur, le moniteur, les unités de disque et les composantes d'entrée/sorties. Cette commande est originaire de la commande <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/equip.htm">EQUIP</a> du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/intro.htm">MS-DOS 3.21 Enhanced Amdek</a>.</td>
 		<tr>
 			<td><b>EVAL.PAS</b></td>
 			<td>Cette commande permet d'évaluer des expressions mathématiques</td>
@@ -79,6 +82,9 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>PWD.PAS</b></td>
 			<td>Cette commande permet d'afficher le chemin du répertoire courant. Cette commande est un équivalent de UNIX.</td>
 		</tr>
+	       <tr>
+		       <td><b>RUN6502.PAS</b></td>
+		       <td>Cette commande permet d'exécuter du code machine du microprocesseur 6502.</td>
 		<tr>
 			<td><b>SLEEP.PAS</b></td>
 			<td>Cette commande permet d'attendre le nombre de secondes spécifiés. Cette commande est un équivalent de UNIX et LINUX.</td>
