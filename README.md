@@ -36,6 +36,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de retourner le nom du fichier seulement à partir d'un chemin complet de nom de fichier. Cette commande est un équivalent de UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>BIN2C.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier binaire en tableau de code source C.</td>
+		</tr>
+		<tr>
 			<td><b>CAL.PAS</b></td>
 			<td>Cette commande permet d'afficher un calendrier. Cette commande est un équivalent de MSX-DOS ou UNIX.</td>
 		</tr>
