@@ -33,7 +33,7 @@ BEGIN
   Assign(Target,ParamStr(2));
   Rewrite(Target);
   Position:=0;
-  WriteLn(Target,'Const samples:Array[0..',FileSize(Source)-1,'] of (');
+  WriteLn(Target,'Const samples:Array[0..',FileSize(Source)-1,'] of Byte=(');
   Write(Target,'  ');
   While Not EOF(Source)do Begin
    BlockRead(Source,Tampon,1,ByteReaded);
