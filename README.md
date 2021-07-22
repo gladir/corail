@@ -126,12 +126,18 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>PWD.PAS</b></td>
 			<td>Cette commande permet d'afficher le chemin du répertoire courant. Cette commande est un équivalent de UNIX.</td>
 		</tr>
-	       <tr>
+	       	<tr>
 		       <td><b>RUN6502.PAS</b></td>
 		       <td>Cette commande permet d'exécuter du code machine du microprocesseur 6502.</td>
+		</tr>
 		<tr>
 			<td><b>SLEEP.PAS</b></td>
 			<td>Cette commande permet d'attendre le nombre de secondes spécifiés. Cette commande est un équivalent de UNIX et LINUX.</td>
+		</tr>
+		<tr>
+			<td><b>SORT.PAS</b></td>
+			<td>Cette commande permet de trier une fichier texte ASCII et de retourner le résultat. Cette commande est un équivalent de la commande du DOS.</td>
+		</tr>	
 		<tr>
 			<td><b>SPLIT.PAS</b></td>
 			<td>Cette commande permet de séparer un fichier en plusieurs fichiers. Cette commande est un équivalent de UNIX.</td>
