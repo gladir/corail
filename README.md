@@ -103,6 +103,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher le début d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
 		<tr>
+			<td><b>HTML2TXT.PAS</b>
+			<td>Cette commande permet de convertir un fichier en HTML en texte seulement (enlève le code HTML).</td>
+		</tr>
+		<tr>
 			<td><b>LP.PAS</b></td>
 			<td>Cette commande permet d'imprimer le contenu d'un fichier. Cette commande est équivalent de UNIX.</td>
 		</tr>	
