@@ -160,7 +160,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>UNBINSCII.PAS</td>
-			<td>Cette commande permet d'extraire les fichiers d'un BSQ d'Apple II. Cette commande est originaire de ProDOS et de l'Apple II.</td>
+			<td>Cette commande permet d'extraire les fichiers d'un <a href="https://www.gladir.com/LEXIQUE/FICHIERS/bsq.htm">BSQ</a> d'Apple II. Cette commande est originaire de ProDOS et de l'Apple II.</td>
 		<tr>
 			<td><b>VIEWHEX.PAS</b></td>
 			<td>Cette commande permet de visualiser un fichier binaire en mode hexadécimal.</td>
