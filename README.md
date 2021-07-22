@@ -159,6 +159,9 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de réduire ou augmenter la taille d'un fichier.</td>
 		</tr>
 		<tr>
+			<td><b>UNBINSCII.PAS</td>
+			<td>Cette commande permet d'extraire les fichiers d'un BSQ d'Apple II. Cette commande est originaire de ProDOS et de l'Apple II.</td>
+		<tr>
 			<td><b>VIEWHEX.PAS</b></td>
 			<td>Cette commande permet de visualiser un fichier binaire en mode hexadécimal.</td>
 		</tr>		
