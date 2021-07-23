@@ -72,7 +72,8 @@ Begin
 End;
 
 Function Path2Drive(Path:String):Char;Begin
- Path2Drive:=FExpand(Path)[1];
+ Path:=FExpand(Path);
+ Path2Drive:=Path[1];
 End;
 
 Function GetDiskLabel(Dsk:Byte):String;
