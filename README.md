@@ -135,6 +135,9 @@ Voici la liste des différents fichiers proposés dans Corail :
 		       <td>Cette commande permet d'exécuter du code machine du microprocesseur 6502.</td>
 		</tr>
 		<tr>
+			<td><b>SH.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande UNIX.</td>
+		<tr>
 			<td><b>SLEEP.PAS</b></td>
 			<td>Cette commande permet d'attendre le nombre de secondes spécifiés. Cette commande est un équivalent de UNIX et LINUX.</td>
 		</tr>
