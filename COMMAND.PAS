@@ -1049,7 +1049,7 @@ End;
 Procedure UnknownCommand;Begin
  Exec(CurrCommand,ParamList);
  If DosError<>0Then Begin
-  WriteLn('Commande ou non de fichier non reconnu');
+  WriteLn('Commande ou nom de fichier non reconnu');
  End;
  WriteLn;
 End;
