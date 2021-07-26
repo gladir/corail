@@ -153,6 +153,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>STAT.PAS</b></td>
 			<td>Cette commande permet d'afficher des informations sur des fichiers. Cettte commande est un équivalent de UNIX et LINUX.</td>
 		</tr>	
+		<tr>
+			<td><b>TAIL.PAS</b>
+			<td>Cette commande permet d'afficher la fin d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
+		</tr>
 	        <tr>
 			<td><b>TEE.PAS</b></td>
 			<td>Cette commande permet d'envoyer l'entrée standard vers la sortie standard. Cette commande est un équivalent de UNIX ou Linux.</td>
