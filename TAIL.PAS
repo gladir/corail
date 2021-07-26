@@ -24,7 +24,7 @@ BEGIN
  MaxBuffer:=32767;
  FileName:='';
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('TAIL : Cette commande permet d''afficher le debut du fichier.');
+  WriteLn('TAIL : Cette commande permet d''afficher la fin du fichier.');
   WriteLn;
   WriteLn('Syntaxe : TAIL [--lines lignes] [--bytes octets] nomdufichier');
  End
