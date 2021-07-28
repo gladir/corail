@@ -4,14 +4,14 @@
   @abstract(Target: Free Pascal)
 }
 
-Program COMMAND;
+Program OS2CMD;
 
 Uses Crt,DOS;
 
 Const
- CommandList:Array[0..36]of String[8]=(
+ CommandList:Array[0..37]of String[8]=(
   'BREAK','CALL','CD','CHCP','CHDIR','CLS','COPY','CTTY','DEL','DELETE',
-  'DIR','ECHO','ERA','ERASE','EXIT','FOR','IF','LOADHIGH','MD','MKDIR',
+  'DIR','ECHO','ERA','ERASE','EXIT','FOR','HELP','IF','LOADHIGH','MD','MKDIR',
   'PATH','PAUSE','PROMPT','RD','REM','REN','RENAME','RMDIR','SET',
   'SHIFT','TIME','TRUENAME','TYPE','VER','VERIFY','VOL','DATE'
  );
@@ -204,56 +204,27 @@ Begin
 End;
 
 Procedure HomeMessage;Begin
+ ClrScr;
+ TextBackground(1);
+ TextColor(15);
+ Write('  OS/2');
+ ClrEol;
+ GotoXY(63,1);
+ Write('Type HELP = aide');
+ TextBackground(0);
+ TextColor(7);
  WriteLn;
- WriteLn('Corail COMMAND.COM');
- WriteLn('gladir.com 2021. Tous droits reserves.');
+ WriteLn('Operating System/2 Command Interpreter');
  WriteLn;
 End;
 
 Procedure ShowPrompt;
-Const Week:Array[0..6]of String[3]=('Dim','Lun','Mar','Mer','Jeu','Ven','Sam');
-      Mon:Array[1..12]of String[3]=('Jan','Fev','Mar','Avr','Mai','Jui',
-			            'Jul','Aou','Sep','Oct','Nov','Dec');
 Var
- SP,CurrentDir:String;
- I:Byte;
- Year,Month,Day,DayOfWeek,Hour,Min,Sec,Sec100:Word;
+ CurrentDir:String;
 Begin
  If Not(Echo)Then Exit;
  GetDir(0,CurrentDir);
- SP:=GetEnv('PROMPT');
- If SP=''Then SP:='$P$G';
- I:=1;
- While I<=Length(SP)do Begin
-  If SP[I]='$'Then Begin
-   Inc(I);
-   Case SP[I] of
-       'D': Begin
-	     GetDate(Year,Month,Day,DayOfWeek);
-	     Write(Week[DayOfWeek],'  ',Mon[Month],Day,',',Year);
-	    End;
-       'T': Begin
-	     GetTime(Hour,Min,Sec,Sec100);
-	     Write(Hour,':',Min,':',Sec);
-	    End;
-       'B' : Write('|');
-   'e','E' : Write(#27);
-   'g','G' : Write('>');
-       'N' : Write(GetCurrentDisk);
-   'p','P' : Begin
-     GetDir(0,CurrentDir);
-     Write(CurrentDir);
-   End;
-   '-','S' : Write(' ');
-       'V' : Write(Lo(DosVersion),'.',Hi(DosVersion));
-   '_','Z' : Write(#13#10);
-       'z' : Write('?');
-   End;
-  End
-   Else
-  Write(SP[I]);
-  Inc(I);
- End;
+ Write('[',CurrentDir,']');
 End;
 
 Procedure InvalidParam(P:Byte);Begin
@@ -1083,6 +1054,112 @@ Begin
  End;
 End;
 
+Procedure HelpCommand;Begin
+ If ParamList<>''Then Begin
+  For J:=Low(CommandList) to High(CommandList) do Begin
+   If StrToUpper(ParamList)=CommandList[J]Then Begin
+    CurrCommand:=ParamList;
+    ParamList:='/?';
+    Case(J)of
+     0:BreakCommand;
+     1:CallCommand;
+     2:ChDirCommand;
+     3:CHCPCommand;
+     4:ChDirCommand;
+     5:CLSCommand;
+     6:CopyCommand;
+     7:CTTYCommand;
+     8:DeleteCommand;
+     9:DeleteCommand;
+     10:DirCommand;
+     11:EchoCommand;
+     12:EraseCommand;
+     13:EraseCommand;
+     14:Terminated:=ExitCommand;
+     15:ForCommand;
+     16:HelpCommand;
+     17:IfCommand;
+     18:LoadHighCommand;
+     19:MkDirCommand;
+     20:MkDirCommand;
+     21:PathCommand;
+     22:PauseCommand;
+     23:PromptCommand;
+     24:RmDirCommand;
+     25:RemCommand;
+     26:RenameCommand;
+     27:RenameCommand;
+     28:RmDirCommand;
+     29:SetCommand;
+     30:ShiftCommand;
+     31:TimeCommand;
+     32:TrueNameCommand;
+     33:TypeCommand;
+     34:VerCommand;
+     35:VerifyCommand;
+     36:VolCommand;
+     37:DateCommand;
+    End;
+    Exit;
+   End;
+  End;
+ End;
+ WriteLn('BREAK     Cette commande permet de fixer ou de demander l''etat du Ctrl+Break.');
+ WriteLn('CALL      Cette commande permet d''appeler une sous-routine');
+ WriteLn('CD        Cette commande permet de fixer ou de demander le repertoire courant.');
+ WriteLn('CHCP      Cette commande permet de changer le page de code');
+ WriteLn('CHDIR     Cette commande permet de fixer ou de demander le repertoire courant.');
+ WriteLn('CLS       Cette commande permet d''effacer l''ecran.');
+ WriteLn('COPY      Cette commande permet d''effacer la copie de fichier vers un autre ',
+                  'emplacement.');
+ WriteLn('CTTY      Cette commande permet de changer un peripherique du prompt ',
+                  'de commande du systŠme d''exploitation.');
+ WriteLn('DATE      Cette commande permet de fixer ou de demander la date du systeme d''exploitation');
+ WriteLn('DEL       Cette commande permet d''effectuer la suppression de fichier sur un ',
+                  'unite de disque.');
+ WriteLn('DELETE    Cette commande permet d''effectuer la suppression de fichier sur un ',
+                  'unite de disque.');
+ WriteLn('DIR       Cette commande permet d''afficher le contenu d''un repertoire dans ',
+                 'l''unite de disque.');
+ WriteLn('ECHO      Cette commande permet d''activer ou desactiver le prompt de commande ',
+                 'ou d''afficher un message sur le console du systeme d''exploitation.');
+ WriteLn('ERA       Cette commande permet d''effectuer la suppression de fichier sur un unite de disque.');
+ WriteLn('ERASE     Cette commande permet d''effectuer la suppression de fichier sur un unite de disque.');
+ WriteLn('EXIT      Cette commande permet de quitter l''interpreteur de commande.');
+ WriteLn('FOR       Cette commande permet d''effectuer le traitement d''un groupe de ',
+                  'fichier a une commande.');
+ WriteLn('HELP      Cette commande permet d''afficher la liste des commandes');
+ WriteLn('IF        Cette commande permet d''effectuer une commande conditionnelle.');
+ WriteLn('LOADHIGH  Cette commande permet d''effectuer le chargement d''un programme dans la m‚moire ',
+                    'sup‚rieur (entre le 640 Ko et 1 Mo).');
+ WriteLn('MD        Cette commande permet de creer un repertoire.');
+ WriteLn('MKDIR     Cette commande permet de creer un repertoire.');
+ WriteLn('PATH      Cette commande permet de fixer ou de demander les chemins de recherche par d‚faut pour ',
+                    'trouver les ex‚cutables dans le systŠme d''exploitation.');
+ WriteLn('PAUSE     Cette commande permet d''afficher un message de pause et une ',
+                  'attente d''une action utilisateur pour poursuivre.');
+ WriteLn('PROMPT    Cette commande permet de fixer ou de demander le prompt affich‚ par l''interpr‚teur ',
+                    'de commande du systŠme d''exploitation.');
+ WriteLn('RD        Cette commande permet de supprimer un repertoire vide.');
+ WriteLn('REM       Cette commande permet d''indiquer une remarque.');
+ WriteLn('REN       Cette commande permet de renommer un fichier.');
+ WriteLn('RENAME    Cette commande permet de renommer un fichier.');
+ WriteLn('RMDIR     Cette commande permet de supprimer un repertoire vide.');
+ WriteLn('SET       Cette commande permet de fixer ou demander le contenu des ',
+          'variables d''environnement du systeme d''exploitation');
+ WriteLn('SHIFT     Cette commande permet de changer la position d''un paramŠtre ',
+                    'de fichier de traitement par lots (Batch).');
+ WriteLn('TIME      Cette commande permet de fixer ou l''heure du systeme ',
+                 'd''exploitation');
+ WriteLn('TRUENAME  Cette commande permet d''afficher le nom complet d''un unite, repertoire ou d''un nom de fichier');
+ WriteLn('TYPE      Cette commande permet d''afficher le contenu d''un fichier');
+ WriteLn('VER       Cette commande permet de demander la version du systeme d''exploitation.');
+ WriteLn('VERIFY    Cette commande permet de fixer ou de demander l''etat du ',
+                    'drapeau de verification de lecture de secteur d''unite ',
+                    'd''allocation du systeme d''exploitation.');
+ WriteLn('VOL       Cette commande permet d''afficher le nom du volume d''une unite de disque.');
+End;
+
 Procedure UnknownCommand;Begin
  Exec(CurrCommand,ParamList);
  If DosError<>0Then Begin
@@ -1118,27 +1195,28 @@ BEGIN
      13:EraseCommand;
      14:Terminated:=ExitCommand;
      15:ForCommand;
-     16:IfCommand;
-     17:LoadHighCommand;
-     18:MkDirCommand;
+     16:HelpCommand;
+     17:IfCommand;
+     18:LoadHighCommand;
      19:MkDirCommand;
-     20:PathCommand;
-     21:PauseCommand;
-     22:PromptCommand;
-     23:RmDirCommand;
-     24:RemCommand;
-     25:RenameCommand;
+     20:MkDirCommand;
+     21:PathCommand;
+     22:PauseCommand;
+     23:PromptCommand;
+     24:RmDirCommand;
+     25:RemCommand;
      26:RenameCommand;
-     27:RmDirCommand;
-     28:SetCommand;
-     29:ShiftCommand;
-     30:TimeCommand;
-     31:TrueNameCommand;
-     32:TypeCommand;
-     33:VerCommand;
-     34:VerifyCommand;
-     35:VolCommand;
-     36:DateCommand;
+     27:RenameCommand;
+     28:RmDirCommand;
+     29:SetCommand;
+     30:ShiftCommand;
+     31:TimeCommand;
+     32:TrueNameCommand;
+     33:TypeCommand;
+     34:VerCommand;
+     35:VerifyCommand;
+     36:VolCommand;
+     37:DateCommand;
     End;
     If J<=High(CommandList)Then Begin
      CommandFound:=True;
@@ -1158,3 +1236,4 @@ BEGIN
   End;
  Until Terminated;
 END.
+
