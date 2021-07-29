@@ -118,6 +118,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>LS.PAS</b></td>
 			<td>Cette commande permet d'afficher les fichiers d'un répertoire. Cette commande est équivalent de UNIX.</td>
 		</tr>
+		<tr>
+			<td><b>MORE.PAS</b></td>
+			<td>Cette commande permet de recevoir l'entrée puis l'affichae sur un périphérique un écran à la fois.</td>
+		</tr>
 	        <tr>
 			<td><b>NUMBER.PAS</b></td>
 			<td>Cette commande permet de retourner en texte un nombre. Similaire à la commande AIX.</td>
