@@ -80,6 +80,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effectuer la conversion des caractères de saut de ligne du système d'exploitation DOS en leur équivalent UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>DRDOS.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande DR-DOS. Il s'agit d'un équivalent du COMMAND.COM du DR-DOS.</td>
+		</tr>
+		<tr>
 			<td><b>EQUIP.PAS</b></td>
 			<td>Cette commande permet d'afficher une liste de l'équipement installé et indique la quantité de mémoire, le type de mémoire, le microprocesseur, le moniteur, les unités de disque et les composantes d'entrée/sorties. Cette commande est originaire de la commande <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/equip.htm">EQUIP</a> du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/intro.htm">MS-DOS 3.21 Enhanced Amdek</a>.</td>
 		<tr>
@@ -131,9 +135,17 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de retourner en texte un nombre. Similaire à la commande AIX.</td>
 		</tr>
 		<tr>
+			<td><b>NDOS.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande NDOS. Il s'agit d'un équivalent du NDOS du Norton Utilities.</td>
+		</tr>	
+		<tr>
 			<td><b>OD.PAS</b></td>
 			<td>Cette commande permet d'afficher le contenu d'un fichier selon un format spécifique. Cette commande est un équivalent de UNIX.</td>
 		</tr>
+		<tr>
+			<td><b>OS2CMD.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande OS/2. Il s'agit d'un équivalent du CMD de OS/2.</td>
+		</tr>	
 		<tr>
 			<td><b>PP.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande Prompt Pascal.</td>
