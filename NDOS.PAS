@@ -188,7 +188,7 @@ Var
  Temp:String;
 Begin
  Temp:='';Count:=1;LocalIndex:=1;l:=0;
- While Count<Length(ParamList)do Begin
+ While Count<=Length(ParamList)do Begin
   If Not(ParamList[Count] in [' ',#9])then Begin
    If LocalIndex=Index Then Begin
     While (Count<=Length(ParamList)) and (Not(ParamList[count] in[' ',#9])) and (l < 256) do Begin
@@ -421,8 +421,71 @@ Procedure CTTYCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure ColorCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure ColorCommand;
+Var
+ Option:(None,fg,_ON,bg,bc);
+ CurrParam:String;
+ Value:Byte;
+ I:Integer;
+ Err:Word;
+Begin
+ Option:=fg;
+ I:=1;
+ CurrParam:=ExtractParam(1);
+ If(CurrParam='/?')or(CurrParam='/H')or(CurrParam='/h')Then Begin
+  WriteLn('COLOR   Cette commande permet de fixer la couleur du texte et d''arriere-plan.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('COLOR [/?]');
+  WriteLn('COLOR [[BRIGHT] [BLINK] [fg ON bg] [BORDER bc]');
+  WriteLn;
+  WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+ End
+  Else
+ While CurrParam<>''do Begin
+  If(Option=_ON)Then Begin
+   If(StrToUpper(CurrParam)='ON')Then Begin
+    Option:=bg;
+   End
+    Else
+   Begin
+    WriteLn('''ON'' attendu !');
+    Break;
+   End;
+  End
+   Else
+  Begin
+   If(StrToUpper(CurrParam)='BRI')or(StrToUpper(CurrParam)='BRIGHT')Then HighVideo Else
+   If(StrToUpper(CurrParam)='BOR')or(StrToUpper(CurrParam)='BORDER')Then Option:=bg Else
+   If(StrToUpper(CurrParam)='BLI')or(StrToUpper(CurrParam)='BLINK')Then Begin
+   End
+    Else
+   Case(Option)of
+    fg:Begin
+     Val(TrimL(CurrParam),Value,Err);
+     TextColor(Value);
+     Option:=_ON;
+    End;
+    bg:Begin
+     Val(TrimL(CurrParam),Value,Err);
+     TextBackground(Value);
+     Option:=None;
+    End;
+    bc:Begin
+     Val(CurrParam,Value,Err);
+     Option:=None;
+    End;
+    Else Begin
+     WriteLn('Valeur non attendu !');
+     Break;
+    End;
+   End;
+  End;
+  Inc(I);
+  CurrParam:=ExtractParam(I);
+  If I>10Then Break;
+ End;
 End;
 
 Procedure DateCommand;
