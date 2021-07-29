@@ -772,7 +772,7 @@ Begin
  FindReg := reg;
 End;
 
-Procedure CodeOut(byte:Integer);Begin
+Procedure CodeOut(_byte:Integer);Begin
  If (pass=2) and updLoc Then Begin
   WriteLn(objet,':',HexWord2Str(codPtr));
   outPtr := codPtr;
@@ -780,8 +780,8 @@ Procedure CodeOut(byte:Integer);Begin
  End;
  outPtr := outPtr + 1;
  If pass=2 Then Begin
-  WriteLn(objet,ByteHex2Str(byte));
-  Write(Binary,byte);
+  WriteLn(objet,ByteHex2Str(_byte));
+  Write(Binary,Byte(_byte));
  End;
 End;
 
