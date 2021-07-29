@@ -329,6 +329,7 @@ Var
  FileView:Text;
  OptionFlag:(_None,_Lines,_Bytes);
  FileName,CurrLine:String;
+ CurrParam:String;
 Begin
  OptionFlag:=_None;
  MaxLine:=10;
@@ -343,23 +344,24 @@ Begin
  Begin
   I:=1;
   While I<10 do Begin
-   If ExtractParam(I)=''Then Break;
+   CurrParam:=ExtractParam(I);
+   If CurrParam=''Then Break;
    If OptionFlag<>_None Then Begin
     Case OptionFlag of
-     _Lines:Val(ExtractParam(I),MaxLine,Err);
-     _Bytes:Val(ExtractParam(I),MaxBuffer,Err);
+     _Lines:Val(CurrParam,MaxLine,Err);
+     _Bytes:Val(CurrParam,MaxBuffer,Err);
     End;
     OptionFlag:=_None;
    End
     Else
-   If ExtractParam(I)='--lines'Then OptionFlag:=_Lines Else
-   If ExtractParam(I)='--bytes'Then OptionFlag:=_Bytes Else
-   If((Length(ExtractParam(I))>=2) and (ExtractParam(I)[1]='-')and(ExtractParam(I)[2] in['0'..'9']))Then Begin
-    Val(Copy(ExtractParam(I),2,255),MaxLine,Err);
+   If CurrParam='--lines'Then OptionFlag:=_Lines Else
+   If CurrParam='--bytes'Then OptionFlag:=_Bytes Else
+   If((Length(CurrParam)>=2) and (CurrParam[1]='-')and(CurrParam[2]in['0'..'9']))Then Begin
+    Val(Copy(CurrParam,2,255),MaxLine,Err);
    End
     Else
    Begin
-    FileName:=ExtractParam(I);
+    FileName:=CurrParam;
     OptionFlag:=_None;
    End;
    Inc(I);
@@ -654,8 +656,115 @@ Procedure SttyCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure TailCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure TailCommand;
+Var
+ OptionFlag:(_None,_Lines,_Bytes);
+ I,CurrLinePos,MaxBuffer,MaxLine:Integer;
+ EndPos,CurrEndPos:LongInt;
+ ByteReaded:Integer;
+ NumLine,Err:Word;
+ FindEnd:Boolean;
+ FileView:File{$IFDEF FPC}of Byte{$ENDIF};
+ Buffer:Array[0..255]of Byte;
+ FileName,CurrLine:String;
+ CurrParam:String;
+Begin
+ OptionFlag:=_None;
+ MaxLine:=10;
+ MaxBuffer:=32767;
+ FileName:='';
+ If(ExtractParam(1)='/?')or(ExtractParam(1)='--help')or(ExtractParam(1)='-h')Then Begin
+  WriteLn('tail : Cette commande permet d''afficher la fin du fichier.');
+  WriteLn;
+  WriteLn('Syntaxe : tail [--lines lignes] [--bytes octets] nomdufichier');
+ End
+  Else
+ If ExtractParam(1)<>''Then Begin
+  I:=1;
+  While ExtractParam(I)<>''do Begin
+   CurrParam:=ExtractParam(I);
+   If OptionFlag<>_None Then Begin
+    Case OptionFlag of
+     _Lines:Val(CurrParam,MaxLine,Err);
+     _Bytes:Val(CurrParam,MaxBuffer,Err);
+    End;
+    OptionFlag:=_None;
+   End
+    Else
+   If CurrParam='--lines'Then OptionFlag:=_Lines Else
+   If CurrParam='--bytes'Then OptionFlag:=_Bytes Else
+   If Copy(CurrParam,1,8)='--bytes='Then Begin
+    Val(Copy(CurrParam,9,255),MaxBuffer,Err);
+   End
+    Else
+   If Copy(CurrParam,1,8)='--lines='Then Begin
+    Val(Copy(CurrParam,9,255),Maxline,Err);
+   End
+    Else
+   If((Length(CurrParam)>=2) and (CurrParam[1]='-')and(CurrParam[2] in['0'..'9']))Then Begin
+    Val(Copy(CurrParam,2,255),MaxLine,Err);
+   End
+    Else
+   Begin
+    FileName:=CurrParam;
+    OptionFlag:=_None;
+   End;
+   Inc(I);
+  End;
+  CurrLinePos:=0;
+  {$I-}Assign(FileView,FileName);
+  Reset(FileView);{$I+}
+  If IOResult<>0Then Begin
+   WriteLn('Fichier introuvable ou impossible a lire !');
+   Halt;
+  End;
+  EndPos:=FileSize(FileView);
+  NumLine:=0;FindEnd:=False;
+  If MaxBuffer<>32767Then Begin
+   Dec(EndPos,MaxBuffer);
+   If EndPos < 0Then EndPos:=0;
+   MaxLine := 1000;
+  End
+   Else
+  Repeat
+   CurrEndPos:=EndPos-SizeOf(Buffer);
+   If CurrEndPos<0Then CurrEndPos:=0;
+   Seek(FileView,CurrEndPos);
+   BlockRead(FileView,Buffer,SizeOf(Buffer),ByteReaded);
+   If ByteReaded<=0Then Break;
+   For I:=ByteReaded-1 downto 0do Begin
+    If Buffer[I]=10Then Begin
+     Inc(NumLine);
+     If NumLine>MaxLine Then Begin
+      Dec(EndPos,SizeOf(Buffer)-I);
+      FindEnd:=True;
+      Break;
+     End;
+    End;
+   End;
+   If(FindEnd)Then Break;
+   Dec(EndPos,ByteReaded);
+  Until EndPos<=0;
+  Seek(FileView,EndPos);
+  While Not EOF(FileView)do Begin
+   BlockRead(FileView,Buffer,SizeOf(Buffer),ByteReaded);
+   If ByteReaded=0Then Break;
+   For I:=0 to ByteReaded-1 do Begin
+    Case Buffer[I]of
+     13:Begin
+      Inc(CurrLinePos);
+      WriteLn;
+     End;
+     10:;
+     Else Write(Char(Buffer[I]));
+    End;
+   End;
+   If CurrLinePos>=MaxLine Then Break;
+  End;
+  Close(FileView);
+ End
+  Else
+ WriteLn('Parametre requis !');
 End;
 
 Procedure TeeCommand;Begin
