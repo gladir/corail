@@ -1305,7 +1305,7 @@ BEGIN
      26:EraseCommand;
      27:ESetCommand;
      28:ExceptCommand;
-     29:ExitCommand;
+     29:Terminated:=ExitCommand;
      30:ForCommand;
      31:FreeCommand;
      32:GlobalCommand;
