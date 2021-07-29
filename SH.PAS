@@ -89,7 +89,7 @@ Var
  Temp:String;
 Begin
  Temp:='';Count:=1;LocalIndex:=1;l:=0;
- While Count<Length(ParamList)do Begin
+ While Count<=Length(ParamList)do Begin
   If Not(ParamList[Count] in [' ',#9])then Begin
    If LocalIndex=Index Then Begin
     While (Count<=Length(ParamList)) and (Not(ParamList[count] in[' ',#9])) and (l < 256) do Begin
