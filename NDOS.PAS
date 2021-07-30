@@ -510,8 +510,23 @@ Begin
  End;
 End;
 
-Procedure DelayCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure DelayCommand;
+Var
+ NombreSeconde:LongInt;
+ Err:Word;
+Begin
+ If(ExtractParam(1)='/?')or(ExtractParam(1)='/h')or(ExtractParam(1)='/H')Then Begin
+  WriteLn('DELAY : Cette commande permet d''attendre le nombre de secondes specifies.');
+  WriteLn;
+  WriteLn('Syntaxe : DELAY nombredesecondes');
+ End
+  Else
+ If ExtractParam(1)<>''Then Begin
+  Val(ExtractParam(1),NombreSeconde,Err);
+  Delay(NombreSeconde*1000);
+ End
+  Else
+ WriteLn('Nombre de parametre invalide !');
 End;
 
 Procedure DeleteCommand;Var
