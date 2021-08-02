@@ -7,50 +7,64 @@
 
 Program TAIL(Input,Output);
 
+Uses DOS;
+
 Var
  OptionFlag:(_None,_Lines,_Bytes);
+ ForceCheck:Boolean;
  I,CurrLinePos,MaxBuffer,MaxLine:Integer;
  EndPos,CurrEndPos:LongInt;
  ByteReaded:Integer;
  NumLine,Err:Word;
  FindEnd:Boolean;
- FileView:File of Byte;
+ FileView:File{$IFDEF FPC}of Byte{$ENDIF};
  Buffer:Array[0..255]of Byte;
- FileName,CurrLine:String;
+ Info:SearchRec;
+ FileName,CurrLine,CurrParam:String;
 
 BEGIN
  OptionFlag:=_None;
  MaxLine:=10;
  MaxBuffer:=32767;
+ ForceCheck:=False;
  FileName:='';
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('TAIL : Cette commande permet d''afficher la fin du fichier.');
   WriteLn;
-  WriteLn('Syntaxe : TAIL [--lines lignes] [--bytes octets] nomdufichier');
+  WriteLn('Syntaxe : TAIL [--lines lignes] [--bytes octets] [-f] nomdufichier');
+  WriteLn;
+  WriteLn('             -f  Ce parametre permet de forcer la surveiller de ',
+                            'la fin du fichier sans arret.');
+  WriteLn(' --lines lignes  Ce parametre permet d''indiquer le nombre de ',
+                            'ligne a lire.');
+  WriteLn(' --bytes octets  Ce parametre permet d''indiquer le nombre ',
+                            'd''octets a lire.');
  End
   Else
  If ParamCount > 0 Then Begin
   For I:=1 to ParamCount do Begin
+   CurrParam:=ParamStr(I);
    If OptionFlag<>_None Then Begin
     Case OptionFlag of
-     _Lines:Val(ParamStr(I),MaxLine,Err);
-     _Bytes:Val(ParamStr(I),MaxBuffer,Err);
+     _Lines:Val(CurrParam,MaxLine,Err);
+     _Bytes:Val(CurrParam,MaxBuffer,Err);
     End;
     OptionFlag:=_None;
    End
     Else
-   If ParamStr(I)='--lines'Then OptionFlag:=_Lines Else
-   If ParamStr(I)='--bytes'Then OptionFlag:=_Bytes Else
-   If Copy(ParamStr(I),1,8)='--bytes='Then Begin
-    Val(Copy(ParamStr(I),9,255),MaxBuffer,Err);
+   If CurrParam='-f'Then ForceCheck:=True Else
+   If CurrParam='--lines'Then OptionFlag:=_Lines Else
+   If CurrParam='--bytes'Then OptionFlag:=_Bytes Else
+   If Copy(CurrParam,1,8)='--bytes='Then Begin
+    Val(Copy(CurrParam,9,255),MaxBuffer,Err);
    End
     Else
-   If Copy(ParamStr(I),1,8)='--lines='Then Begin
-    Val(Copy(ParamStr(I),9,255),Maxline,Err);
+   If Copy(CurrParam,1,8)='--lines='Then Begin
+    Val(Copy(CurrParam,9,255),Maxline,Err);
    End
     Else
-   If((Length(ParamStr(I))>=2) and (ParamStr(I)[1]='-')and(ParamStr(I)[2] in['0'..'9']))Then Begin
-    Val(Copy(ParamStr(I),2,255),MaxLine,Err);
+   If((Length(CurrParam)>=2) and (CurrParam[1]='-')and(CurrParam[2] in['0'..'9']))Then Begin
+    Val(Copy(CurrParam,2,255),MaxLine,Err);
    End
     Else
    Begin
@@ -109,6 +123,30 @@ BEGIN
    If CurrLinePos>=MaxLine Then Break;
   End;
   Close(FileView);
+  If(ForceCheck)Then Begin
+   Repeat
+    FindFirst(FileName,AnyFile,Info);
+    If(DosError=0)and(Info.Size>EndPos)Then Begin
+     {$I-}Assign(FileView,FileName);
+     If(ForceCheck)Then FileMode:=0 + $30 + $80; { Fixe le mode Lecture seulement + Partage }
+     Reset(FileView);{$I+}
+     Seek(FileView,EndPos);
+     BlockRead(FileView,Buffer,SizeOf(Buffer),ByteReaded);
+     If ByteReaded>0Then For I:=0 to ByteReaded-1 do Begin
+      Case Buffer[I]of
+       13:Begin
+        Inc(CurrLinePos);
+        WriteLn;
+       End;
+       10:;
+       Else Write(Char(Buffer[I]));
+      End;
+     End;
+     Inc(EndPos,ByteReaded);
+     Close(FileView);
+    End;
+   Until True=False;
+  End;
  End
   Else
  WriteLn('Parametre requis !');
