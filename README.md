@@ -115,6 +115,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de demander la distance entre deux villes, soit par coordonnée géographique, soit par son nom s'il est répertorié.</td>
 		</tr>	
 		<tr>
+			<td><b>GREP.PAS</b></td>
+			<td>Cette commande permet d'effectuer des recherches dans des fichiers. Cette commande est un équivalent de UNIX.</td>
+		</tr>
+		<tr>
 			<td><b>HEAD.PAS</b>
 			<td>Cette commande permet d'afficher le début d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
