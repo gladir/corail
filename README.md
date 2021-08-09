@@ -76,6 +76,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de retourner le chemin seulement à partir d'un chemin complet de nom de fichier. Cette commande est un équivalent de UNIX et Linux.</td>
 		</tr>
 		<tr>
+		    	<td><b>DISKCOPY.PAS</b></td>
+		    	<td>Cette commande permet de copier des disquettes ou des images.</td>
+		</tr>	
+		<tr>
 		    	<td><b>DISKINFO.PAS</b></td>
 		    	<td>Cette commande permet d''afficher les informations sur une disquette ou un fichier d'image disque.</td>
 		</tr>
