@@ -216,6 +216,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>WC.PAS</b>
 			<td>Cette commande permet de compter le nombre de mots, de lignes ou de caractères.</td>
 		</tr>
+	        <tr>
+			<td><b>WIPEINFO.PAS</b>
+			<td>Cette commande permet d'effacer totalement les données et le fichier.</td>
+		</tr>	
 	</table>
 	
 Aperçu de la commande VIEWHEX :
