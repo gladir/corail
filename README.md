@@ -198,6 +198,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'envoyer l'entrée standard vers la sortie standard. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
 	        <tr>
+			<td><b>TOKEN2BAS.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier de TOKEN (GWBASIC, CoCo,...) de BASIC en BASIC ASCII.</td>
+		</tr>	
+	        <tr>
 			<td><b>TOUCH.PAS</b></td>
 			<td>Cette commande permet de changer la date et l'heure d'un fichier. Cette commande est un équivalent de UNIX, AIX et Linux.</td>
 	        </tr>
