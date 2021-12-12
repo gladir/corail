@@ -22,7 +22,7 @@ End;
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('BIN2C : Cette commande permet de convertir un ficiher binaire en tableau de C.');
+  WriteLn('BIN2C : Cette commande permet de convertir un fichier binaire en tableau de C.');
   WriteLn;
   WriteLn('Syntaxe : BIN2C fichier fichier.c');
  End
