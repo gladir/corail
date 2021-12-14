@@ -21,7 +21,7 @@ Begin
   Dizaine:=(X div 10)mod 10;
   Centaine:=(X div 100)mod 10;
   Millier:=(X div 1000)mod 10;
-  Case Centaine of
+  Case Millier of
    1:S:=S+'mille ';
    2:S:=S+'deux mille ';
    3:S:=S+'trois mille ';
