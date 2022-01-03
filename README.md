@@ -66,7 +66,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		 <tr>
 			<td><b>CPP.PAS</b></td>
 			<td>Cette commande permet d'effectuer un traitement de préprocesseur de langage de porgrammation <a href="https://www.gladir.com/CODER/C/intro.htm">C</a>.</td>
-		</tr>	
+		</tr>
+	         <tr>
+			 <td><b>CREATE.PAS</b></td>
+			 <td>Cette commande permet de créer un fichier. Cette commande est originaire du <a href="https://www.gladir.com/OS/LDOS/intro.htm">LDOS</a> de TRS-80.</td>
+		 </tr>	
 		 <tr>
 			<td><b>DELQ.PAS</b></td>
 			<td>Cette commande permet d'effectuer la suppression de fichier en demandant une confirmation.</td>
