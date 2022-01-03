@@ -190,6 +190,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher le chemin du répertoire courant. Cette commande est un équivalent de UNIX.</td>
 		</tr>
 	       	<tr>
+		       <td><b>RENDIR.PAS</b></td>
+		       <td>Cette commande permet de renommer un répertoire. Cette commande est inspiré de la commande <a href="https://www.gladir.com/SOFTWARE/NOVELLNETWARE/rendir.htm">RENDIR</a> de <a href="https://www.gladir.com/SOFTWARE/NOVELLNETWARE/presentation.htm">Novell Netware.</td>
+		</tr>	
+	       	<tr>
 		       <td><b>RUN6502.PAS</b></td>
 		       <td>Cette commande permet d'exécuter du code machine du microprocesseur 6502.</td>
 		</tr>
