@@ -143,6 +143,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier en HTML en texte seulement (enlève le code HTML).</td>
 		</tr>
 		<tr>
+			<td><b>LABEL.PAS</b></td>
+			<td>Cette commande permet de changer le nom d'un volume.</td>
+		</tr>
+		<tr>
 			<td><b>LP.PAS</b></td>
 			<td>Cette commande permet d'imprimer le contenu d'un fichier. Cette commande est équivalent de UNIX.</td>
 		</tr>	
