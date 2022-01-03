@@ -119,6 +119,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de demander le type de fichier. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
 		<tr>
+			<td><b>FILEATTR.PAS</b></td>
+			<td>Cette commande permet de demander ou de changer les attributs d'un fichier. Cette commande est équivalent de la commande FILEATTR des utilitaires <a href="https://www.gladir.com/SOFTWARE/PCTOOLS/presentation.htm">PC Tools</a> de Central-Point.</td>
+		</tr>	
+		<tr>
 			<td><b>FIND.PAS</b></td>
 			<td>Cette commande permet de rechercher une chaine de caractères dans des fichiers. Cette commande est un équivalent du DOS.</td>
 		</tr>
