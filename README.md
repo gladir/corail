@@ -64,6 +64,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de comparer deux fichiers. Cette commande est un equivalent du <a href="https://www.gladir.com/OS/PCDOS/intro.htm">PC-DOS</a> ou <a href="https://www.gladir.com/OS/MSDOS/intro.htm">MS-DOS</a>.</td>
 		</tr>
 		 <tr>
+			<td><b>CPP.PAS</b></td>
+			<td>Cette commande permet d'effectuer un traitement de préprocesseur de langage de porgrammation <a href="https://www.gladir.com/CODER/C/intro.htm">C</a>.</td>
+		</tr>	
+		 <tr>
 			<td><b>DELQ.PAS</b></td>
 			<td>Cette commande permet d'effectuer la suppression de fichier en demandant une confirmation.</td>
 		</tr>
