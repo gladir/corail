@@ -55,6 +55,9 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>CAT.PAS</b></td>
 			<td>Cette commande permet d'afficher le contenu d'un/des fichiers. Cette commande est un équivalent de UNIX.</td>
 		</tr>
+	        <tr>
+			<td><b>CHOICE.PAS</b></td>
+			<td>Cette commande permet de faire une choix. Cette commande est un équivalent de la commande MS-DOS.</td>
 		<tr>
 			<td><b>COMMAND.PAS</b></td>
 			<td>Logiciel clone d'un <i>COMMAND.COM</i> du système d'exploitation <a href="https://www.gladir.com/OS/DOS/intro.htm"><i>DOS</i></a>.</td>
