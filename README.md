@@ -126,6 +126,9 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>FIND.PAS</b></td>
 			<td>Cette commande permet de rechercher une chaine de caractères dans des fichiers. Cette commande est un équivalent du DOS.</td>
 		</tr>
+		<tr>
+			<td><b>FLIPFLOP.PAS</td></td>
+			<td>Cette commande permet d'échanger des fichiers textes de TRS-80 et UNIX (ou Amiga). Utilitaire MISOSYS pour TRS-80.</td>
  		<tr>
 			<td><b>GEODELTA.PAS</b></td>
 			<td>Cette commande permet de demander la distance entre deux villes, soit par coordonnée géographique, soit par son nom s'il est répertorié.</td>
