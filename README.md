@@ -41,7 +41,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	        <tr>
 			<td><b>BIN2BGI.PAS</b></td>
-			<td>Cette programme permet d''écriture l''entête de la portion du pilote BGI.</td>
+			<td>Cette programme permet l'écriture d'entête de la portion du pilote BGI.</td>
 		</tr>
 		<tr>
 			<td><b>BIN2C.PAS</b></td>
