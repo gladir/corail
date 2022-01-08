@@ -237,8 +237,12 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher des informations sur des fichiers. Cettte commande est un équivalent de UNIX et LINUX.</td>
 		</tr>	
 		<tr>
-			<td><b>TAIL.PAS</b>
+			<td><b>TAIL.PAS</b></td>
 			<td>Cette commande permet d'afficher la fin d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
+		</tr>
+		<tr>
+			<td><b>TCC2MSG.PAS</b></td>
+			<td>Cette programme permet de capturer les messages TCC et de les retourner a Turbo Pascal.</td>
 		</tr>
 	        <tr>
 			<td><b>TEE.PAS</b></td>
