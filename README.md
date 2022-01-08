@@ -39,6 +39,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>BASENAME.PAS</b></td>
 			<td>Cette commande permet de retourner le nom du fichier seulement à partir d'un chemin complet de nom de fichier. Cette commande est un équivalent de UNIX.</td>
 		</tr>
+	        <tr>
+			<td><b>BIN2BGI.PAS</b></td>
+			<td>Cette programme permet d''écriture l''entête de la portion du pilote BGI.</td>
+		</tr>
 		<tr>
 			<td><b>BIN2C.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier binaire en tableau de code source C.</td>
