@@ -148,6 +148,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>GREP.PAS</b></td>
 			<td>Cette commande permet d'effectuer des recherches dans des fichiers. Cette commande est un équivalent de UNIX.</td>
 		</tr>
+	        <tr>
+		        <td><b>GREP2MSG.PAS</b></td>
+			<td>Cette programme permet de capturer les messages GREP et de les retourner a Turbo Pascal.</td>
+		</tr>
 		<tr>
 			<td><b>HEAD.PAS</b>
 			<td>Cette commande permet d'afficher le début d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
