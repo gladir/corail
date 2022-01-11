@@ -39,14 +39,20 @@ BEGIN
   WriteLn('Syntaxe : CMOS nomdufichier /T:action');
   WriteLn;
   WriteLn('           nomdufichier   Le fichier a lire ou modifier');
-  WriteLN('           /T:s           Sauvegarde le CMOS dans un fichier');
-  WriteLN('           /T:rs          Copie un fichier dans le CMOS');
+  WriteLn('           /T:s           Sauvegarde le CMOS dans un fichier');
+  WriteLn('           /T:rs          Copie un fichier dans le CMOS');
+  WriteLN('           /AMDEK         Utilise l''adresse d''un AMDEK SYSTEM/88');
  End
   Else
  Begin
   Mode:=_None;
   FileName:='';
   For I:=1 to ParamCount do Begin
+   If(ParamStr(I)='/AMDEK')Then Begin
+    RTCAdrPort:=$E0;
+	RTCDtaPort:=$E1;
+   End 
+    Else
    If(ParamStr(I)='/T:s')Then Mode:=_Save Else
    If(ParamStr(I)='/T:rs')Then Mode:=_Restore
                          Else FileName:=ParamStr(I);
