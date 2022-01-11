@@ -66,6 +66,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 	        <tr>
 			<td><b>CHOICE.PAS</b></td>
 			<td>Cette commande permet de faire une choix. Cette commande est un équivalent de la commande MS-DOS.</td>
+		</tr>
+		<tr>
+			<td><b>CKCMOS.PAS</b></td>
+			<td>Cette commande permet de sauvegarder ou restaurer les données du CMOS du système. Cette commande est un clone de la commande <a href="https://www.gladir.com/SOFTWARE/CHECKIT/ckcmos.htm">CKCMOS</a> de la série d'utilitaires <a href="https://www.gladir.com/SOFTWARE/CHECKIT/presentation.htm">CheckIt</a>.</td>
 		<tr>
 			<td><b>COMMAND.PAS</b></td>
 			<td>Logiciel clone d'un <i>COMMAND.COM</i> du système d'exploitation <a href="https://www.gladir.com/OS/DOS/intro.htm"><i>DOS</i></a>.</td>
