@@ -194,7 +194,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de recevoir l'entrée puis l'affichage sur un périphérique un écran à la fois.</td>
 		</tr>
 		<tr>
-			<td>MS.PAS</td>
+			<td><b>MS.PAS</b></td>
 			<td>Cette commande permet de lancer le MultiSwitch, soit un clone de l'utilitaire <a href="https://www.gladir.com/LEXIQUE/CARD/graphicssolution.htm">Graphics Solution</a> d'ATI.</td>
 		</tr>
 	        <tr>
