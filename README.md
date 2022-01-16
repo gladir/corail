@@ -190,6 +190,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher les fichiers d'un répertoire. Cette commande est équivalent de UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>MODE.PAS</b></td>
+			<td>Cette commande permet d'effectuer la gestion des paramètres d'un périphérique.</td>
+		</tr>
+		<tr>
 			<td><b>MORE.PAS</b></td>
 			<td>Cette commande permet de recevoir l'entrée puis l'affichage sur un périphérique un écran à la fois.</td>
 		</tr>
