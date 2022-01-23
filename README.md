@@ -83,6 +83,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effectuer un traitement de préprocesseur de langage de porgrammation <a href="https://www.gladir.com/CODER/C/intro.htm">C</a>.</td>
 		</tr>
 	         <tr>
+			 <td><b>CPUTEST.PAS</b></td>
+			 <td>Cette commande permet de détecter le type de microprocesseur. Cette commande est un clone de la commande CPUTEST du Turbo Pascal 6.</td>
+		</tr>
+	         <tr>
 			 <td><b>CREATE.PAS</b></td>
 			 <td>Cette commande permet de créer un fichier. Cette commande est originaire du <a href="https://www.gladir.com/OS/LDOS/intro.htm">LDOS</a> de TRS-80.</td>
 		 </tr>	
