@@ -1037,6 +1037,7 @@ Procedure TimeCommand;
 Var
  FirstParam:String;
  Hour,Minute,Second,CentSec:Word;
+ Y:Byte;
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
@@ -1044,9 +1045,22 @@ Begin
   WriteLn;
   WriteLn('Syntaxe:');
   WriteLn;
-  WriteLn('TIME [/?]');
+  WriteLn('TIME [/?] [/C]');
   WriteLn;
   WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn('  /C    Ce parametre permet d''afficher l''heure en continu jusqu''a ',
+                   'ce que vous appuyiez sur une touche pour quitter');
+ End
+  Else
+ If StrToUpper(FirstParam)='/C'Then Begin
+  Y:=WhereY;
+  Repeat
+   GotoXY(1,Y);
+   GetTime(Hour,Minute,Second,CentSec);
+   Write('L''heure actuelle est ',Hour:2,':',PadZeroLeft(Minute,2),':',PadZeroLeft(Second,2),',',CentSec);
+  Until Keypressed;
+  If(ReadKey<>#0)Then;
+  WriteLn;
  End
   Else
  Begin
