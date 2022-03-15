@@ -254,7 +254,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		       <td>Cette commande permet d'exécuter du code machine du microprocesseur 6502.</td>
 		</tr>
 	        <tr>
-			<td></b>SD</b></td>
+			<td><b>SD.PAS</b></td>
 			<td>Cette commande permet d'imprimer le contenu de l'écran. Cette commande est inspiré du logiciel <a href="https://www.gladir.com/SOFTWARE/KIX/presentation.htm">KIX</a> de Kyan Software pour Apple II.</td>
 		</tr>	
 		<tr>
