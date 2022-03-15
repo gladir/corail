@@ -253,6 +253,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		       <td><b>RUN6502.PAS</b></td>
 		       <td>Cette commande permet d'exécuter du code machine du microprocesseur 6502.</td>
 		</tr>
+	        <tr>
+			<td></b>SD</b></td>
+			<td>Cette commande permet d'imprimer le contenu de l'écran. Cette commande est inspiré du logiciel <a href="https://www.gladir.com/SOFTWARE/KIX/presentation.htm">KIX</a> de Kyan Software pour Apple II.</td>
+		</tr>	
 		<tr>
 			<td><b>SH.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande UNIX.</td>
