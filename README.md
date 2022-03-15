@@ -317,13 +317,17 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de visualiser un fichier binaire en mode hexadécimal.</td>
 		</tr>		
 	        <tr>
-			<td><b>WC.PAS</b>
+			<td><b>WC.PAS</b></td>
 			<td>Cette commande permet de compter le nombre de mots, de lignes ou de caractères.</td>
 		</tr>
 	        <tr>
-			<td><b>WIPEINFO.PAS</b>
+			<td><b>WIPEINFO.PAS</b></td>
 			<td>Cette commande permet d'effacer totalement les données et le fichier.</td>
-		</tr>	
+		</tr>
+	        <tr>
+			<td><b>XCOPY.PAS</b></td>
+			<td>Cette commande permet d'effectuer la copie étendue avec sous-répertoire de fichier(s) vers un nouvel emplacement.</td>
+		</tr>
 	</table>
 	
 Aperçu de la commande VIEWHEX :
