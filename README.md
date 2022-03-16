@@ -250,6 +250,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		       <td>Cette commande permet de renommer un répertoire. Cette commande est inspiré de la commande <a href="https://www.gladir.com/SOFTWARE/NOVELLNETWARE/rendir.htm">RENDIR</a> de <a href="https://www.gladir.com/SOFTWARE/NOVELLNETWARE/presentation.htm">Novell Netware.</td>
 		</tr>
 	        <tr>
+			<td><b>REPLACE.PAS</b></td>
+			<td>Cette commande permet de remplacer un fichier. Cette commande est un équivalent du DOS.</td>
+		</tr>
+	        <tr>
 			<td><b>RTMRES.PAS</b></td>
 			<td>Cette commande permet de charger le RTM en mode résident.</td>
 		</tr>
