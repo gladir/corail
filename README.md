@@ -54,6 +54,14 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>BIN2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier binaire en tableau de code source Pascal.</td>
+		</tr>
+	        <tr>
+			<td><b>C40.PAS</b></td>
+			<td>Cette commande permet de passer en écran de texte de 40 colonnes.</td>
+		</tr>
+	        <tr>
+			<td><b>C80.PAS</b></td>
+			<td>Cette commande permet de passer en écran de texte de 80 colonnes.</td>
 		</tr>	
 		<tr>
 			<td><b>CAL.PAS</b></td>
