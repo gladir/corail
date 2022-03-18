@@ -110,6 +110,71 @@ Begin
  ExtractParam:=Temp;
 End;
 
+Function SplitFileName(s:String):String;
+Var
+ D:DirStr;
+ N:NameStr;
+ E:ExtStr;
+Begin
+ FSplit(S,D,N,E);
+ Splitfilename:=N+E;
+End;
+
+Function CopyFile(Source,Target:String):Boolean;
+Var
+ SourceFile,TargetFile:File;
+ RecordsRead:Integer;
+ Buffer:Array[1..1000]of Byte;
+Begin
+ CopyFile:=False;
+ Assign(SourceFile,Source);
+ {$I-}Reset(SourceFile,1);{$I+}
+ If IOResult<>0Then Begin
+  WriteLn('Fichier source introuvable ',Source);
+  Exit;
+ End;
+ Assign(TargetFile,Target);
+ {$I-}Rewrite(TargetFile,1);
+ BlockRead(SourceFile,Buffer,SizeOf(Buffer),RecordsRead);
+ While RecordsRead>0 do Begin
+  BlockWrite(TargetFile,Buffer,RecordsRead);
+  BlockRead(SourceFile,Buffer,SizeOf(Buffer),RecordsRead);
+ End;
+ Close(SourceFile);
+ Close(TargetFile);
+ {$I+}
+ CopyFile:=True;
+End;
+
+
+Function MoveFile(Source,Target:String):Boolean;
+Var
+ F:File;
+Begin
+ If(Source='')or(Target='')Then Begin
+  MoveFile:=False;
+  Exit;
+ End;
+ Source:=FExpand(Source);
+ Target:=FExpand(Target);
+ If(Source[1]<>Target[1])and(Source[2]=':')Then Begin { Unite de disque different ?}
+   { Copie le fichier }
+  MoveFile:=CopyFile(Source,Target);
+   { Supprime le fichier }
+  {$I-}Assign(F,Source);
+  Erase(F);
+  {$I+}
+ End
+  Else
+ Begin
+  {$I-}
+  Assign(F,Source);
+  Rename(F,Target+'\'+SplitFileName(Source));
+  MoveFile:=IOResult=0;
+  {$I+}
+ End;
+End;
+
 Procedure HomeMessage;Begin
  WriteLn;
  WriteLn('sh - Shell UNIX par defaut');
@@ -533,8 +598,27 @@ Procedure MoreCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure MvCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure MvCommand;
+Var
+ CurrParam1,CurrParam2:String;
+Begin
+ If(ExtractParam(1)='/?')or(ExtractParam(1)='--help')or(ExtractParam(1)='-h')Then Begin
+  WriteLn('mv : Cette commande permet de deplacer un fichier.');
+  WriteLn;
+  WriteLn('Syntaxe : mv source destination');
+ End
+  Else
+ Begin
+  CurrParam1:=ExtractParam(1);
+  CurrParam2:=ExtractParam(2);
+  If(CurrParam1<>'')and(CurrParam2<>'')Then Begin
+   If Not MoveFile(CurrParam1,CurrParam2)Then Begin
+    WriteLn('Erreur de d‚placement du fichier.');
+   End;
+  End
+   Else
+  WriteLn('Nombre de parametre invalide');
+ End;
 End;
 
 Procedure NewsCommand;Begin
