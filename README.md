@@ -229,6 +229,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>MS.PAS</b></td>
 			<td>Cette commande permet de lancer le MultiSwitch, soit un clone de l'utilitaire <a href="https://www.gladir.com/LEXIQUE/CARD/graphicssolution.htm">Graphics Solution</a> d'ATI.</td>
 		</tr>
+		<tr>
+			<td><b>MV.PAS</b></td>
+			<td>Cette commande permet de déplacer un fichier.</td>
+		</tr>
 	        <tr>
 			<td><b>NUMBER.PAS</b></td>
 			<td>Cette commande permet de retourner en texte un nombre. Similaire à la commande AIX.</td>
