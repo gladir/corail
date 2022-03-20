@@ -98,6 +98,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			 <td><b>CREATE.PAS</b></td>
 			 <td>Cette commande permet de créer un fichier. Cette commande est originaire du <a href="https://www.gladir.com/OS/LDOS/intro.htm">LDOS</a> de TRS-80.</td>
 		 </tr>	
+	         <tr>
+			 <td><b>DEBUG.PAS</b></td>
+			 <td>Cette commande permet de deboguer un programme.</td>
+		</tr>
 		 <tr>
 			<td><b>DELQ.PAS</b></td>
 			<td>Cette commande permet d'effectuer la suppression de fichier en demandant une confirmation.</td>
@@ -228,6 +232,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>MS.PAS</b></td>
 			<td>Cette commande permet de lancer le MultiSwitch, soit un clone de l'utilitaire <a href="https://www.gladir.com/LEXIQUE/CARD/graphicssolution.htm">Graphics Solution</a> d'ATI.</td>
+		</tr>
+		<tr>
+			<td><b>MV.PAS</b></td>
+			<td>Cette commande permet de déplacer un fichier.</td>
 		</tr>
 	        <tr>
 			<td><b>NUMBER.PAS</b></td>
