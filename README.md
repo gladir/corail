@@ -134,6 +134,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>DRDOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande DR-DOS. Il s'agit d'un équivalent du COMMAND.COM du DR-DOS.</td>
 		</tr>
+	        <tr>
+			<td><b>EDLIN.PAS</b></td>
+			<td>Cette commande permet de lancer l'éditeur en ligne de commande.</td>
+		</tr>
 	         <tr>
 			 <td><b>EMSTEST.PAS</b></td>
 			 <td>Cette commande permet de tester la mémoire EMS. Cette commande est un clone de la commande EMSTEST du Turbo Pascal 6.</td>
