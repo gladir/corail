@@ -393,8 +393,7 @@ Procedure InsertByte(B:Byte);Begin
  InsertStr(ByteHex2Str(B));
  ByteCount:=ByteCount+1;
  LastSlash:=Tindex;
- If(InlineForTurboPascal in Option)Then InsertChr('/')
-                                   Else InsertChr(' ');
+ If(InlineForTurboPascal in Option)Then InsertChr('/');
  If(BinaryFile in Option)Then Write(Binary,B);
  Wait_Already:=False;
 End;
@@ -541,8 +540,7 @@ Begin
    If W=1 Then ByteCount:=ByteCount+2
           Else ByteCount:=ByteCount+1;
    LastSlash:=Tindex;
-   If(InlineForTurboPascal in Option)Then InsertChr('/')
-                                     Else InsertChr(' ');
+   If(InlineForTurboPascal in Option)Then InsertChr('/');
   End
    Else
   If W=1 then InsertWord(Value) else InsertByte(Lo(Value));
@@ -1782,7 +1780,7 @@ BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('ASM86 : Cette commande permet de compiler de l''assembleur 8086.');
   WriteLn;
-  WriteLn('Syntaxe : ASM86 [source[.ASM] [destination[.H86]]] [/C] [/INLINE|/TP]');
+  WriteLn('Syntaxe : ASM86 [source[.A86] [destination[.H86]]] [/C] [/INLINE|/TP]');
   WriteLn;
   WriteLn('Parametres');
   WriteLn('    source       Nom du fichier contenant le source assembleur');
@@ -1804,7 +1802,7 @@ BEGIN
     If(StrToUpper(ParamStr(I))='/INLINE')or(StrToUpper(ParamStr(I))='/TP')Then Include(Option,InlineForTurboPascal)Else
     If SourceName=''Then Begin
      SourceName:=ParamStr(1);
-     If Path2Ext(SourceName)=''Then SourceName:=SourceName+'.ASM';
+     If Path2Ext(SourceName)=''Then SourceName:=SourceName+'.A86';
      Assign(SourceFile,SourceName);
      {$I-}Reset(SourceFile);{$I+}
      If ChkIOerror(SourceName)<>0 Then Halt(1);
@@ -1828,10 +1826,10 @@ BEGIN
    Else
   Begin
    Repeat
-    Write('Nom du fichier source [.ASM]: ');
+    Write('Nom du fichier source [.A86]: ');
     ReadLn(SourceName);
     If SourceName='' Then Halt;
-    If Path2Ext(SourceName)=''Then SourceName:=SourceName+'.ASM';
+    If Path2Ext(SourceName)=''Then SourceName:=SourceName+'.A86';
     Assign(SourceFile,SourceName);
     {$I-}Reset(SourceFile);{$I+}
     Err:=ChkIOerror(SourceName);
@@ -1872,6 +1870,7 @@ BEGIN
     Sym:=Othersym;
     SkipSpaces;
     If UCh<>Chr(CR)Then Begin
+     If Not(InlineForTurboPascal in Option)Then InsertChr(':');
      Interpret;
      InsertChr(' ');
      If Not NewFnd and Not TheEnd Then Begin
