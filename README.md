@@ -48,6 +48,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de retourner le nom du fichier seulement à partir d'un chemin complet de nom de fichier. Cette commande est un équivalent de UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>BASH.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande BASH.</td>
+		</tr>
+		<tr>
 			<td><b>BASIC.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de langage de programmation BASIC.</td>
 		</tr>
