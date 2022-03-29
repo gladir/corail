@@ -210,6 +210,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette programme permet de capturer les messages GREP et de les retourner a Turbo Pascal.</td>
 		</tr>
 	        <tr>
+			<td><b>HD.PAS</b></td>
+			<td>Cette commande permet d'afficher le contenu d'un fichier en format hexadecimal. Cette commande est inspiré de la commande HD du compilateur Aztec C86 ou de Linux.</td>
+		</tr>
+	        <tr>
 			<td><b>HDPARK.PAS</b></td>
 			<td>Cette commande permet de déplacer les têtes d'écritures et de lecture du disque dur sur une piste où aucune données n'est entreposé afin de protéger l'unité de disque pour des déménagement du matériel. Lorsque l'ordinateur redémarre, les têtes se déplaceront automatiquement au bonne endroit et il sera a nouveau prêt être utilisé. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/hdpark.htm">HDPARK</a> du <i>MS-DOS 3.21 Enhanced Amdek</i>.</td>
 		<tr>
