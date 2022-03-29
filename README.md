@@ -329,6 +329,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'envoyer l'entrée standard vers la sortie standard. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
 	        <tr>
+			<td><b>TOD.PAS</b></td>
+			<td>Cette commande permet de fixer la date et l'heure d'affichage dans la ligne d'état du bas de l'affichage. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/CPM86/tod.htm">TOD</a> du CP/M-86.</td>
+		</tr>
+	        <tr>
 			<td><b>TOKEN2BAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier de TOKEN (GWBASIC, CoCo,...) de BASIC en BASIC ASCII.</td>
 		</tr>	
