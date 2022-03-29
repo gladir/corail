@@ -49,6 +49,17 @@ Begin
  TrimL:=S;
 End;
 
+Function TrimR(s:String):String;
+Var
+ i:Integer;
+Begin
+ i:=Length(s);
+ While (i>0)and(s[i]in[#9,' '])do Dec(i);
+ s[0]:=Chr(i);
+ TrimR:=S;
+End;
+
+
 Function StrToUpper(S:String):String;
 Var
  I:Byte;
@@ -301,7 +312,7 @@ End;
 
 Procedure RenCommand;
 Var
- P:Byte;
+ P,I:Byte;
  Err:Word;
  F:File;
  CurrParam,Source,Target:String;
@@ -309,36 +320,28 @@ Begin
  P:=0;
  Source:='';
  Target:='';
- Repeat
-  Inc(P);
-  CurrParam:=ExtractParam(P);
-  If CurrParam=''Then Begin
-   If P=1Then Begin
-    WriteLn('Paramätre requis');
+ If ParamList='/?'Then Begin
+  WriteLn('REN   Cette commande permet de renommer un fichier.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('REN [/?] nouveaunom=anciennom');
+  WriteLn;
+  WriteLn(' /?         Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn('nouveaunom  Ce parametre permet d''indiquer le nouveau nom');
+  WriteLn('anciennom   Ce parametre permet d''indiquer l''ancien nom');
+  Exit;
+ End
+  Else
+ If ParamList<>''Then Begin
+  For I:=1 to Length(ParamList)do Begin
+   If ParamList[I]='='Then Begin
+    Target:=TrimR(TrimL(Copy(ParamList,1,I-1)));
+    Source:=TrimR(TrimL(Copy(ParamList,I+1,255)));
+    Break;
    End;
-   Break;
-  End
-   Else
-  If CurrParam='/?'Then Begin
-   WriteLn('REN   Cette commande permet de renommer un fichier.');
-   WriteLn;
-   WriteLn('Syntaxe:');
-   WriteLn;
-   WriteLn('REN [/?] anciennom nouveaunom');
-   WriteLn;
-   WriteLn(' /?         Ce parametre permet d''afficher l''aide sur cette commande');
-   WriteLn('anciennom   Ce parametre permet d''indiquer l''ancien nom');
-   WriteLn('nouveaunom  Ce parametre permet d''indiquer le nouveau nom');
-   Exit;
-  End
-   Else
-  If CurrParam<>''Then
-  Begin
-   If Source=''Then Source:=CurrParam
-               Else Target:=CurrParam;
   End;
-  If P>9Then Break;
- Until CurrParam='';
+ End;
  If(Source='')or(Target='')Then Begin
   WriteLn('La source et la destination sont requises');
  End
