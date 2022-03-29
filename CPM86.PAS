@@ -353,8 +353,51 @@ Begin
  End;
 End;
 
-Procedure DIRSCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure DirsCommand;
+Var
+ P:Byte;
+ Info:SearchRec;
+ T:DateTime;
+ TotalNumFiles,TotalSize:LongInt;
+ CurrParam,ShowDir,CurrLabel:String;
+ CurrDrive:Char;
+Begin
+ P:=0;
+ ShowDir:='*.*';
+ Repeat
+  Inc(P);
+  CurrParam:=ExtractParam(P);
+  If Length(CurrParam)=0Then Break;
+  If CurrParam='/?'Then Begin
+   WriteLn('DIR   Cette commande permet d''afficher le contenu d''un repertoire dans l''unite de disque.');
+   WriteLn;
+   WriteLn('Syntaxe:');
+   WriteLn;
+   WriteLn('DIR [/?] [chemin]');
+   WriteLn;
+   WriteLn(' /?   Ce parametre permet d''afficher l''aide sur cette commande');
+   Exit;
+  End
+   Else
+  ShowDir:=CurrParam;
+  If P>99Then Break;
+ Until CurrParam='';
+ CurrDrive:=Path2Drive(ShowDir);
+ FindFirst(ShowDir,SysFile,Info);
+ P:=0;
+ While DOSError=0 do Begin
+  If Info.Attr and SysFile=SysFile Then Begin
+   If P=0Then Write(CurrDrive,': ');
+   Inc(P);
+   Write(PadRight(Path2Name(StrToUpper(Info.Name)),9),
+         PadRight(Path2ExtNoDot(StrToUpper(Info.Name)),4),': ');
+   If P=4Then Begin
+    WriteLn;
+    P:=0;
+   End;
+  End;
+  FindNext(Info);
+ End;
 End;
 
 Procedure TypeCommand;
