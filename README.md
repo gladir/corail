@@ -291,6 +291,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>OS2CMD.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande OS/2. Il s'agit d'un équivalent du CMD de OS/2.</td>
+		</tr>
+	        <tr>
+			<td><b>OS9.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande OS-9 des Color Computer de Tandy Radio Shack.</td>
 		</tr>	
 		<tr>
 			<td><b>PP.PAS</b></td>
