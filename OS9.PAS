@@ -15,7 +15,7 @@ Const
   'DISPLAY','DSAVE','ECHO','EDIT','ERROR','EX','EXIT','FORMAT','FREE',
   'HELP','IDENT','INIZ','KILL','LINK','LIST','LOAD','MAKDIR',
   'MDIR','MERGE','MFREE','MODPATCH','MONTYPE','OS9GEN','PROCS',
-  'PWD','PXD','RENAME','SETPR','SETTIME','SHELL','TMODE',
+  'PWD','PXD','RENAME','SETPR','SETIME','SHELL','TMODE',
   'TUNEPORT','UNLINK','WCREATE','XMODE'
  );
 
@@ -667,8 +667,75 @@ Procedure SETPRCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure SETTIMECommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure SETTIMECommand;
+Var
+ Pos:(PMonth,PDay,PYear,PHour,PMin,PSec);
+ Year,Month,Day,DayOfMonth,Hour,Minute,Second,CentSec,Err:Word;
+ I:Byte;
+ S,T:String;
+Begin
+ If(ExtractParam(1)='/?')Then Begin
+  WriteLn('SETIME : Cette commande permet de fixer l''horloge du systeme d''exploitation.');
+  WriteLn;
+  WriteLn('Syntaxe : SETIME aa/MM/dd hh:mm[:ss]');
+ End
+  Else
+ If ExtractParam(1)<>''Then Begin
+  T:='';
+  Pos:=PYear;
+  S:=ExtractParam(1);
+  For I:=1 to Length(S)do Begin
+   If S[I]<>'/'Then T:=T+S[I];
+   If S[I]='/'Then Begin
+    If Pos=PYear Then Begin
+     Val(T,Year,Err);
+     Pos:=PMonth;
+    End
+     Else
+    If Pos=PMonth Then Begin
+     Val(T,Month,Err);
+     Pos:=PDay;
+    End
+     Else
+    Val(T,Day,Err);
+    T:='';
+   End;
+  End;
+  If T<>''Then Val(T,Day,Err);
+  SetDate(Year,Month,Day);
+  S:=ExtractParam(2);
+  If S<>''Then Begin
+   T:='';
+   Hour:=0;
+   Minute:=0;
+   Second:=0;
+   Pos:=PHour;
+   For I:=1 to Length(S)do Begin
+    If S[I]<>':'Then T:=T+S[I];
+    If S[I]=':'Then Begin
+     If Pos=PHour Then Begin
+      Val(T,Hour,Err);
+      Pos:=PMin;
+     End
+      Else
+     If Pos=PMin Then Begin
+      Val(T,Minute,Err);
+      Pos:=PSec;
+     End
+      Else
+     Val(T,Second,Err);
+     T:='';
+    End;
+   End;
+   If T<>''Then Begin
+    If(Pos=PMin)Then Val(T,Minute,Err)
+                Else Val(T,Second,Err);
+   End;
+   SetTime(Hour,Minute,Second,0);
+  End;
+ End
+  Else
+ WriteLn('Heure attendu');
 End;
 
 Procedure SHELLCommand;Begin

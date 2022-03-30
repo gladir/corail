@@ -32,6 +32,7 @@ BEGIN
  End
   Else
  If ParamCount>0Then Begin
+  T:='';
   Pos:=PMonth;
   S:=ParamStr(1);
   For I:=1 to Length(S)do Begin
