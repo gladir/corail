@@ -555,8 +555,25 @@ Procedure DSAVECommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure ECHOCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure ECHOCommand;
+Var
+ FirstParam:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  WriteLn('ECHO   Cette commande permet d''activer ou desactiver le prompt de commande ',
+          'ou d''afficher un message sur le console du systeme d''exploitation.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('ECHO [/?] message');
+  WriteLn;
+  WriteLn('       /?  Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn('  message  Ce parametre permet d''afficher un message');
+ End
+  Else
+ If ParamList='.'Then WriteLn
+                 Else WriteLn(ParamList);
 End;
 
 Procedure EDITCommand;Begin
