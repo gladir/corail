@@ -13,8 +13,7 @@ Var
 BEGIN
  FirstParam:=ParamStr(1);
  If FirstParam='/?'Then Begin
-  WriteLn('ECHO   Cette commande permet d''activer ou desactiver le prompt de commande ',
-          'ou d''afficher un message sur le console du systeme d''exploitation.');
+  WriteLn('ECHO   Cette commande permet d''afficher un message sur le console du systeme d''exploitation.');
   WriteLn;
   WriteLn('Syntaxe:');
   WriteLn;
