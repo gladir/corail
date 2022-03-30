@@ -114,6 +114,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			 <td><b>CREATE.PAS</b></td>
 			 <td>Cette commande permet de créer un fichier. Cette commande est originaire du <a href="https://www.gladir.com/OS/LDOS/intro.htm">LDOS</a> de TRS-80.</td>
 		 </tr>	
+		<tr>
+			<td><b>CSH.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande C Shell.</td>
+		</tr>
 	         <tr>
 			 <td><b>DEBUG.PAS</b></td>
 			 <td>Cette commande permet de deboguer un programme.</td>
@@ -367,6 +371,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 	        <tr>
 			<td><b>TREE.PAS</b></td>
 			<td>Cette commande permet d'afficher un arbre de répertoire.</td>
+		</tr>
+		<tr>
+			<td><b>TRSDOS.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande <a href="https://www.gladir.com/OS/TRSDOS/intro.htm">TRSDOS</a>.</td>
 		</tr>
 	 	<tr>
 			<td><b>TRUNCATE.PAS</b></td>
