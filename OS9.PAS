@@ -88,6 +88,21 @@ Begin
  End;
 End;
 
+Function GetHex(Source:String;Var H:Word):Boolean;
+Var
+ Digit:Word;
+Begin
+ H:=0;
+ GetHex:=False;
+ Source:=StrToUpper(Source);
+ For I:=1 to Length(Source) do If(Source[I] in ['A'..'F', '0'..'9'])Then Begin
+  GetHex:=True;
+  If(Source[I]>='A')Then Digit:=Ord(Source[I])-Ord('A')+10
+                    Else Digit:=Ord(Source[I])-Ord('0');
+  H:=(H Shl 4)+Digit;
+ End;
+End;
+
 Function ByteHex2Str(value:Byte):String;
 Const
  matrix:Array[0..15]of Char = ('0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F');
@@ -472,9 +487,38 @@ Begin
  End;
 End;
 
-Procedure DISPLAYCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure DISPLAYCommand;
+Var
+ P:Byte;
+ W:Word;
+ Msg,CurrParam:String;
+Begin
+ P:=0;
+ Msg:='';
+ Repeat
+  Inc(P);
+  CurrParam:=ExtractParam(P);
+  If Length(CurrParam)=0Then Break;
+  If CurrParam='/?'Then Begin
+   WriteLn('DISPLAY   Cette commande permet d''afficher un message encodee en hexadecimal.');
+   WriteLn;
+   WriteLn('Syntaxe:');
+   WriteLn;
+   WriteLn('DISPLAY [/?] hex [...]');
+   WriteLn;
+   WriteLn(' /?   Ce parametre permet d''afficher l''aide sur cette commande');
+   WriteLn(' hex  Ce parametre permet d''indiquer des nombres hexadecimal de 2 chiffres');
+   Exit;
+  End
+   Else
+  Begin
+   If GetHex(ExtractParam(P),W)Then Msg:=Msg+Chr(Lo(W));
+  End;
+  If P>255Then Break;
+ Until CurrParam='';
+ If Msg<>''Then WriteLn(Msg);
 End;
+
 
 Procedure DSAVECommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
