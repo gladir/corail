@@ -368,6 +368,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>TREE.PAS</b></td>
 			<td>Cette commande permet d'afficher un arbre de répertoire.</td>
 		</tr>
+		<tr>
+			<td><b>TRSDOS.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande TRSDOS.</td>
+		</tr>
 	 	<tr>
 			<td><b>TRUNCATE.PAS</b></td>
 			<td>Cette commande permet de réduire ou augmenter la taille d'un fichier.</td>
