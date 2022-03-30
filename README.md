@@ -130,6 +130,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			 <td><b>DEBUG.PAS</b></td>
 			 <td>Cette commande permet de deboguer un programme.</td>
 		</tr>
+	        <tr>
+			<td><b>DELDIR.PAS</b></td>
+			<td>Cette commande permet de supprimer un répertoire vide. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/OS9/deldir.htm">DELDIR</a> de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
+		</tr>		
 		 <tr>
 			<td><b>DELQ.PAS</b></td>
 			<td>Cette commande permet d'effectuer la suppression de fichier en demandant une confirmation.</td>
