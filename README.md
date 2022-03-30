@@ -170,6 +170,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>DRDOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande DR-DOS. Il s'agit d'un équivalent du COMMAND.COM du DR-DOS.</td>
 		</tr>
+	        <tr>
+			<td><b>ECHO.PAS</b></td>
+			<td>Cette commande permet d'afficher un message.</td>
+		</tr>
 	 	<tr>
 			<td><b>ED.PAS</b></td>
 			<td>Cette commande permet de lancer l'éditeur en ligne de commande. Cette commande est un clone de la commande ED du système d'exploitation CP/M-86.</td>
