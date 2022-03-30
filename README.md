@@ -11,6 +11,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<th>Nom</th>
 			<th>Description</th>	
 		</tr>
+	        <tr>
+			<td><b>AMIGADOS.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande AmigaShell/AmigaDOS.</td>
+		</tr>
 		<tr>
 			<td><b>APPEND.PAS</b></td>
 			<td>Cette commande permet d'ajouter un fichier ASCII à la fin d'un autre fichier. Cette commande est originaire du <a href="https://www.gladir.com/OS/LDOS/intro.htm">LDOS</a> pour TRS-80.</td>
@@ -42,6 +46,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>BASENAME.PAS</b></td>
 			<td>Cette commande permet de retourner le nom du fichier seulement à partir d'un chemin complet de nom de fichier. Cette commande est un équivalent de UNIX.</td>
+		</tr>
+		<tr>
+			<td><b>BASH.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande BASH.</td>
 		</tr>
 		<tr>
 			<td><b>BASIC.PAS</b></td>
