@@ -374,7 +374,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>TRSDOS.PAS</b></td>
-			<td>Cette commande permet de lancer l'interpréteur de commande TRSDOS.</td>
+			<td>Cette commande permet de lancer l'interpréteur de commande <a href="https://www.gladir.com/OS/TRSDOS/intro.htm">TRSDOS</a>.</td>
 		</tr>
 	 	<tr>
 			<td><b>TRUNCATE.PAS</b></td>
