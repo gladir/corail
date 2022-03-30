@@ -79,6 +79,15 @@ Begin
  StrToUpper:=S;
 End;
 
+Procedure ChangeChar(Var Str:String;OldChar,NewChar:Char);
+Var
+ I:Byte;
+Begin
+ For I:=1 to Length(Str)do Begin
+  If Str[I]=OldChar Then Str[I]:=NewChar;
+ End;
+End;
+
 Function ByteHex2Str(value:Byte):String;
 Const
  matrix:Array[0..15]of Char = ('0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F');
@@ -104,6 +113,20 @@ Var
 Begin
  GetDir(0,CurrentDir);
  GetCurrentDisk:=CurrentDir[1];
+End;
+
+Function GetCurrentDiskCoco:String;
+Var
+ Tmp:String;
+Begin
+ Case GetCurrentDisk of
+  'A':GetCurrentDiskCoco:='/D0';
+  'B':GetCurrentDiskCoco:='/D1';
+  Else Begin
+   Str((Ord(GetCurrentDisk)-Ord('A')-2),Tmp);
+   GetCurrentDiskCoco:='/H'+Tmp;
+  End;
+ End;
 End;
 
 Function Path2Drive(Path:String):Char;Begin
@@ -532,8 +555,27 @@ Procedure PROCSCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure PWDCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure PWDCommand;
+Var
+ CurrDir:String;
+Begin
+ If(ExtractParam(1)='/?')Then Begin
+  WriteLn('PWD : Cette commande permet d''afficher le repertoire de travail.');
+  WriteLn;
+  WriteLn('Syntaxe : PWD');
+ End
+  Else
+ If ExtractParam(1)=''Then Begin
+  GetDir(0,CurrDir);
+  ChangeChar(CurrDir,'\','/');
+  If CurrDir[2]=':'Then Begin
+   CurrDir:=Copy(CurrDir,3,255);
+  End;
+  CurrDir:=GetCurrentDiskCoco+CurrDir;
+  WriteLn(CurrDir);
+ End
+  Else
+ WriteLn('Parametre non requis !');
 End;
 
 Procedure PXDCommand;Begin
