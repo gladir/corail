@@ -417,6 +417,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	</table>
 	
+Aperçu de la commande AMIGADOS :
+
+![image](https://user-images.githubusercontent.com/11842176/160870008-c9f4ee94-e44f-435e-995e-d6e2bb6140d1.png)
+	
 Aperçu de la commande OS9 :
 
 ![image](https://user-images.githubusercontent.com/11842176/160869302-3bc16cf6-ef68-4752-83a9-822abcf0ba89.png)
