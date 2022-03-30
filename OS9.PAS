@@ -656,7 +656,13 @@ Begin
 End;
 
 Procedure PXDCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ If(ExtractParam(1)='/?')Then Begin
+  WriteLn('PXD : Cette commande permet d''afficher le repertoire d''execution.');
+  WriteLn;
+  WriteLn('Syntaxe : PWX');
+ End
+  Else
+ WriteLn(GetEnv('PATH'));
 End;
 
 Procedure RENAMECommand;Begin
