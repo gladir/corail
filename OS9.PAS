@@ -404,13 +404,11 @@ Var
  P:Byte;
  Info:SearchRec;
  T:DateTime;
- Option:Set of (Pause,Subdirectory,Lower,Brief,Description);
- Column:Set Of (Double,Width);
+ Option:Set of (Detail);
  CurrParam,ShowDir,CurrLabel:String;
  CurrDrive:Char;
 Begin
  Option:=[];
- Column:=[];
  P:=0;
  ShowDir:='*.*';
  Repeat
@@ -422,12 +420,14 @@ Begin
    WriteLn;
    WriteLn('Syntaxe:');
    WriteLn;
-   WriteLn('DIR [/?] [/2|/W] [/B] [/P] [chemin]');
+   WriteLn('DIR [/?] [e] [chemin]');
    WriteLn;
    WriteLn(' /?   Ce parametre permet d''afficher l''aide sur cette commande');
+   WriteLn('  e   Ce parametre permet d''afficher la liste de facon detaille');
    Exit;
   End
    Else
+  If CurrParam='e'Then Include(Option,Detail) Else
   ShowDir:=CurrParam;
   If P>99Then Break;
  Until CurrParam='';
@@ -437,9 +437,9 @@ Begin
  FindFirst(ShowDir,AnyFile,Info);
  WriteLn(' Repertoire de .');
  WriteLn;
- WriteLn('Propr Dern.modifica. Attributs Secteur Compteur d''octets Nom');
- WriteLn('----- -------------- --------- ------- ----------------- ---------------');
- Begin
+ If(Detail in Option)Then Begin
+  WriteLn('Propr Dern.modifica. Attributs Secteur Compteur d''octets Nom');
+  WriteLn('----- -------------- --------- ------- ----------------- ---------------');
   While DOSError=0 do Begin
    If Not((Info.Name='.')or(Info.Name='..'))Then Begin
     Write(0:4,'  ');
@@ -457,6 +457,15 @@ Begin
     Write(RemoveZeroLeft(LongHex2Str(0)):7);
     Write(RemoveZeroLeft(LongHex2Str(Info.Size)):18);
     WriteLn(' ',Info.Name);
+   End;
+   FindNext(Info);
+  End;
+ End
+  Else
+ Begin
+  While DOSError=0 do Begin
+   If Not((Info.Name='.')or(Info.Name='..'))Then Begin
+    WriteLn(PadRight(Info.Name,25));
    End;
    FindNext(Info);
   End;
