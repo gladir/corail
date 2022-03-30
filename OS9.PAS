@@ -299,8 +299,35 @@ Procedure BASIC09Command;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure BUILDCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure BUILDCommand;
+Var
+ TextFile:Text;
+ FirstParam,CurrLine:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  WriteLn('BUILD   Cette commande permet de construire un fichier texte.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('BUILD [/?] nomdufichier');
+  WriteLn;
+  WriteLn('  /?           Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn(' nomdufichier  Ce parametre permet d''indiquer le nom du fichier a construire.');
+ End
+  Else
+ If Length(FirstParam)>0Then Begin
+  Assign(TextFile,FirstParam);
+  Rewrite(TextFile);
+  Repeat
+   Write('? ');
+   ReadLn(CurrLine);
+   WriteLn(TextFile,CurrLine);
+  Until CurrLine='';
+  Close(TextFile);
+ End
+  Else
+ WriteLn('Nom de fichier requis');
 End;
 
 Procedure CHDCommand;
@@ -515,8 +542,49 @@ Procedure LINKCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure LISTCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure LISTCommand;
+Var
+ P:Byte;
+ Err:Word;
+ Handle:Text;
+ CurrParam,CurrLine:String;
+Begin
+ P:=0;
+ Repeat
+  Inc(P);
+  CurrParam:=ExtractParam(P);
+  If(Length(CurrParam)=0)and(P=1)Then Begin
+   WriteLn('La syntaxe est incorrecte');
+   Exit;
+  End;
+  If CurrParam='/?'Then Begin
+   WriteLn('LIST   Cette commande permet d''afficher le contenu d''un fichier');
+   WriteLn;
+   WriteLn('Syntaxe:');
+   WriteLn;
+   WriteLn('LIST [/?] [fichier]');
+   WriteLn;
+   WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
+   WriteLn('fichier  Ce parametre permet d''indiquer le nom du fichier a afficher');
+   Exit;
+  End;
+  If CurrParam<>''Then Begin
+   Assign(Handle,CurrParam);
+   {$I-}Reset(Handle);{$I+}
+   Err:=IOResult;
+   If Err<>0Then Begin
+    WriteLn('Nom du fichier : "',CurrParam,'"');
+    WriteLn(GetErrorMessage(Err));
+    Exit;
+   End;
+   While NOT EOF(Handle)do Begin
+    ReadLn(Handle,CurrLine);
+    WriteLn(CurrLine);
+   End;
+   Close(Handle);
+  End;
+  If P>9Then Break;
+ Until CurrParam='';
 End;
 
 Procedure LOADCommand;Begin
