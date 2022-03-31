@@ -229,6 +229,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>FORMAT.PAS</b></td>
 			<td>Cette commande permet de formater un unite de disquette.</td>
 		</tr>
+		<tr>
+			<td><b>FREE.PAS</b></td>
+			<td>Cette commande permet de demander les ressources de disponible (style Linux) ou les statistiques d'un unite de disque (style 4DOS).</td>
+		</tr>
  		<tr>
 			<td><b>GEODELTA.PAS</b></td>
 			<td>Cette commande permet de demander la distance entre deux villes, soit par coordonnée géographique, soit par son nom s'il est répertorié.</td>
