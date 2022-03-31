@@ -330,8 +330,27 @@ Procedure AttribCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure BeepCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure BeepCommand;
+Var
+ FirstParam:String;
+ X:Boolean;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  WriteLn('BEEP   Cette commande permet d''emettre un bip sonore.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('BEEP [/?]');
+  WriteLn;
+  WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+ End
+  Else
+ Begin
+  Sound(1550);
+  Delay(182);
+  NoSound;
+ End;
 End;
 
 Procedure BreakCommand;
