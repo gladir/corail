@@ -29,6 +29,15 @@ Var
  CurrCommand,ParamList:String;
  I,J:Byte;
 
+Function GetConvMemory:Word;
+Var
+ Regs:Registers;
+Begin
+ Regs.AX:=0;
+ Intr($12,Regs);
+ GetConvMemory:=Regs.AX;
+End;
+
 Function PadRight(S:String;Space:Byte):String;
 Var
  I:Byte;
@@ -57,6 +66,16 @@ Begin
   End;
  End;
  TrimL:=S;
+End;
+
+Function StrToLower(S:String):String;
+Var
+ I:Byte;
+Begin
+ For I:=1 to Length(S)do Begin
+  If S[I] in['A'..'Z']Then S[I]:=Chr(Ord(S[I])+32);
+ End;
+ StrToLower:=S;
 End;
 
 Function StrToUpper(S:String):String;
@@ -285,7 +304,7 @@ Begin
        'N' : Write(GetCurrentDisk);
    'p','P' : Begin
      GetDir(0,CurrentDir);
-     Write(CurrentDir);
+     Write(StrToLower(CurrentDir));
    End;
    '-','S' : Write(' ');
        'V' : Write(Lo(DosVersion),'.',Hi(DosVersion));
@@ -373,8 +392,46 @@ Begin
  End;
 End;
 
-Procedure CHCPCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure CHCPCommand;
+Var
+ Err:Word;
+ Regs:Registers;
+ FirstParam:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  WriteLn('CHCP   Cette commande permet de fixer ou de demander la page de codes.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('CHCP [/?] [code]');
+  WriteLn;
+  WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn(' code    Ce parametre permet d''indiquer la page de code');
+ End
+  Else
+ If FirstParam<>''Then Begin
+  Regs.AX:=$6602;
+  Val(FirstParam,Regs.BX,Err);
+  If Err=0Then Begin
+   Intr($21,Regs);
+   If(Regs.Flags and FCarry=FCarry)Then Begin
+    WriteLn('Impossible de changer le code de page actif');
+   End;
+  End
+   Else
+  WriteLn('Code de page invalide.');
+ End
+  Else
+ Begin
+  Regs.AX:=$6601;
+  Intr($21,Regs);
+  If(Regs.Flags and FCarry=FCarry)Then Begin
+   WriteLn('Page de code active inconnnu');
+  End
+   Else
+  WriteLn('Page de code active : ',Regs.BX);
+ End;
 End;
 
 Procedure CDDCommand;Begin
@@ -943,8 +1000,20 @@ Procedure LogCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure MemoryCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure MemoryCommand;
+Var
+ I,EnvSize:LongInt;
+Begin
+ {$IFDEF FPC}
+  WriteLn('** Information non disponible sur ce systeme');
+ {$ELSE}
+  WriteLn(GetConvMemory*1024:15,' octets total de memoire RAM');
+  WriteLn(MemAvail:15,' octets de libre');
+ {$ENDIF}
+ WriteLn;
+ EnvSize:=0;
+ For I:=1 to EnvCount do Inc(EnvSize,Length(EnvStr(I)));
+ WriteLn(EnvSize:15,' taille total de l''environnement');
 End;
 
 Procedure MkDirCommand;Var
