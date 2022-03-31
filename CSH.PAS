@@ -17,7 +17,14 @@ Const
   'unalias','unhash','unlimit','unset','unsetenv','wait','while'
  );
 
+ MaxHistory=100;
+
+Type
+ StrPointer=^String;
+
 Var
+ History:Array[1..MaxHistory] of StrPointer;
+ NumberHistory:Integer;
  CommandFound,Terminated:Boolean;
  CmdStr:String;
  CurrCommand,ParamList:String;
@@ -36,6 +43,30 @@ Begin
  TrimL:=S;
 End;
 
+Function AddHistory(S:String):Boolean;
+Var
+ I:Word;
+ P:StrPointer;
+Begin
+ If NumberHistory>=MaxHistory Then Begin
+  FreeMem(History[1],Length(History[1]^)+1);
+  For I:=1 to MaxHistory-1 do History[I]:=History[I+1];
+  GetMem(P,Length(S)+1);
+  P^:=S;
+  History[MaxHistory]:=P;
+  AddHistory:=True;
+  Exit;
+ End
+  Else
+ Begin
+  Inc(NumberHistory);
+  GetMem(P,Length(S)+1);
+  P^:=S;
+  History[NumberHistory]:=P;
+  AddHistory:=True;
+ End;
+End;
+
 Procedure ExtractCommand;
 Var
  I:Byte;
@@ -49,6 +80,35 @@ Begin
  End;
  CurrCommand:=CmdStr;
  ParamList:='';
+End;
+
+Function ExtractParam(Index:Byte):String;
+Var
+ Count:Word;
+ LocalIndex:Word;
+ l:Byte;
+ Temp:String;
+Begin
+ Temp:='';Count:=1;LocalIndex:=1;l:=0;
+ While Count<=Length(ParamList)do Begin
+  If Not(ParamList[Count] in [' ',#9])then Begin
+   If LocalIndex=Index Then Begin
+    While (Count<=Length(ParamList)) and (Not(ParamList[count] in[' ',#9])) and (l < 256) do Begin
+     Temp:=Temp+ParamList[count];
+     Inc(l);
+     Inc(Count);
+    end;
+    Temp[0]:=Char(l);
+    ExtractParam:=Temp;
+    Exit;
+   End;
+   While (Count<=Length(ParamList)) and (Not(ParamList[count] in [' ',#9])) do Inc(Count);
+   Inc(LocalIndex);
+  End;
+  If Count>=Length(ParamList)Then Break;
+  Inc(Count);
+ End;
+ ExtractParam:=Temp;
 End;
 
 Procedure HomeMessage;Begin
@@ -127,8 +187,23 @@ Procedure HashstatCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure HistoryCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure HistoryCommand;
+Var
+ I:Integer;
+ FirstParam:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='-h'Then Begin
+  WriteLn('history   Cette commande permet d''afficher l''historique des commandes.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('history [-h]');
+  WriteLn;
+  WriteLn('  -h    Ce parametre permet d''afficher l''aide sur cette commande');
+ End
+  Else
+ For I:=1 to NumberHistory do WriteLn(History[I]^);
 End;
 
 Procedure JobsCommand;Begin
@@ -250,11 +325,14 @@ Procedure UnknownCommand;Begin
 End;
 
 BEGIN
+ FillChar(History,SizeOf(History),0);
+ NumberHistory:=0;
  Terminated:=False;
  HomeMessage;
  Repeat
   ShowPrompt;
   ReadLn(CmdStr);
+  AddHistory(CmdStr);
   ExtractCommand;
   CommandFound:=False;
   For J:=Low(CommandList) to High(CommandList) do Begin
