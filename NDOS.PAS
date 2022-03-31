@@ -28,6 +28,8 @@ Type
  StrPointer=^String;
 
 Var
+ InCmd:Byte;
+ Option:(optNone,optCommand);
  History:Array[1..MaxHistory] of StrPointer;
  NumberHistory:Integer;
  Echo:Boolean;
@@ -101,6 +103,14 @@ Var
 Begin
  GetDir(0,CurrentDir);
  GetCurrentDisk:=CurrentDir[1];
+End;
+
+Function FileExist(Name:String):Boolean;
+Var
+ Rec:SearchRec;
+Begin
+ FindFirst(Name,AnyFile,Rec);
+ FileExist:=DosError=0;
 End;
 
 Function Path2Drive(Path:String):Char;Begin
@@ -1562,118 +1572,175 @@ Procedure UnknownCommand;Begin
  WriteLn;
 End;
 
+Procedure RunCommand;
+Var
+ LastEcho:Boolean;
+ FileBat:Text;
+Begin
+ AddHistory(CmdStr);
+ ExtractCommand;
+ CommandFound:=False;
+ For J:=Low(CommandList) to High(CommandList) do Begin
+  If CurrCommand=CommandList[J]Then Begin
+   Case(J)of
+    0:AliasCommand;
+    1:AttribCommand;
+    2:BeepCommand;
+    3:BreakCommand;
+    4:CallCommand;
+    5:ChDirCommand;
+    6:CDDCommand;
+    7:CHCPCommand;
+    8:ChDirCommand;
+    9:CLSCommand;
+    10:ColorCommand;
+    11:CopyCommand;
+    12:CTTYCommand;
+    13:DateCommand;
+    14:DeleteCommand;
+    15:DelayCommand;
+    16:DeleteCommand;
+    17:DirCommand;
+    18:DirsCommand;
+    19:DrawBoxCommand;
+    20:DrawHLineCommand;
+    21:DrawVLineCommand;
+    22:EchoCommand;
+    23:EndLocalCommand;
+    24:EndTextCommand;
+    25:EraseCommand;
+    26:EraseCommand;
+    27:ESetCommand;
+    28:ExceptCommand;
+    29:Terminated:=ExitCommand;
+    30:ForCommand;
+    31:FreeCommand;
+    32:GlobalCommand;
+    33:GosubCommand;
+    34:GotoCommand;
+    35:HelpCommand;
+    36:HistoryCommand;
+    37:IfCommand;
+    38:IFFCommand;
+    39:InkeyCommand;
+    40:InputCommand;
+    41:KeyStackCommand;
+    42:LoadHighCommand;
+    43:LoadBTMCommand;
+    44:LoadHighCommand;
+    45:LogCommand;
+    46:MkDirCommand;
+    47:MemoryCommand;
+    48:MkDirCommand;
+    49:MoveCommand;
+    50:PathCommand;
+    51:PauseCommand;
+    52:PromptCommand;
+    53:PushDCommand;
+    54:QuitCommand;
+    55:RmDirCommand;
+    56:RemCommand;
+    57:RenameCommand;
+    58:RenameCommand;
+    59:ReturnCommand;
+    60:RmDirCommand;
+    61:ScreenCommand;
+    62:ScrPutCommand;
+    63:SetCommand;
+    64:SetDosCommand;
+    65:SetLocalCommand;
+    66:ShiftCommand;
+    67:SwappingCommand;
+    68:TeeCommand;
+    69:TextCommand;
+    70:TimeCommand;
+    71:TimerCommand;
+    72:TrueNameCommand;
+    73:TypeCommand;
+    74:UnaliasCommand;
+    75:UnsetCommand;
+    76:VerCommand;
+    77:VerifyCommand;
+    78:VolCommand;
+    79:YCommand;
+   End;
+   If J<=High(CommandList)Then Begin
+    CommandFound:=True;
+    If InCmd=0Then WriteLn;
+    Break;
+   End;
+  End;
+ End;
+ If Not(CommandFound)Then Begin
+  If CmdStr='?'Then Begin
+   For I:=Low(CommandList) to High(CommandList) do Write(PadRight(CommandList[I],10));
+   WriteLn;
+   WriteLn;
+  End
+   Else
+  If FileExist(CmdStr+'.BAT')Then Begin
+   Inc(InCmd);
+   If InCmd>20Then Begin
+    WriteLn('Limite de 20 fichiers de traitements par lots maximum.');
+    Exit;
+   End;
+   LastEcho:=Echo;
+   Assign(FileBat,CmdStr+'.BAT');
+   {$I-}Reset(FileBat);{$I+}
+   If IOResult=0Then Begin
+    While Not EOF(FileBat)do Begin
+     ReadLn(FileBat,CmdStr);
+     If(Echo)Then WriteLn(CmdStr);
+     RunCommand;
+    End;
+   End
+    Else
+   WriteLn('Probleme de lecture du fichier de traitement par lot');
+   Close(FileBat);
+   Echo:=LastEcho;
+   Dec(InCmd);
+  End
+   Else
+  UnknownCommand;
+ End;
+End;
+
 BEGIN
  FillChar(History,SizeOf(History),0);
  NumberHistory:=0;
  Echo:=True;
- Terminated:=False;
- HomeMessage;
- Repeat
-  ShowPrompt;
-  ReadLn(CmdStr);
-  AddHistory(CmdStr);
-  ExtractCommand;
-  CommandFound:=False;
-  For J:=Low(CommandList) to High(CommandList) do Begin
-   If CurrCommand=CommandList[J]Then Begin
-    Case(J)of
-     0:AliasCommand;
-     1:AttribCommand;
-     2:BeepCommand;
-     3:BreakCommand;
-     4:CallCommand;
-     5:ChDirCommand;
-     6:CDDCommand;
-     7:CHCPCommand;
-     8:ChDirCommand;
-     9:CLSCommand;
-     10:ColorCommand;
-     11:CopyCommand;
-     12:CTTYCommand;
-     13:DateCommand;
-     14:DeleteCommand;
-     15:DelayCommand;
-     16:DeleteCommand;
-     17:DirCommand;
-     18:DirsCommand;
-     19:DrawBoxCommand;
-     20:DrawHLineCommand;
-     21:DrawVLineCommand;
-     22:EchoCommand;
-     23:EndLocalCommand;
-     24:EndTextCommand;
-     25:EraseCommand;
-     26:EraseCommand;
-     27:ESetCommand;
-     28:ExceptCommand;
-     29:Terminated:=ExitCommand;
-     30:ForCommand;
-     31:FreeCommand;
-     32:GlobalCommand;
-     33:GosubCommand;
-     34:GotoCommand;
-     35:HelpCommand;
-     36:HistoryCommand;
-     37:IfCommand;
-     38:IFFCommand;
-     39:InkeyCommand;
-     40:InputCommand;
-     41:KeyStackCommand;
-     42:LoadHighCommand;
-     43:LoadBTMCommand;
-     44:LoadHighCommand;
-     45:LogCommand;
-     46:MkDirCommand;
-     47:MemoryCommand;
-     48:MkDirCommand;
-     49:MoveCommand;
-     50:PathCommand;
-     51:PauseCommand;
-     52:PromptCommand;
-     53:PushDCommand;
-     54:QuitCommand;
-     55:RmDirCommand;
-     56:RemCommand;
-     57:RenameCommand;
-     58:RenameCommand;
-     59:ReturnCommand;
-     60:RmDirCommand;
-     61:ScreenCommand;
-     62:ScrPutCommand;
-     63:SetCommand;
-     64:SetDosCommand;
-     65:SetLocalCommand;
-     66:ShiftCommand;
-     67:SwappingCommand;
-     68:TeeCommand;
-     69:TextCommand;
-     70:TimeCommand;
-     71:TimerCommand;
-     72:TrueNameCommand;
-     73:TypeCommand;
-     74:UnaliasCommand;
-     75:UnsetCommand;
-     76:VerCommand;
-     77:VerifyCommand;
-     78:VolCommand;
-     79:YCommand;
-    End;
-    If J<=High(CommandList)Then Begin
-     CommandFound:=True;
-     WriteLn;
-     Break;
-    End;
-   End;
-  End;
-  If Not(CommandFound)Then Begin
-   If CmdStr='?'Then Begin
-    For I:=Low(CommandList) to High(CommandList) do Write(PadRight(CommandList[I],10));
-    WriteLn;
-    WriteLn;
+ InCmd:=0;
+ If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
+  WriteLn('NDOS : Cette commande permet de lancer l''interpreteur de commande NDOS.');
+  WriteLn;
+  WriteLn('Syntaxe : NDOS [/C command]');
+ End
+  Else
+ If ParamCount>1Then Begin
+  Option:=optNone;
+  For I:=1 to ParamCount do Begin
+   If(Option=optCommand)Then Begin
+    CmdStr:=ParamStr(I);
+    RunCommand;
+    Option:=optNone;
    End
     Else
-   UnknownCommand;
+   If StrToUpper(ParamStr(I))='/C'Then Option:=optCommand
+    Else
+   Begin
+    WriteLn('Parametre non reconnu : ',ParamStr(I));
+   End;
   End;
- Until Terminated;
+ End
+  Else
+ Begin
+  Terminated:=False;
+  HomeMessage;
+  Repeat
+   ShowPrompt;
+   ReadLn(CmdStr);
+   RunCommand;
+  Until Terminated;
+ End;
 END.
 
