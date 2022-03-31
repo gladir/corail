@@ -222,6 +222,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'échanger des fichiers textes de TRS-80 et UNIX (ou Amiga). Utilitaire MISOSYS pour TRS-80.</td>
 		</tr>
 		<tr>
+			<td><b>FLEX.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande FLEX. L'interpréteur de commande FLEX etait a l'origine proposé pour des microprocesseurs 6800, comme par exemple les micro-ordinateur CoCo.</td>
+		</tr>
+		<tr>
 			<td><b>FORMAT.PAS</b></td>
 			<td>Cette commande permet de formater un unite de disquette.</td>
 		</tr>
