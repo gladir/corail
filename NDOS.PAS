@@ -22,7 +22,14 @@ Const
   'TYPE','UNALIAS','UNSET','VER','VERIFY','VOL','Y'
  );
 
+ MaxHistory=100;
+
+Type
+ StrPointer=^String;
+
 Var
+ History:Array[1..MaxHistory] of StrPointer;
+ NumberHistory:Integer;
  Echo:Boolean;
  CommandFound,Terminated:Boolean;
  CmdStr:String;
@@ -127,6 +134,30 @@ Begin
   FindNext(Info);
  End;
  GetDiskLabel:=''
+End;
+
+Function AddHistory(S:String):Boolean;
+Var
+ I:Word;
+ P:StrPointer;
+Begin
+ If NumberHistory>=MaxHistory Then Begin
+  FreeMem(History[1],Length(History[1]^)+1);
+  For I:=1 to MaxHistory-1 do History[I]:=History[I+1];
+  GetMem(P,Length(S)+1);
+  P^:=S;
+  History[MaxHistory]:=P;
+  AddHistory:=True;
+  Exit;
+ End
+  Else
+ Begin
+  Inc(NumberHistory);
+  GetMem(P,Length(S)+1);
+  P^:=S;
+  History[NumberHistory]:=P;
+  AddHistory:=True;
+ End;
 End;
 
 Function CopyFile(Source,Target:String;ShowProgression:Boolean):Boolean;
@@ -983,8 +1014,23 @@ Procedure HelpCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure HistoryCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure HistoryCommand;
+Var
+ I:Integer;
+ FirstParam:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  WriteLn('HISTORY   Cette commande permet d''afficher l''historique des commandes.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('HISTORY [/?]');
+  WriteLn;
+  WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+ End
+  Else
+ For I:=1 to NumberHistory do WriteLn(History[I]^);
 End;
 
 Procedure IfCommand;Begin
@@ -1517,11 +1563,15 @@ Procedure UnknownCommand;Begin
 End;
 
 BEGIN
- Echo:=True;Terminated:=False;
+ FillChar(History,SizeOf(History),0);
+ NumberHistory:=0;
+ Echo:=True;
+ Terminated:=False;
  HomeMessage;
  Repeat
   ShowPrompt;
   ReadLn(CmdStr);
+  AddHistory(CmdStr);
   ExtractCommand;
   CommandFound:=False;
   For J:=Low(CommandList) to High(CommandList) do Begin
