@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2021
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program NDOS;
@@ -82,6 +82,16 @@ Function Path2Drive(Path:String):Char;Begin
  Path2Drive:=Path[1];
 End;
 
+Function SplitFileName(s:String):String;
+Var
+ D:DirStr;
+ N:NameStr;
+ E:ExtStr;
+Begin
+ FSplit(S,D,N,E);
+ Splitfilename:=N+E;
+End;
+
 Function GetDiskLabel(Dsk:Byte):String;
 Var
  Info:SearchRec;
@@ -127,6 +137,34 @@ Begin
  Close(TargetFile);
  {$I+}
  CopyFile:=True;
+End;
+
+Function MoveFile(Source,Target:String):Boolean;
+Var
+ F:File;
+Begin
+ If(Source='')or(Target='')Then Begin
+  MoveFile:=False;
+  Exit;
+ End;
+ Source:=FExpand(Source);
+ Target:=FExpand(Target);
+ If(Source[1]<>Target[1])and(Source[2]=':')Then Begin { Unite de disque different ?}
+   { Copie le fichier }
+  MoveFile:=CopyFile(Source,Target,False);
+   { Supprime le fichier }
+  {$I-}Assign(F,Source);
+  Erase(F);
+  {$I+}
+ End
+  Else
+ Begin
+  {$I-}
+  Assign(F,Source);
+  Rename(F,Target+'\'+SplitFileName(Source));
+  MoveFile:=IOResult=0;
+  {$I+}
+ End;
 End;
 
 Function GetErrorMessage(Code:Word):String;Begin
@@ -814,8 +852,43 @@ Procedure ForCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure FreeCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure FreeCommand;
+Var
+ P,Drive:Integer;
+ CurrParam:String;
+Begin
+ P:=1;
+ CurrParam:=ExtractParam(1);
+ If ExtractParam(1)='/?'Then Begin
+  WriteLn('FREE : Cette commande permet de demander ',
+                  'les statistiques d''un unite de disque');
+  WriteLn;
+  WriteLn('Syntaxe : FREE [/?]');
+  WriteLn('          FREE unite:');
+  WriteLn;
+  WriteLn(' unite:   Affiche les statistiques d''un unite');
+ End
+  Else
+ Repeat
+  If CurrParam=''Then Begin
+   WriteLn;
+   WriteLn(' Volume dans l''unite ',GetCurrentDisk,' est ',GetDiskLabel(0));
+   WriteLn(DiskSize(0):20,' octets d''espace disque total');
+   WriteLn(DiskSize(0)-DiskFree(0):20,' octets d''espace utilise');
+   WriteLn(DiskFree(0):20,' octets d''espace libre');
+  End
+   Else
+  Begin
+   Drive:=Ord(CurrParam[1])-Ord('A');
+   WriteLn;
+   WriteLn(' Volume dans l''unite ',UpCase(CurrParam[1]),' est ',GetDiskLabel(Drive+1));
+   WriteLn(DiskSize(Drive+1):20,' octets d''espace disque total');
+   WriteLn(DiskSize(Drive+1)-DiskFree(Drive+1):20,' octets d''espace utilise');
+   WriteLn(DiskFree(Drive+1):20,' octets d''espace libre');
+  End;
+  Inc(P);
+  CurrParam:=ExtractParam(P);
+ Until CurrParam='';
 End;
 
 Procedure GlobalCommand;Begin
@@ -909,7 +982,19 @@ Begin
 End;
 
 Procedure MoveCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ If ExtractParam(1)='/?'Then Begin
+  WriteLn('MOVE : Cette commande permet de deplacer un fichier.');
+  WriteLn;
+  WriteLn('Syntaxe : MOVE source destination');
+ End
+  Else
+ If(ExtractParam(1)<>'')and(ExtractParam(2)<>'')Then Begin
+  If Not MoveFile(ExtractParam(1),ExtractParam(2))Then Begin
+   WriteLn('Erreur de d‚placement du fichier.');
+  End;
+ End
+  Else
+ WriteLn('Nombre de parametre invalide');
 End;
 
 Procedure PathCommand;Begin
