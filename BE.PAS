@@ -33,6 +33,7 @@ BEGIN
   WriteLn('          BE CLS [couleur]');
   WriteLn('          BE DELAY tics');
   WriteLn('          BE MONTHDAY');
+  WriteLn('          BE WEEKDAY');
   WriteLn;
   WriteLn('  BEEP      Ce parametre permet d''emettre un signal sonore');
   WriteLn('  CLS       Ce parametre permet d''effacer l''ecran');
@@ -40,6 +41,7 @@ BEGIN
   WriteLn('  DELAY     Ce parametre permet d''indiquer un delai');
   WriteLn('  tics      Ce parametre permet d''indiquer des tic de 1/18 de secondes');
   WriteLn('  MONTHDAY  Ce parametre permet de retourner le jour du mois dans ERRORLEVEL.');
+  WriteLn('  WEEKDAY  Ce parametre permet de retourner le jour de la semaine dans ERRORLEVEL.');
  End
   Else
  Begin
@@ -71,6 +73,11 @@ BEGIN
   If StrToUpper(ParamStr(1))='MONTHDAY'Then Begin
    GetDate(Year,Month,Day,DOW);
    Halt(Day);
+  End
+   Else
+  If StrToUpper(ParamStr(1))='WEEKDAY'Then Begin
+   GetDate(Year,Month,Day,DOW);
+   Halt(DOW);
   End
    Else
   WriteLn('Commande etendue non reconnu');
