@@ -110,6 +110,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>COMP.PAS</b></td>
 			<td>Cette commande permet de comparer deux fichiers. Cette commande est un equivalent du <a href="https://www.gladir.com/OS/PCDOS/intro.htm">PC-DOS</a> ou <a href="https://www.gladir.com/OS/MSDOS/intro.htm">MS-DOS</a>.</td>
 		</tr>
+		<tr>
+			<td><b>CP.PAS</b></td>
+			<td>Cette commande permet de copier un fichier. Cette commande est inspiré de la commande UNIX.</td>
+		</tr>
 	         <tr>
 			<td><b>CPM86.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande du système d'exploitation CP/M-86.</td>
