@@ -1588,7 +1588,7 @@ Begin
       End;
      End;
      If Color=-1Then Val(CurrParam,Color,Err);
-     TextBackground(Color and $8);
+     TextBackground(Color and 7);
      Pos:=txt;
     End
      Else
