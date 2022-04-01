@@ -159,7 +159,7 @@ Begin
  Splitfilename:=N+E;
 End;
 
-Function CopyFile(Source,Target:String):Boolean;
+Function CopyFile(Source,Target:String;ShowProgression:Boolean):Boolean;
 Var
  SourceFile,TargetFile:File;
  RecordsRead:Integer;
@@ -174,17 +174,19 @@ Begin
  End;
  Assign(TargetFile,Target);
  {$I-}Rewrite(TargetFile,1);
+ If(ShowProgression)Then WriteLn('. = 1000 octets de copies');
  BlockRead(SourceFile,Buffer,SizeOf(Buffer),RecordsRead);
  While RecordsRead>0 do Begin
+  If(ShowProgression)Then Write('.');
   BlockWrite(TargetFile,Buffer,RecordsRead);
   BlockRead(SourceFile,Buffer,SizeOf(Buffer),RecordsRead);
  End;
+ If(ShowProgression)Then WriteLn;
  Close(SourceFile);
  Close(TargetFile);
  {$I+}
  CopyFile:=True;
 End;
-
 
 Function MoveFile(Source,Target:String):Boolean;
 Var
@@ -198,7 +200,7 @@ Begin
  Target:=FExpand(Target);
  If(Source[1]<>Target[1])and(Source[2]=':')Then Begin { Unite de disque different ?}
    { Copie le fichier }
-  MoveFile:=CopyFile(Source,Target);
+  MoveFile:=CopyFile(Source,Target,False);
    { Supprime le fichier }
   {$I-}Assign(F,Source);
   Erase(F);
@@ -368,8 +370,58 @@ Procedure ContinueCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure CpCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure CpCommand;
+Var
+ P:Byte;
+ ShowVerbose:Boolean;
+ F:File;
+ CurrParam,Source,Target:String;
+Begin
+ P:=0;
+ ShowVerbose:=False;
+ Source:='';
+ Target:='';
+ Repeat
+  Inc(P);
+  CurrParam:=ExtractParam(P);
+  If CurrParam=''Then Begin
+   If P=1Then Begin
+    WriteLn('Paramätre requis');
+   End;
+   Break;
+  End
+   Else
+  If(CurrParam='-h')or(CurrParam='--help')Then Begin
+   WriteLn('cp   Cette commande permet d''effacer la copie de fichier vers un autre emplacement.');
+   WriteLn;
+   WriteLn('Syntaxe:');
+   WriteLn;
+   WriteLn('cp [-h] [-v] source destination');
+   WriteLn;
+   WriteLn('    -h       Ce parametre permet d''afficher l''aide sur cette commande');
+   WriteLn('    -v       Ce parametre permet d''afficher les details');
+   WriteLn('source       Ce parametre permet d''indiquer le fichier source');
+   WriteLn('destination  Ce parametre permet d''indiquer le fichier destination');
+   Exit;
+  End
+   Else
+  If(CurrParam='-v')Then ShowVerbose:=True
+   Else
+  If CurrParam<>''Then
+  Begin
+   If Source=''Then Source:=CurrParam
+               Else Target:=CurrParam;
+  End;
+  If P>9Then Break;
+ Until CurrParam='';
+ If(Source='')or(Target='')Then Begin
+  WriteLn('La source et la destination sont requises');
+ End
+  Else
+ Begin
+  If CopyFile(Source,Target,ShowVerbose)Then WriteLn('1 fichier copie')
+                                        Else WriteLn('Echec de copie de fichier');
+ End;
 End;
 
 Procedure DoscpCommand;Begin
