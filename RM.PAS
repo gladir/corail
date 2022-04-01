@@ -122,7 +122,7 @@ BEGIN
    DeleteTree(CurrParam);
   End
    Else
-  If CurrParam='/?'Then Begin
+  If(CurrParam='/?')or(CurrParam='-h')or(CurrParam='--help')Then Begin
    WriteLn('RM   Cette commande permet d''effectuer la suppression de fichier sur un unite de disque.');
    WriteLn;
    WriteLn('Syntaxe:');
