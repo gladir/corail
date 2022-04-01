@@ -345,6 +345,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de remplacer un fichier. Cette commande est un équivalent du DOS.</td>
 		</tr>
 	        <tr>
+			<td><b>RM.PAS</b></td>
+			<td>Cette commande permet de supprimer un fichier. Cette commande est un équivalent de Linux.</td>
+		</tr>
+	        <tr>
 			<td><b>RTMRES.PAS</b></td>
 			<td>Cette commande permet de charger le RTM en mode résident.</td>
 		</tr>
