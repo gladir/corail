@@ -9,7 +9,7 @@ Program NDOS;
 Uses Crt,DOS;
 
 Const
- CommandList:Array[0..79]of String[8]=(
+ CommandList:Array[0..80]of String[8]=(
   'ALIAS','ATTRIB','BEEP','BREAK','CALL','CD','CDD','CHCP','CHDIR',
   'CLS','COLOR','COPY','CTTY','DATE','DEL','DELAY','DELETE','DIR',
   'DIRS','DRAWBOX','DRAWHLINE','DRAWVLINE','ECHO','ENDLOCAL',
@@ -19,10 +19,11 @@ Const
   'MKDIR','MOVE','PATH','PAUSE','PROMPT','PUSHD','QUIT','RD','REM',
   'REN','RENAME','RETURN','RMDIR','SCREEN','SCRPUT','SET','SETDOS',
   'SETLOCAL','SHIFT','SWAPPING','TEE','TEXT','TIME','TIMER','TRUENAME',
-  'TYPE','UNALIAS','UNSET','VER','VERIFY','VOL','Y'
+  'TYPE','UNALIAS','UNSET','VER','VERIFY','VOL','Y','POPD'
  );
 
  MaxHistory=100;
+ MaxStackDirectory=50;
 
 Type
  StrPointer=^String;
@@ -33,7 +34,8 @@ Var
  InCmd:Byte;
  Option:(optNone,optCommand);
  History:Array[1..MaxHistory] of StrPointer;
- NumberHistory:Integer;
+ StackDirectory:Array[1..MaxStackDirectory] of StrPointer;
+ NumberHistory,NumberDirectory:Integer;
  Echo:Boolean;
  CommandFound,Terminated:Boolean;
  CmdStr:String;
@@ -169,6 +171,31 @@ Begin
   P^:=S;
   History[NumberHistory]:=P;
   AddHistory:=True;
+ End;
+End;
+
+Function PushDirectory(Directory:String):Boolean;
+Var
+ P:StrPointer;
+Begin
+ If NumberDirectory>=MaxStackDirectory Then Begin
+  WriteLn('Pile de r‚pertoire pleine');
+  PushDirectory:=False;
+  Exit;
+ End;
+ Inc(NumberDirectory);
+ GetMem(P,Length(Directory)+1);
+ P^:=Directory;
+ StackDirectory[NumberDirectory]:=P;
+ PushDirectory:=True;
+End;
+
+Function PopDirectory:String;Begin
+ PopDirectory:='';
+ If NumberDirectory>0Then Begin
+  PopDirectory:=StackDirectory[NumberDirectory]^;
+  FreeMem(History[NumberDirectory],Length(History[NumberDirectory]^)+1);
+  Dec(NumberDirectory);
  End;
 End;
 
@@ -1301,12 +1328,62 @@ Begin
  End;
 End;
 
+Procedure PopDCommand;
+Var
+ Error:Word;
+ FirstParam,Dir:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  WriteLn('POPD   Cette commande permet de restaurer le repertoire.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('POPD [/?]');
+  WriteLn;
+  WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
+ End
+  Else
+ Begin
+  Dir:=PopDirectory;
+  {$I-} ChDir(Dir);{$I+}
+  Error:=IoResult;
+  If Error<>0Then WriteLn(GetErrorMessage(Error));
+ End;
+End;
+
 Procedure PromptCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure PushDCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure PushDCommand;
+Var
+ Error:Word;
+ FirstParam,Dir:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  WriteLn('PUSHD   Cette commande permet de sauver le repertoire.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('PUSHD [/?] chemin');
+  WriteLn;
+  WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn(' chemin  Ce parametre permet d''indiquer le repertoire a mettre a la place.');
+ End
+  Else
+ If Length(FirstParam)>0Then Begin
+  If Not(PushDirectory(FExpand(FirstParam)))Then WriteLn('Pile pleine');
+  {$I-} ChDir(FirstParam);{$I+}
+  Error:=IoResult;
+  If Error<>0Then WriteLn(GetErrorMessage(Error));
+ End
+  Else
+ Begin
+  GetDir(0,Dir);
+  If Not(PushDirectory(Dir))Then WriteLn('Pile pleine');
+ End;
 End;
 
 Procedure QuitCommand;Begin
@@ -1422,12 +1499,106 @@ Procedure ReturnCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure ScreenCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure ScreenCommand;
+Var
+ X,Y,Err:Word;
+Begin
+ If ExtractParam(1)='/?'Then Begin
+  WriteLn('SCREEN   Cette commande permet de fixer ou demander le contenu des ',
+          'variables d''environnement du systeme d''exploitation');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('SCREEN [/?]');
+  WriteLn('SCREEN row column [message]');
+  WriteLn;
+  WriteLn(' /?      Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn(' row     Ce parametre permet d''indiquer la ligne du texte');
+  WriteLn(' column  Ce parametre permet d''indiquer la colonne du texte');
+ End
+  Else
+ Begin
+  Val(ExtractParam(1),X,Err);
+  Val(ExtractParam(2),Y,Err);
+  GotoXY(X+1,Y+1);
+  WriteLn(ExtractParam(3));
+ End;
 End;
 
-Procedure ScrPutCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure ScrPutCommand;
+Const
+ ColorList:Array[0..15]of String=(
+  'BLACK','BLUE','GREEN','CYAN','RED','MAGENTA','BROWN','LIGHTGRAY',
+  'DARKGRAY','LIGHTBLUE','LIGHTGREEN','LIGHTCYAN','LIGHTRED',
+  'LIGHTMAGENTA','YELLOW','WHITE');
+Var
+ Pos:(fg,bg,txt);
+ Bright,Blink:Boolean;
+ I,X,Y,P,Err:Word;
+ Color:Integer;
+ CurrParam:String;
+Begin
+ If ExtractParam(1)='/?'Then Begin
+  WriteLn('SCRPUT   Cette commande permet de fixer ou demander le contenu des ',
+          'variables d''environnement du systeme d''exploitation');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('SCRPUT [/?]');
+  WriteLn('SCRPUT row column [BRIGHT] [BLINK] fg ON bg message');
+  WriteLn;
+  WriteLn(' /?      Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn(' row     Ce parametre permet d''indiquer la ligne du texte');
+  WriteLn(' column  Ce parametre permet d''indiquer la colonne du texte');
+ End
+  Else
+ Begin
+  Bright:=False;
+  Val(ExtractParam(1),X,Err);
+  Val(ExtractParam(2),Y,Err);
+  GotoXY(X+1,Y+1);
+  P:=3;
+  Pos:=fg;
+  CurrParam:=ExtractParam(3);
+  Repeat
+   If(StrToUpper(CurrParam)='BRI')or(StrToUpper(CurrParam)='BRIGHT')Then Bright:=True Else
+   If(StrToUpper(CurrParam)='BLI')or(StrToUpper(CurrParam)='BLINK')Then Blink:=True Else
+   If(StrToUpper(CurrParam)<>'ON')Then Begin
+    If Pos=fg Then Begin
+     Color:=-1;
+     For I:=0 to 15 do Begin
+      If StrToUpper(CurrParam)=ColorList[I]Then Begin
+       Color:=I;
+       Break;
+      End;
+     End;
+     If Color=-1Then Val(CurrParam,Color,Err);
+     If(Bright)Then Color:=Color or 8;
+     If(Blink)Then Color:=Color or 16;
+     TextColor(Color and $1F);
+     Pos:=bg;
+    End
+     Else
+    If Pos=bg Then Begin
+     Color:=-1;
+     For I:=0 to 15 do Begin
+      If StrToUpper(CurrParam)=ColorList[I]Then Begin
+       Color:=I;
+       Break;
+      End;
+     End;
+     If Color=-1Then Val(CurrParam,Color,Err);
+     TextBackground(Color and $8);
+     Pos:=txt;
+    End
+     Else
+    Write(CurrParam);
+   End;
+   CurrParam:=ExtractParam(P);
+   Inc(P);
+  Until CurrParam='';
+  WriteLn(ExtractParam(3));
+ End;
 End;
 
 Procedure SetCommand;
@@ -1797,6 +1968,7 @@ Begin
     77:VerifyCommand;
     78:VolCommand;
     79:YCommand;
+    80:PopDCommand;
    End;
    If J<=High(CommandList)Then Begin
     CommandFound:=True;
@@ -1842,6 +2014,8 @@ End;
 BEGIN
  FillChar(History,SizeOf(History),0);
  NumberHistory:=0;
+ FillChar(StackDirectory,SizeOf(StackDirectory),0);
+ NumberDirectory:=0;
  Echo:=True;
  InCmd:=0;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
