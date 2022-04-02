@@ -281,6 +281,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de changer le nom d'un volume.</td>
 		</tr>
 		<tr>
+			<td><b>LESS.PAS</b></td>
+			<td>Cette commande permet d'afficher un fichier de la fin vers le début.</td>
+		</tr>
+		<tr>
 			<td><b>LP.PAS</b></td>
 			<td>Cette commande permet d'imprimer le contenu d'un fichier. Cette commande est équivalent de UNIX.</td>
 		</tr>	
@@ -432,6 +436,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>UNBINSCII.PAS</td>
 			<td>Cette commande permet d'extraire les fichiers d'un <a href="https://www.gladir.com/LEXIQUE/FICHIERS/bsq.htm">BSQ</a> d'Apple II. Cette commande est originaire de ProDOS et de l'Apple II.</td>
 		<tr>
+			<td><b>VIEWASC.PAS</b></td>
+			<td>Cette commande permet de visualiser un fichier ASCII.</td>
+		</tr>
+	        <tr>
 			<td><b>VIEWHEX.PAS</b></td>
 			<td>Cette commande permet de visualiser un fichier binaire en mode hexadécimal.</td>
 		</tr>		
