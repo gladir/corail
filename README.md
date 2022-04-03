@@ -138,6 +138,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>CSH.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande C Shell.</td>
 		</tr>
+	        <tr>
+			<td><b>CUT.PAS</b></td>
+			<td>Cette commande permet de supprimer des sections de chaque ligne des fichiers.</td>
+		</tr>
 	         <tr>
 			 <td><b>DEBUG.PAS</b></td>
 			 <td>Cette commande permet de deboguer un programme.</td>
