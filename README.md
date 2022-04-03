@@ -156,7 +156,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	        <tr>
 			<td><b>DF.PAS</b></td>
-			<td>Cette commande permet d'afficher l'espace libre sur le système de fichiers.</td>
+			<td>Cette commande permet d'afficher l'espace libre sur le système de fichiers. C'est commande est inpiré de Linux et de cygwin.</td>
 		</tr>
 		<tr>
 			<td><b>DIR.PAS</b></td>
