@@ -140,7 +140,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	        <tr>
 			<td><b>CUT.PAS</b></td>
-			<td>Cette commande permet de supprimer des sections de chaque ligne des fichiers.</td>
+			<td>Cette commande permet de supprimer des sections de chaque ligne des fichiers. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/LINUX/cut.htm">cut</a> de Linux.</td>
 		</tr>
 	         <tr>
 			 <td><b>DEBUG.PAS</b></td>
