@@ -160,7 +160,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	        <tr>
 			<td><b>DF.PAS</b></td>
-			<td>Cette commande permet d'afficher l'espace libre sur le système de fichiers. C'est commande est inpiré de Linux et de cygwin.</td>
+			<td>Cette commande permet d'afficher l'espace libre sur le système de fichiers. C'est commande est inspiré de Linux et de cygwin.</td>
 		</tr>
 		<tr>
 			<td><b>DIR.PAS</b></td>
@@ -238,12 +238,12 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de rechercher une chaine de caractères dans des fichiers. Cette commande est un équivalent du DOS.</td>
 		</tr>
 		<tr>
-			<td><b>FLIPFLOP.PAS</td></td>
-			<td>Cette commande permet d'échanger des fichiers textes de TRS-80 et UNIX (ou Amiga). Utilitaire MISOSYS pour TRS-80.</td>
-		</tr>
-		<tr>
 			<td><b>FLEX.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande FLEX. L'interpréteur de commande FLEX etait a l'origine proposé pour des microprocesseurs 6800, comme par exemple les micro-ordinateur CoCo.</td>
+		</tr>	
+		<tr>
+			<td><b>FLIPFLOP.PAS</td></td>
+			<td>Cette commande permet d'échanger des fichiers textes de TRS-80 et UNIX (ou Amiga). Utilitaire MISOSYS pour TRS-80.</td>
 		</tr>
 		<tr>
 			<td><b>FORMAT.PAS</b></td>
