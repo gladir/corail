@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2021
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program DRDOS;
@@ -18,7 +18,9 @@ Const
  );
 
 Var
+ InCmd:Byte;
  Echo:Boolean;
+ Option:(optNone,optCommand);
  CommandFound,Terminated:Boolean;
  CmdStr:String;
  CurrCommand,ParamList:String;
@@ -79,6 +81,14 @@ End;
 Function Path2Drive(Path:String):Char;Begin
  Path:=FExpand(Path);
  Path2Drive:=Path[1];
+End;
+
+Function FileExist(Name:String):Boolean;
+Var
+ Rec:SearchRec;
+Begin
+ FindFirst(Name,AnyFile,Rec);
+ FileExist:=DosError=0;
 End;
 
 Function GetDiskLabel(Dsk:Byte):String;
@@ -322,8 +332,46 @@ Begin
  End;
 End;
 
-Procedure CHCPCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure CHCPCommand;
+Var
+ Err:Word;
+ Regs:Registers;
+ FirstParam:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  WriteLn('CHCP   Cette commande permet de fixer ou de demander la page de codes.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('CHCP [/?] [code]');
+  WriteLn;
+  WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn(' code    Ce parametre permet d''indiquer la page de code');
+ End
+  Else
+ If FirstParam<>''Then Begin
+  Regs.AX:=$6602;
+  Val(FirstParam,Regs.BX,Err);
+  If Err=0Then Begin
+   Intr($21,Regs);
+   If(Regs.Flags and FCarry=FCarry)Then Begin
+    WriteLn('Impossible de changer le code de page actif');
+   End;
+  End
+   Else
+  WriteLn('Code de page invalide.');
+ End
+  Else
+ Begin
+  Regs.AX:=$6601;
+  Intr($21,Regs);
+  If(Regs.Flags and FCarry=FCarry)Then Begin
+   WriteLn('Page de code active inconnnu');
+  End
+   Else
+  WriteLn('Page de code active : ',Regs.BX);
+ End;
 End;
 
 Procedure CLSCommand;
@@ -1268,75 +1316,132 @@ Procedure UnknownCommand;Begin
  WriteLn;
 End;
 
-BEGIN
- Echo:=True;Terminated:=False;
- HomeMessage;
- Repeat
-  ShowPrompt;
-  ReadLn(CmdStr);
-  ExtractCommand;
-  CommandFound:=False;
-  For J:=Low(CommandList) to High(CommandList) do Begin
-   If CurrCommand=CommandList[J]Then Begin
-    Case(J)of
-     0:BreakCommand;
-     1:CallCommand;
-     2:ChDirCommand;
-     3:CHCPCommand;
-     4:ChDirCommand;
-     5:CLSCommand;
-     6:CopyCommand;
-     7:CTTYCommand;
-     8:DateCommand;
-     9:DeleteCommand;
-     10:DeleteCommand;
-     11:DelPurgeCommand;
-     12:DelQCommand;
-     13:DelWatchCommand;
-     14:DirCommand;
-     15:EchoCommand;
-     16:EraseCommand;
-     17:EraqCommand;
-     18:EraseCommand;
-     19:Terminated:=ExitCommand;
-     20:ForCommand;
-     21:IfCommand;
-     22:LoadHighCommand;
-     23:MkDirCommand;
-     24:MkDirCommand;
-     25:PathCommand;
-     26:PauseCommand;
-     27:PromptCommand;
-     28:RmDirCommand;
-     29:RemCommand;
-     30:RenameCommand;
-     31:RenameCommand;
-     32:RmDirCommand;
-     33:SetCommand;
-     34:ShiftCommand;
-     35:TimeCommand;
-     36:TrueNameCommand;
-     37:TypeCommand;
-     38:VerCommand;
-     39:VerifyCommand;
-     40:VolCommand;
-    End;
-    If J<=High(CommandList)Then Begin
-     CommandFound:=True;
-     WriteLn;
-     Break;
-    End;
+Procedure RunCommand;
+Var
+ LastEcho:Boolean;
+ FileBat:Text;
+Begin
+ ExtractCommand;
+ CommandFound:=False;
+ For J:=Low(CommandList) to High(CommandList) do Begin
+  If CurrCommand=CommandList[J]Then Begin
+   Case(J)of
+    0:BreakCommand;
+    1:CallCommand;
+    2:ChDirCommand;
+    3:CHCPCommand;
+    4:ChDirCommand;
+    5:CLSCommand;
+    6:CopyCommand;
+    7:CTTYCommand;
+    8:DateCommand;
+    9:DeleteCommand;
+    10:DeleteCommand;
+    11:DelPurgeCommand;
+    12:DelQCommand;
+    13:DelWatchCommand;
+    14:DirCommand;
+    15:EchoCommand;
+    16:EraseCommand;
+    17:EraqCommand;
+    18:EraseCommand;
+    19:Terminated:=ExitCommand;
+    20:ForCommand;
+    21:IfCommand;
+    22:LoadHighCommand;
+    23:MkDirCommand;
+    24:MkDirCommand;
+    25:PathCommand;
+    26:PauseCommand;
+    27:PromptCommand;
+    28:RmDirCommand;
+    29:RemCommand;
+    30:RenameCommand;
+    31:RenameCommand;
+    32:RmDirCommand;
+    33:SetCommand;
+    34:ShiftCommand;
+    35:TimeCommand;
+    36:TrueNameCommand;
+    37:TypeCommand;
+    38:VerCommand;
+    39:VerifyCommand;
+    40:VolCommand;
+   End;
+   If J<=High(CommandList)Then Begin
+    CommandFound:=True;
+    WriteLn;
+    Break;
    End;
   End;
-  If Not(CommandFound)Then Begin
-   If CmdStr='?'Then Begin
-    For I:=Low(CommandList) to High(CommandList) do Write(PadRight(CommandList[I],10));
-    WriteLn;
-    WriteLn;
+ End;
+ If Not(CommandFound)Then Begin
+  If CmdStr='?'Then Begin
+   For I:=Low(CommandList) to High(CommandList) do Write(PadRight(CommandList[I],10));
+   WriteLn;
+   WriteLn;
+  End
+   Else
+  If FileExist(CmdStr+'.BAT')Then Begin
+   Inc(InCmd);
+   If InCmd>20Then Begin
+    WriteLn('Limite de 20 fichiers de traitements par lots maximum.');
+    Exit;
+   End;
+   LastEcho:=Echo;
+   Assign(FileBat,CmdStr+'.BAT');
+   {$I-}Reset(FileBat);{$I+}
+   If IOResult=0Then Begin
+    While Not EOF(FileBat)do Begin
+     ReadLn(FileBat,CmdStr);
+     If(Echo)Then WriteLn(CmdStr);
+     RunCommand;
+    End;
    End
     Else
-   UnknownCommand;
+   WriteLn('Probleme de lecture du fichier de traitement par lot');
+   Close(FileBat);
+   Echo:=LastEcho;
+   Dec(InCmd);
+  End
+   Else
+  UnknownCommand;
+ End;
+End;
+
+BEGIN
+ Echo:=True;InCmd:=0;
+ If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
+  WriteLn('DRDOS : Cette commande permet de lancer l''interpreteur de commande.');
+  WriteLn;
+  WriteLn('Syntaxe : DRDOS [/C command]');
+ End
+  Else
+ If ParamCount>1Then Begin
+  Option:=optNone;
+  For I:=1 to ParamCount do Begin
+   If(Option=optCommand)Then Begin
+    CmdStr:=ParamStr(I);
+    RunCommand;
+    Option:=optNone;
+   End
+    Else
+   If StrToUpper(ParamStr(I))='/C'Then Option:=optCommand
+    Else
+   Begin
+    WriteLn('Parametre non reconnu : ',ParamStr(I));
+   End;
   End;
- Until Terminated;
+ End
+  Else
+ Begin
+  Terminated:=False;
+  HomeMessage;
+  Repeat
+   ShowPrompt;
+   ReadLn(CmdStr);
+   RunCommand;
+  Until Terminated;
+ End;
 END.
 
