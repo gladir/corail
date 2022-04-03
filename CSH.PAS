@@ -17,14 +17,16 @@ Const
   'unalias','unhash','unlimit','unset','unsetenv','wait','while'
  );
 
+ MaxStackDirectory=50;
  MaxHistory=100;
 
 Type
  StrPointer=^String;
 
 Var
+ StackDirectory:Array[1..MaxStackDirectory] of StrPointer;
  History:Array[1..MaxHistory] of StrPointer;
- NumberHistory:Integer;
+ NumberHistory,NumberDirectory:Integer;
  CommandFound,Terminated:Boolean;
  CmdStr:String;
  CurrCommand,ParamList:String;
@@ -64,6 +66,31 @@ Begin
   P^:=S;
   History[NumberHistory]:=P;
   AddHistory:=True;
+ End;
+End;
+
+Function PushDirectory(Directory:String):Boolean;
+Var
+ P:StrPointer;
+Begin
+ If NumberDirectory>=MaxStackDirectory Then Begin
+  WriteLn('Pile de r‚pertoire pleine');
+  PushDirectory:=False;
+  Exit;
+ End;
+ Inc(NumberDirectory);
+ GetMem(P,Length(Directory)+1);
+ P^:=Directory;
+ StackDirectory[NumberDirectory]:=P;
+ PushDirectory:=True;
+End;
+
+Function PopDirectory:String;Begin
+ PopDirectory:='';
+ If NumberDirectory>0Then Begin
+  PopDirectory:=StackDirectory[NumberDirectory]^;
+  FreeMem(History[NumberDirectory],Length(History[NumberDirectory]^)+1);
+  Dec(NumberDirectory);
  End;
 End;
 
@@ -129,8 +156,34 @@ Procedure BgCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure ChdirCommand;Begin
- ChDir(ParamList);
+Procedure ChdirCommand;
+Var
+ Error:Word;
+ FirstParam,Dir:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='-h'Then Begin
+  WriteLn('chdir   Cette commande permet de fixer ou de demander le repertoire courant.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('cd [-h] chemin');
+  WriteLn('chdir [-h] chemin');
+  WriteLn;
+  WriteLn('  -h     Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn(' chemin  Ce parametre permet d''indiquer le chemin du repertoire.');
+ End
+  Else
+ If Length(FirstParam)>0Then Begin
+  {$I-} ChDir(FirstParam);{$I+}
+  Error:=IoResult;
+  If Error<>0Then WriteLn('Impossible de changer de repertoire');
+ End
+  Else
+ Begin
+  GetDir(0,Dir);
+  WriteLn(Dir);
+ End;
 End;
 
 Procedure DirsCommand;Begin
@@ -247,12 +300,58 @@ Procedure NotifyCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure PopdCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure PopdCommand;
+Var
+ Error:Word;
+ FirstParam,Dir:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='-h'Then Begin
+  WriteLn('popd   Cette commande permet de restaurer le repertoire.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('popd [-h]');
+  WriteLn;
+  WriteLn('  -h     Ce parametre permet d''afficher l''aide sur cette commande');
+ End
+  Else
+ Begin
+  Dir:=PopDirectory;
+  {$I-} ChDir(Dir);{$I+}
+  Error:=IoResult;
+  If Error<>0Then WriteLn('Impossible de changer de repertoire');
+ End;
 End;
 
-Procedure PushdCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure PushdCommand;
+Var
+ Error:Word;
+ FirstParam,Dir:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='-h'Then Begin
+  WriteLn('pushd   Cette commande permet de sauver le repertoire.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('pushd [-h] [chemin]');
+  WriteLn;
+  WriteLn('  -h     Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn(' chemin  Ce parametre permet d''indiquer le repertoire a mettre a la place.');
+ End
+  Else
+ If Length(FirstParam)>0Then Begin
+  If Not(PushDirectory(FExpand(FirstParam)))Then WriteLn('Pile pleine');
+  {$I-} ChDir(FirstParam);{$I+}
+  Error:=IoResult;
+  If Error<>0Then WriteLn('Impossible de changer de repertoire');
+ End
+  Else
+ Begin
+  GetDir(0,Dir);
+  If Not(PushDirectory(Dir))Then WriteLn('Pile pleine');
+ End;
 End;
 
 Procedure RehashCommand;Begin
@@ -327,6 +426,8 @@ End;
 BEGIN
  FillChar(History,SizeOf(History),0);
  NumberHistory:=0;
+ FillChar(StackDirectory,SizeOf(StackDirectory),0);
+ NumberDirectory:=0;
  Terminated:=False;
  HomeMessage;
  Repeat
