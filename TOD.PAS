@@ -6,7 +6,7 @@
 
 Program TOD;
 
-Uses DOS;
+Uses Crt,DOS;
 
 Function PadZeroLeft(Value:Integer;Space:Byte):String;
 Var
@@ -20,7 +20,7 @@ End;
 Var
  Pos:(PMonth,PDay,PYear,PHour,PMin,PSec);
  Year,Month,Day,DayOfMonth,Hour,Minute,Second,CentSec,Err:Word;
- I:Byte;
+ I,Y:Byte;
  S,T:String;
 
 BEGIN
@@ -29,6 +29,27 @@ BEGIN
   WriteLn('TOD : Cette commande permet de demander la date et l''heure de la journee.');
   WriteLn;
   WriteLn('Syntaxe : TOD [/?] [mois/jour/annee heure:minute:seconde]');
+  WriteLn;
+  WriteLn(' mois     Ce parametre permet d''indiquer le mois');
+  WriteLn(' jour     Ce parametre permet d''indiquer le jour du mois');
+  WriteLn(' annee    Ce parametre permet d''indiquer l''annee');
+  WriteLn(' heure    Ce parametre permet d''indiquer l''heure');
+  WriteLn(' minute   Ce parametre permet d''indiquer les minutes');
+  WriteLn(' seconde  Ce parametre permet d''indiquer les secondes');
+  WriteLn('  P       Ce parametre permet d''afficher l''heure en continue');
+ End
+  Else
+ If(ParamStr(1)='P')or(ParamStr(1)='p')Then Begin
+  Y:=WhereY;
+  Repeat
+   GotoXY(1,Y);
+   GetDate(Year,Month,Day,DayOfMonth);
+   GetTime(Hour,Minute,Second,CentSec);
+   Write(PadZeroLeft(Month,2),'-',PadZeroLeft(Day,2),'-',PadZeroLeft(Year mod 100,2),
+         ' ':7,PadZeroLeft(Hour,2),':',PadZeroLeft(Minute,2),':',PadZeroLeft(Second,2));
+  Until Keypressed;
+  If(ReadKey<>#0)Then;
+  WriteLn;
  End
   Else
  If ParamCount>0Then Begin
