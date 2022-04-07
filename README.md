@@ -2,6 +2,8 @@
 
 Les logiciels contenu dans Corail sont une séries de logiciels autonomes écrit en Pascal et n'ayant pas de dépendances avec d'autres fichiers Pascal mais uniquement d'un compilateur, comme par exemple Free Pascal.
 
+Le logiciel Corail offrent des interpréteurs de commandes avec la syntaxe du AmigaDOS, OS-9, DR-DOS, MS-DOS, Unix, Linux, LDOS, TRSDOS, Prompt Pascal,... De plus, des nombreux utilitaires complémentaires sont fournit avec Corail, tel que des compilateurs, des interpréteurs de langage de programmation,... et des outils de bas niveau.
+
 <h2>Liste des fichiers</h2>
 
 Voici la liste des différents fichiers proposés dans Corail :
