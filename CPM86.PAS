@@ -449,7 +449,17 @@ Begin
 End;
 
 Procedure UserCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ If ParamList='/?'Then Begin
+  WriteLn('USER   Cette commande permet de demander le numero de l''utilisateur courant');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('USER [/?]');
+  WriteLn;
+  WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
+ End
+  Else
+ WriteLn(0); { Retourne toujours l'utilisateur 0 }
 End;
 
 Procedure UnknownCommand;Begin
