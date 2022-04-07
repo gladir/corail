@@ -407,7 +407,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>STAT.PAS</b></td>
 			<td>Cette commande permet d'afficher des informations sur des fichiers. Cettte commande est un équivalent de UNIX et LINUX.</td>
-		</tr>	
+		</tr>
+		<tr>
+			<td><b>SUBMIT.PAS</b></td>
+			<td>Cette commande permet d'exécuter un fichier .SUB du système d'exploitation CP/M-86.</td>
+		</tr>
 		<tr>
 			<td><b>TAIL.PAS</b></td>
 			<td>Cette commande permet d'afficher la fin d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
