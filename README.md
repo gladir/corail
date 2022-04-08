@@ -453,6 +453,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>UNBINSCII.PAS</td>
 			<td>Cette commande permet d'extraire les fichiers d'un <a href="https://www.gladir.com/LEXIQUE/FICHIERS/bsq.htm">BSQ</a> d'Apple II. Cette commande est originaire de ProDOS et de l'Apple II.</td>
+		</tr>
+		<tr>
+			<td><b>UNIQ.PAS</b></td>
+			<td>Cette commande permet de sortir le contenu d'un fichier sans duplication du contenu de ses lignes.</td>
+		</tr>
 		<tr>
 			<td><b>VIEWASC.PAS</b></td>
 			<td>Cette commande permet de visualiser un fichier ASCII.</td>
