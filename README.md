@@ -451,6 +451,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>SUBMIT.PAS</b></td>
 			<td>Cette commande permet d'exécuter un fichier .SUB du système d'exploitation CP/M-86.</td>
 		</tr>
+	        <tr>
+			<td><b>SYMDEB.PAS</b></td>
+			<td>Cette commande permet de lancer le débogueur DOS. Cette commande est inspiré du SYMDEB du MASM.</td>
+		</tr>
 		<tr>
 			<td><b>TAIL.PAS</b></td>
 			<td>Cette commande permet d'afficher la fin d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
