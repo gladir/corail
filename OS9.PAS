@@ -691,8 +691,39 @@ Procedure LOADCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure MAKDIRCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure MAKDIRCommand;
+Var
+ P:Byte;
+ Err:Word;
+ CurrParam:String;
+Begin
+ P:=0;
+ Repeat
+  Inc(P);
+  CurrParam:=ExtractParam(P);
+  If CurrParam=''Then Begin
+   If P=1Then Begin
+    WriteLn('Paramätre requis');
+   End;
+   Break;
+  End
+   Else
+  If CurrParam='/?'Then Begin
+   WriteLn('MAKDIR   Cette commande permet de creer un repertoire.');
+   WriteLn;
+   WriteLn('Syntaxe:');
+   WriteLn;
+   WriteLn('MAKDIR [/?] nomrepertoire');
+   WriteLn;
+   WriteLn('  nomrepertoire   Ce parametre permet d''indiquer le nom du repertoire');
+   WriteLn('            /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   Exit;
+  End;
+  {$I-}MkDir(CurrParam);{$I+}
+  Err:=IoResult;
+  If Err<>0Then WriteLn(GetErrorMessage(Err));
+  If P>9Then Break;
+ Until CurrParam='';
 End;
 
 Procedure MDIRCommand;Begin
