@@ -287,8 +287,12 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher le contenu d'un fichier en format hexadecimal. Cette commande est inspiré de la commande de Linux.</td>
 		</tr>	
 		<tr>
-			<td><b>HTML2TXT.PAS</b>
+			<td><b>HTML2TXT.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier en HTML en texte seulement (enlève le code HTML).</td>
+		</tr>
+		<tr>
+			<td><b>INFO.PAS</b></td>
+			<td>Cette commande permet de demander des informations sur l'état du système d'exploitation.</td>
 		</tr>
 		<tr>
 			<td><b>LABEL.PAS</b></td>
