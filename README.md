@@ -13,6 +13,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<th>Nom</th>
 			<th>Description</th>	
 		</tr>
+		<tr>
+			<td><b>4DOS.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande 4DOS. Il s'agit d'un équivalent du 4DOS du JP Software.</td>
+		</tr>
 	        <tr>
 			<td><b>AMIGADOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande AmigaShell/AmigaDOS.</td>
