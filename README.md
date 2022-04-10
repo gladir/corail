@@ -384,7 +384,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	        <tr>
 			<td><b>PXD.PAS</b></td>
-			<td>Cette commande permet d'afficher le répertoire d'exécution. Cette commande est inspiré du AmigaDOS.</td>
+			<td>Cette commande permet d'afficher le répertoire d'exécution. Cette commande est inspiré du <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
 		</tr>
 	       	<tr>
 		       <td><b>RENDIR.PAS</b></td>
