@@ -494,7 +494,7 @@ Aperçu de la commande OS9 :
 
 Apercu de la commande NC (North Commander) :
 
-![image](https://user-images.githubusercontent.com/11842176/162598071-c95a0c39-b3e4-4a4b-a847-c2f6582c8c77.png)
+![image](https://user-images.githubusercontent.com/11842176/162598150-5dd1d97c-fb13-4943-a74e-bac731ee2f18.png)
 
 Aperçu de la commande VIEWHEX :
 
