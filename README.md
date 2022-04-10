@@ -335,6 +335,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de retourner en texte un nombre. Similaire à la commande AIX.</td>
 		</tr>
 		<tr>
+			<td><b>NC.PAS</b></td>
+			<td>Cette commande permet de lancer le North Commander, soit un clone du <a href="https://www.gladir.com/SOFTWARE/NC/presentation.htm">Norton Commander</a>.</td>
+		</tr>
+		<tr>
 			<td><b>NDOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande NDOS. Il s'agit d'un équivalent du NDOS du Norton Utilities.</td>
 		</tr>	
