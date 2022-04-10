@@ -382,6 +382,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>PWD.PAS</b></td>
 			<td>Cette commande permet d'afficher le chemin du répertoire courant. Cette commande est un équivalent de UNIX.</td>
 		</tr>
+	        <tr>
+			<td><b>PXD.PAS</b></td>
+			<td>Cette commande permet d'afficher le répertoire d'exécution. Cette commande est inspiré du AmigaDOS.</td>
+		</tr>
 	       	<tr>
 		       <td><b>RENDIR.PAS</b></td>
 		       <td>Cette commande permet de renommer un répertoire. Cette commande est inspiré de la commande <a href="https://www.gladir.com/SOFTWARE/NOVELLNETWARE/rendir.htm">RENDIR</a> de <a href="https://www.gladir.com/SOFTWARE/NOVELLNETWARE/presentation.htm">Novell Netware.</td>
