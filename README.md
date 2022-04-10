@@ -292,7 +292,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>INFO.PAS</b></td>
-			<td>Cette commande permet de demander des informations sur l'état du système d'exploitation.</td>
+			<td>Cette commande permet de demander des informations sur l'état du système d'exploitation. Cette commande est inspiré du AmigaDOS.</td>
 		</tr>
 		<tr>
 			<td><b>LABEL.PAS</b></td>
