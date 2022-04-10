@@ -491,7 +491,11 @@ Aperçu de la commande AMIGADOS :
 Aperçu de la commande OS9 :
 
 ![image](https://user-images.githubusercontent.com/11842176/160869302-3bc16cf6-ef68-4752-83a9-822abcf0ba89.png)
-	
+
+Apercu de la commande NC (North Commander) :
+
+![image](https://user-images.githubusercontent.com/11842176/162598071-c95a0c39-b3e4-4a4b-a847-c2f6582c8c77.png)
+
 Aperçu de la commande VIEWHEX :
 
 ![image](https://user-images.githubusercontent.com/11842176/123694681-a0523b80-d827-11eb-9314-14661688945d.png)
