@@ -158,7 +158,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	         <tr>
 			<td><b>DELETE.PAS</b></td>
-			<td>Cette commande permet d'effectuer la suppression de fichier sur un unite de disque.</td>
+			<td>Cette commande permet d'effectuer la suppression de fichier sur un unite de disque. Cette commande est inspiré du AmigaDOS.</td>
 		 </tr>
 		 <tr>
 			<td><b>DELQ.PAS</b></td>
