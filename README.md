@@ -319,6 +319,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher les fichiers d'un répertoire. Cette commande est équivalent de UNIX.</td>
 		</tr>
 	        <tr>
+			<td><b>MAKEDIR.PAS</b></td>
+			<td>Cette commande permet de créer un répertoire. Cette commande est inspiré du AmigaDOS.</td>
+		</tr>
+	        <tr>
 			<td><b>MEM.PAS</b></td>
 			<td>Cette commande permet d'afficher les informations sur la mémoire. Cette commande est un clone de la commande MS-DOS ou PC-DOS.</td>
 		</tr>
