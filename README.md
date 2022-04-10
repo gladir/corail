@@ -219,6 +219,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>EQUIP.PAS</b></td>
 			<td>Cette commande permet d'afficher une liste de l'équipement installé et indique la quantité de mémoire, le type de mémoire, le microprocesseur, le moniteur, les unités de disque et les composantes d'entrée/sorties. Cette commande est originaire de la commande <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/equip.htm">EQUIP</a> du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/intro.htm">MS-DOS 3.21 Enhanced Amdek</a>.</td>
+		</tr>
+	        <tr>
+			<td><b>ERROR.PAS</b></td>
+			<td>Cette commande permet d'afficher la description de l'erreur. Cette commande est inspiré de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
+		</tr>
 		<tr>
 			<td><b>EVAL.PAS</b></td>
 			<td>Cette commande permet d'évaluer des expressions mathématiques</td>
