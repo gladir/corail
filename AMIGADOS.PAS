@@ -555,7 +555,7 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('INFO   Cette commande permet de demander des inforamtions sur ',
+  WriteLn('INFO   Cette commande permet de demander des informations sur ',
                   'l''etat du systeme d''exploitation.');
   WriteLn;
   WriteLn('Syntaxe:');
