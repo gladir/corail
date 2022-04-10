@@ -368,7 +368,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	        <tr>
 			<td><b>PROTECT.PAS</b></td>
-			<td>Cette commande permet de fixer la protection de mode d'accès d'un fichier.< Cette commande est inspiré du AmigaDOS.</td>
+			<td>Cette commande permet de fixer la protection de mode d'accès d'un fichier. Cette commande est inspiré du AmigaDOS.</td>
 		</tr>
 		<tr>
 			<td><b>PWD.PAS</b></td>
