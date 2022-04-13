@@ -73,7 +73,7 @@ End;
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')or
    (ParamStr(1)='/h')or(ParamStr(1)='/H')Then Begin
-  WriteLn('UNAME : Cette commande permet des informations sur ',
+  WriteLn('UNAME : Cette commande permet d''afficher des informations sur ',
           'le systäme d''exploitation');
   WriteLn;
   WriteLn('Syntaxe : UNAME [-h]');
