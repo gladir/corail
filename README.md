@@ -26,6 +26,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'ajouter un fichier ASCII à la fin d'un autre fichier. Cette commande est originaire du <a href="https://www.gladir.com/OS/LDOS/intro.htm">LDOS</a> pour TRS-80.</td>
 		</tr>
 		<tr>
+			<td><b>APPLEDOS.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande du style Apple II.</td>
+		</tr>
+		<tr>
 			<td><b>ASC2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source Pascal.</td>
 		</tr>
