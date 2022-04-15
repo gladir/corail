@@ -27,7 +27,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>APPLEDOS.PAS</b></td>
-			<td>Cette commande permet de lancer l'interpréteur de commande du style Apple II.</td>
+			<td>Cette commande permet de lancer l'interpréteur de commande Apple DOS du style Apple II.</td>
 		</tr>
 		<tr>
 			<td><b>ASC2PAS.PAS</b></td>
