@@ -2011,6 +2011,7 @@ Begin
       ClrEol;
       If CommandY<5Then Inc(CommandY);
       ExtractCommand;
+      Terminated:=False;
       CommandFound:=False;
       For J:=Low(CommandList) to High(CommandList) do Begin
        If CurrCommand=CommandList[J]Then Begin
@@ -2071,6 +2072,10 @@ Begin
          Break;
         End;
        End;
+      End;
+      If(Terminated)Then Begin
+       UnsetCommandWindow;
+       Exit;
       End;
       If Not(CommandFound)Then Begin
        If(CmdStr='?')or(StrToUpper(CmdStr)='HELP')Then Begin
