@@ -153,6 +153,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de supprimer des sections de chaque ligne des fichiers. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/LINUX/cut.htm">cut</a> de Linux.</td>
 		</tr>
 	         <tr>
+			<td><b>CV.PAS</b></td>
+			<td>Cette commande permet de lancer un clone de CodeView. Cette utilitaire était fournit avec MASM, Microsoft C,...</td>
+		</tr>
+	         <tr>
 			 <td><b>DEBUG.PAS</b></td>
 			 <td>Cette commande permet de deboguer un programme.</td>
 		</tr>
@@ -537,7 +541,11 @@ Aperçu de la commande OS9 :
 
 ![image](https://user-images.githubusercontent.com/11842176/160869302-3bc16cf6-ef68-4752-83a9-822abcf0ba89.png)
 
-Apercu de la commande NC (North Commander) :
+Aperçu du clone de CodeView :
+
+![image](https://user-images.githubusercontent.com/11842176/163688889-1e0d5988-d2b3-4e7b-afd1-3eda1f89c385.png)
+
+Aperçu de la commande NC (North Commander) :
 
 ![image](https://user-images.githubusercontent.com/11842176/162598150-5dd1d97c-fb13-4943-a74e-bac731ee2f18.png)
 
