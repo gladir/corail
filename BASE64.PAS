@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2021
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program BASE64(Input,Output);
@@ -74,9 +74,9 @@ Begin
     sum:=sum+((pos(c2, base64Alphabet) - 1) shl bitModifier);
     Dec(bitModifier,6);
    End;
-   Insert(StringOfChar(Chr((sum shr 16) and 255), 1), StrResult, Length(StrResult)+1);
-   Insert(StringOfChar(Chr((sum shr 8) and 255), 1), StrResult, Length(StrResult)+1);
-   Insert(StringOfChar(Chr(sum and 255), 1), StrResult, Length(StrResult)+1);
+   Insert(Chr((sum shr 16) and 255), StrResult, Length(StrResult)+1);
+   Insert(Chr((sum shr 8) and 255), StrResult, Length(StrResult)+1);
+   Insert(Chr(sum and 255), StrResult, Length(StrResult)+1);
    toProcess:='';
   End;
   If c<>'='Then Begin
@@ -99,7 +99,7 @@ End;
 
 Var
  I:Integer;
- Handle:File of Byte;
+ Handle:File {$IFDEF FPC}of Byte{$ENDIF};
  HandleBase64:Text;
  CurrLine:String;
  ByteReaded:Integer;

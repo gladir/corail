@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2021
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program Cal;
@@ -83,7 +83,7 @@ BEGIN
  End
   Else
  If(Copy(ParamStr(1),1,2)='/y')or(Copy(ParamStr(1),1,2)='/Y')Then Begin
-  Val(Copy(ParamStr(1),3,255),CurrYear);
+  Val(Copy(ParamStr(1),3,255),CurrYear,Err);
   For I:=1 to 12 do Begin
    WriteLn(MonthName(I),' ',CurrYear);
    WriteLn;
@@ -94,12 +94,12 @@ BEGIN
  Begin
   If Length(ParamStr(1))<=2Then Begin
    GetDate(CurrYear,CurrMonth,CurrDay,DayOfWeek);
-   Val(ParamStr(1),CurrMonth);
+   Val(ParamStr(1),CurrMonth,Err);
   End
    Else
   Begin
-   Val(Copy(ParamStr(1),1,4),CurrYear);
-   Val(Copy(ParamStr(1),6,2),CurrMonth);
+   Val(Copy(ParamStr(1),1,4),CurrYear,Err);
+   Val(Copy(ParamStr(1),6,2),CurrMonth,Err);
   End;
   WriteLn(MonthName(CurrMonth),' ',CurrYear);
   WriteLn;

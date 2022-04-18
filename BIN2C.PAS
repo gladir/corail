@@ -1,13 +1,13 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2021
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program BIN2C;
 
 Var
- Source:File of Byte;
+ Source:File{$IFDEF FPC} of Byte{$ENDIF};
  Target:Text;
  Tampon:Array[0..0]of Byte;
  ByteReaded:Integer;
