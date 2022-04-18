@@ -526,7 +526,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 	        <tr>
 			<td><b>VIEWHEX.PAS</b></td>
 			<td>Cette commande permet de visualiser un fichier binaire en mode hexadécimal.</td>
-		</tr>		
+		</tr>
+		<tr>
+			<td><b>VOL.PAS</b></td>
+			<td>Cette commande permet d'afficher le nom du volume d'une unité de disque.</td>
+		</tr>
 	        <tr>
 			<td><b>WC.PAS</b></td>
 			<td>Cette commande permet de compter le nombre de mots, de lignes ou de caractères.</td>
