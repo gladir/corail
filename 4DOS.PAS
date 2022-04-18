@@ -1669,7 +1669,7 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('TIME   Cette commande permet de fixer ou l''heure du systeme d''exploitation');
+  WriteLn('TIME   Cette commande permet de fixer ou de demander l''heure du systeme d''exploitation');
   WriteLn;
   WriteLn('Syntaxe:');
   WriteLn;
