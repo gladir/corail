@@ -512,6 +512,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de sortir le contenu d'un fichier sans duplication du contenu de ses lignes.</td>
 		</tr>
 		<tr>
+			<td><b>VERIFY.PAS</b></td>
+			<td>Cette commande permet de fixer ou de demander l'état du drapeau de vérification de lecture de secteur ou d'unité d'allocation du système d'exploitation ou de vérifier qu'un fichier existe. Cette commande est un mixte entre la commande MS-DOS et l'Apple DOS.</td>
+		</tr>
+		<tr>
 			<td><b>VIEWASC.PAS</b></td>
 			<td>Cette commande permet de visualiser un fichier ASCII.</td>
 		</tr>
