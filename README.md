@@ -508,6 +508,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de réduire ou augmenter la taille d'un fichier.</td>
 		</tr>
 		<tr>
+			<td><b>TYPE.PAS</b></td>
+			<td>Cette commande permet d'afficher le contenu d'un fichier.</td>
+		</tr>
+		<tr>
 			<td><b>UNBINSCII.PAS</td>
 			<td>Cette commande permet d'extraire les fichiers d'un <a href="https://www.gladir.com/LEXIQUE/FICHIERS/bsq.htm">BSQ</a> d'Apple II. Cette commande est originaire de ProDOS et de l'Apple II.</td>
 		</tr>
