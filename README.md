@@ -499,6 +499,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>TRSDOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande <a href="https://www.gladir.com/OS/TRSDOS/intro.htm">TRSDOS</a>.</td>
 		</tr>
+		<tr>
+			<td><b>TRUENAME.PAS</b></td>
+			<td>Cette commande permet d'afficher le nom complet d'un unité, d'un répertoire ou d'un nom de fichier. Cette commande est inspiré de la commande TRUENAME non-documenté du MS-DOS.</td>
+		</tr>
 	 	<tr>
 			<td><b>TRUNCATE.PAS</b></td>
 			<td>Cette commande permet de réduire ou augmenter la taille d'un fichier.</td>
