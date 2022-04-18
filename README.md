@@ -101,6 +101,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>CAT.PAS</b></td>
 			<td>Cette commande permet d'afficher le contenu d'un/des fichiers. Cette commande est un équivalent de UNIX.</td>
 		</tr>
+	        <tr>
+			<td><b>CATALOG.PAS</b></td>
+			<td>Cette commande permet d'afficher le contenu d'un répertoire dans l'unité de disque.</td>
+		</tr>
 		<tr>
 			<td><b>CHCP.PAS</b></td>
 			<td>Cette commande permet de fixer ou de demander la page de codes.</td>
