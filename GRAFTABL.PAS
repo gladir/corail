@@ -6,6 +6,8 @@
 
 Program GRAFTABL;
 
+{$M 1024,0,0}
+
 Uses DOS;
 
 Const Matrix8x8:Array[0..1023] of Byte=(
@@ -142,14 +144,14 @@ Const Matrix8x8:Array[0..1023] of Byte=(
 
 Var
  CurrIntr1Fh:Pointer;
- 
+
 Function StrToUpper(s:String):String;
 Var
  i:Integer;
 Begin
  For i:=1 to Length(s) do If s[i] in ['a'..'z']Then s[i] := UpCase(s[i]);
  StrToUpper:=s;
-End; 
+End;
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
