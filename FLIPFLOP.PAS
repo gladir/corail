@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2022
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 
@@ -23,16 +23,16 @@ BEGIN
    Read(C);
    Case C of
     #$0A:Begin
-     Write(ErrOutput,'C');
+     Write({$IFDEF FPC}ErrOutput{$ELSE}Output{$ENDIF},'C');
      WriteLn;
     End;
     #$0D:Begin
-     Write(ErrOutput,'L');
+     Write({$IFDEF FPC}ErrOutput{$ELSE}Output{$ENDIF},'L');
     End;
     Else Write(C);
    End;
   End;
-  WriteLn(ErrOutput,'Fait!!');
-  WriteLn(ErrOutput);
+  WriteLn({$IFDEF FPC}ErrOutput{$ELSE}Output{$ENDIF},'Fait!!');
+  WriteLn({$IFDEF FPC}ErrOutput{$ELSE}Output{$ENDIF});
  End;
 END.
