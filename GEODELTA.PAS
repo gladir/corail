@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2021
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program GeoDelta;
@@ -21,6 +21,7 @@ Var
  Q2Latitude,Q2LatiDeg:Real;Q2LatiDirection:Char;
  Q2Longitude,Q2LongDeg:Real;Q2LongDirection:Char;
  Err:Word;
+ CurrParam:String;
 
 Function StrToUpper(S:String):String;
 Var
@@ -292,10 +293,12 @@ BEGIN
      Val(ParamStr(2),Q2Latitude,Err);
     If Err>0Then WriteLn('ATTENTION ! Erreur de valeur');
      Val(ParamStr(3),Q2LatiDeg,Err);
-     Q2LatiDirection := ParamStr(4)[1];
+     CurrParam:=ParamStr(4);
+     Q2LatiDirection := CurrParam[1];
      Val(ParamStr(5),Q2Longitude,Err);
      Val(ParamStr(6),Q2LongDeg,Err);
-     Q2LongDirection := ParamStr(7)[1];
+     CurrParam:=ParamStr(7);
+     Q2LongDirection := CurrParam[1];
     End;
    End
     Else
@@ -303,18 +306,22 @@ BEGIN
     Val(ParamStr(1),Q1Latitude,Err);
     If Err>0Then WriteLn('ATTENTION ! Erreur de valeur');
     Val(ParamStr(2),Q1LatiDeg,Err);
-    Q1LatiDirection := ParamStr(3)[1];
+    CurrParam:=ParamStr(3);
+    Q1LatiDirection := CurrParam[1];
     Val(ParamStr(4),Q1Longitude,Err);
     Val(ParamStr(5),Q1LongDeg,Err);
-    Q1LongDirection := ParamStr(6)[1];
+    CurrParam:=ParamStr(6);
+    Q1LongDirection := CurrParam[1];
     If Not FindCity(ParamStr(7),2)Then Begin
      Val(ParamStr(7),Q2Latitude,Err);
     If Err>0Then WriteLn('ATTENTION ! Erreur de valeur');
      Val(ParamStr(8),Q2LatiDeg,Err);
-     Q2LatiDirection := ParamStr(9)[1];
+     CurrParam:=ParamStr(9);
+     Q2LatiDirection := CurrParam[1];
      Val(ParamStr(10),Q2Longitude,Err);
      Val(ParamStr(11),Q2LongDeg,Err);
-     Q2LongDirection := ParamStr(12)[1];
+     CurrParam:=ParamStr(12);
+     Q2LongDirection := CurrParam[1];
     End;
    End;
 
