@@ -227,7 +227,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 	         <tr>
 			 <td><b>EMSTEST.PAS</b></td>
 			 <td>Cette commande permet de tester la mémoire EMS. Cette commande est un clone de la commande EMSTEST du Turbo Pascal 6.</td>
-		</tr>	
+		</tr>
+		<tr>
+			<td><b>ENV.PAS</b></td>
+			<td>Cette commande permet de fixer ou de demander le contenu des variables d'environnement du système d'exploitaiton.</td>
+		</tr>
 		<tr>
 			<td><b>EQUIP.PAS</b></td>
 			<td>Cette commande permet d'afficher une liste de l'équipement installé et indique la quantité de mémoire, le type de mémoire, le microprocesseur, le moniteur, les unités de disque et les composantes d'entrée/sorties. Cette commande est originaire de la commande <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/equip.htm">EQUIP</a> du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/intro.htm">MS-DOS 3.21 Enhanced Amdek</a>.</td>
