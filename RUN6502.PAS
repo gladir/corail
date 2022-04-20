@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2021
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program RUN6502;
@@ -1046,7 +1046,7 @@ End;
 
 Var
  I,ByteReaded:Integer;
- FileLoad:File of Byte;
+ FileLoad:File {$IFDEF FPC}of Byte{$ENDIF};
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
