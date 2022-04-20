@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2021
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program STAT;
@@ -59,7 +59,8 @@ BEGIN
      If(Info.Attr and Archive=Archive)Then Write('a')
                                       Else Write('-');
      WriteLn(')');
-     WriteLn('Modifier: ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2),' ');
+     WriteLn('Modifier: ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
+             PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2),' ');
     End;
     FindNext(Info);
    End;

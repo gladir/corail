@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2021
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program HexView;
@@ -10,7 +10,7 @@ Uses Crt;
 
 Var
  Finish:Boolean;
- FileView:File of Byte;
+ FileView:File {$IFDEF FPC}of Byte{$ENDIF};
  ByteReaded:Word;
  FileName:String;
  Buffer:Array[0..1023]of Byte;

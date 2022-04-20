@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2021
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program Token2Bas;
@@ -10,7 +10,7 @@ Label RFGW,RF0,RF1;
 
 Var
  Mode:(None,CocoFileBAS,Coco1FileBAS,GWBASIC);
- Source:File Of Byte;
+ Source:File {$IFDEF FPC}Of Byte{$ENDIF};
  Target:Text;
  Pos:Word;
  SourceName,TargetName:String;
