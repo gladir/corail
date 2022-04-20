@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2021
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program HEAD(Input,Output);
@@ -15,6 +15,11 @@ Var
  FileView:Text;
   OptionFlag:OptionFlagType;
  FileName,CurrLine:String;
+
+Function StringToChar(S:String;Index:Byte):Char;Begin
+ If Length(S)<=Index Then StringToChar:=S[Index]
+                     Else StringToChar:=#0;
+End;
 
 BEGIN
  OptionFlag:=_None;
@@ -39,7 +44,7 @@ BEGIN
     Else
    If ParamStr(I)='--lines'Then OptionFlag:=_Lines Else
    If ParamStr(I)='--bytes'Then OptionFlag:=_Bytes Else
-   If((Length(ParamStr(I))>=2) and (ParamStr(I)[1]='-')and(ParamStr(I)[2] in['0'..'9']))Then Begin
+   If((Length(ParamStr(I))>=2) and (StringToChar(ParamStr(I),1)='-')and(StringToChar(ParamStr(I),2)in['0'..'9']))Then Begin
     Val(Copy(ParamStr(I),2,255),MaxLine,Err);
    End
     Else
@@ -50,17 +55,21 @@ BEGIN
   End;
   If FileName<>''Then Begin
    I:=0;
-   Assign(FileView,FileName);
-   Reset(FileView);
-   While Not EOF(FileView)do Begin
-    ReadLn(FileView,CurrLine);
-    WriteLn(Output,CurrLine);
-    Inc(CurrSize,Length(CurrLine));
-    If CurrSize>MaxBuffer Then Break;
-    Inc(I);
-    If I>=MaxLine Then Break;
-   End;
-   Close(FileView);
+   {$I-}Assign(FileView,FileName);
+   Reset(FileView);{$I+}
+   If IoResult=0Then Begin
+    While Not EOF(FileView)do Begin
+     ReadLn(FileView,CurrLine);
+     WriteLn(Output,CurrLine);
+     Inc(CurrSize,Length(CurrLine));
+     If CurrSize>MaxBuffer Then Break;
+     Inc(I);
+     If I>=MaxLine Then Break;
+    End;
+    Close(FileView);
+   End
+    Else
+   WriteLn('Erreur de lecture du fichier ',FileName);
   End
    Else
   Begin
