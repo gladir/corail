@@ -407,6 +407,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>PXD.PAS</b></td>
 			<td>Cette commande permet d'afficher le répertoire d'exécution. Cette commande est inspiré du <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
 		</tr>
+		<tr>
+			<td><b>REBOOT.PAS</b></td>
+			<td>Cette commande permet de redémarrer l'ordinateur.</td>
+		</tr>
 	       	<tr>
 		       <td><b>RENDIR.PAS</b></td>
 		       <td>Cette commande permet de renommer un répertoire. Cette commande est inspiré de la commande <a href="https://www.gladir.com/SOFTWARE/NOVELLNETWARE/rendir.htm">RENDIR</a> de <a href="https://www.gladir.com/SOFTWARE/NOVELLNETWARE/presentation.htm">Novell Netware.</td>
