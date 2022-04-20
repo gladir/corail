@@ -16,7 +16,8 @@ Var
 BEGIN
  Pause:=False;
  FirstParam:=ParamStr(1);
- If FirstParam='/?'Then Begin
+ If(FirstParam='/?')or(FirstParam='--help')or(FirstParam='-h')or
+   (FirstParam='/h')or(FirstParam='/H')Then Begin
   WriteLn('ENV   Cette commande permet de fixer ou demander le contenu des ',
           'variables d''environnement du systeme d''exploitation');
   WriteLn;
