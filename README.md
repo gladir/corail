@@ -185,6 +185,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>DELTREE.PAS</b></td>
 			<td>Cette commande permet d'effectuer la suppression d'un répertoire avec tous ses fichiers et répertoires inclusivement sur une unité de disque. Cette commande est un équivalent de la commande <a href="https://www.gladir.com/OS/MSDOS/deltree.htm">DELTREE</a> du MS-DOS.</td>
 		</tr>
+		<tr>
+			<td><b>DESTROY.PAS</b></td>
+			<td>Cette commande permet d'effacer totalement les données et le fichier.</td>
+		</tr>
 	        <tr>
 			<td><b>DF.PAS</b></td>
 			<td>Cette commande permet d'afficher l'espace libre sur le système de fichiers. C'est commande est inspiré de Linux et de cygwin.</td>
