@@ -187,7 +187,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>DESTROY.PAS</b></td>
-			<td>Cette commande permet d'effacer totalement les données et le fichier.</td>
+			<td>Cette commande permet d'effacer totalement les données et le fichier. Cette commande est un clone de la commande DESTROY du Mace Utilities.</td>
 		</tr>
 	        <tr>
 			<td><b>DF.PAS</b></td>
@@ -360,6 +360,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>MEM.PAS</b></td>
 			<td>Cette commande permet d'afficher les informations sur la mémoire. Cette commande est un clone de la commande MS-DOS ou PC-DOS.</td>
 		</tr>
+		<tr>
+			<td><b>MKEYRATE.PAS</b></td>
+			<td>Cette commande permet de modifier les temps de réponse des claviers AT pour permettre une saisie et un mouvement du curseur plus rapides. Cette commande est un clone de la commande MKEYRATE du Mace Utilities.</td>
+		</tr>	
 		<tr>
 			<td><b>MODE.PAS</b></td>
 			<td>Cette commande permet d'effectuer la gestion des paramètres d'un périphérique.</td>
