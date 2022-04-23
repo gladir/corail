@@ -533,6 +533,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de réduire ou augmenter la taille d'un fichier.</td>
 		</tr>
 		<tr>
+			<td><b>TS.PAS</b></td>
+			<td>Cette commande permet de rechercher une chaine de caractères dans des fichiers. Cette commande est un équivalent du Norton Utilities.</td>
+		</tr>
+		<tr>
 			<td><b>TYPE.PAS</b></td>
 			<td>Cette commande permet d'afficher le contenu d'un fichier.</td>
 		</tr>
