@@ -293,6 +293,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>FREE.PAS</b></td>
 			<td>Cette commande permet de demander les ressources de disponible (style Linux) ou les statistiques d'un unite de disque (style 4DOS).</td>
 		</tr>
+	        <tr>
+			<td><b>FS.PAS</b></td>
+			<td>Cette commande permet d'afficher la taille d'un ou plusieurs fichiers. Cette commande est inspiré de la commande FS de Norton Utilities.</td>
+		</tr>	
  		<tr>
 			<td><b>GEODELTA.PAS</b></td>
 			<td>Cette commande permet de demander la distance entre deux villes, soit par coordonnée géographique, soit par son nom s'il est répertorié.</td>
