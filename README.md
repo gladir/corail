@@ -616,9 +616,8 @@ Aperçu de la commande NC (North Commander) :
 
 Aperçu de la commande VIEWHEX :
 
-![image](https://user-images.githubusercontent.com/11842176/123694681-a0523b80-d827-11eb-9314-14661688945d.png)
+![image](https://user-images.githubusercontent.com/11842176/164950448-9166138f-38e0-4c68-a5c3-a4465650db37.png)
 
-	
 	
 <h2>Compilation</h2>
 	
