@@ -6,6 +6,8 @@
 
 Program COMMAND;
 
+{$M 4096,0,0}
+
 Uses Crt,DOS;
 
 Const
