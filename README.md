@@ -353,6 +353,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher un fichier de la fin vers le début.</td>
 		</tr>
 		<tr>
+			<td><b>LOOK.PAS</b></td>
+			<td>Cette commande permet de rechercher les lignes commençant par un texte spécifié.</td>
+		</tr>
+		<tr>
 			<td><b>LP.PAS</b></td>
 			<td>Cette commande permet d'imprimer le contenu d'un fichier. Cette commande est équivalent de UNIX.</td>
 		</tr>	
