@@ -353,6 +353,9 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de demander des informations sur l'état du système d'exploitation. Cette commande est inspiré du AmigaDOS.</td>
 		</tr>
 		<tr>
+			<td><b>IPCONFIG.PAS</b></td>
+			<td>Cette commande permet d'afficher l'adresse IP de la machine local.</td>
+		<tr>
 			<td><b>LABEL.PAS</b></td>
 			<td>Cette commande permet de changer le nom d'un volume.</td>
 		</tr>
