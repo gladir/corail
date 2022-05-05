@@ -312,7 +312,11 @@ Voici la liste des différents fichiers proposés dans Corail :
  		<tr>
 			<td><b>GEODELTA.PAS</b></td>
 			<td>Cette commande permet de demander la distance entre deux villes, soit par coordonnée géographique, soit par son nom s'il est répertorié.</td>
-		</tr>	
+		</tr>
+		<tr>
+			<td><b>GETMAC.PAS</b></td>
+			<td>Cette commande permet d'afficher la liste des adresses MAC de la machine local.</td>
+		</tr>
 	        <tr>
 			<td><b>GRAFTABL.PAS</b></td>
 			<td>Cette commande permet d'effectuer le chargement en mémoire conventionnelle d'une table de police de caractères pour les modes graphiques.</td>
