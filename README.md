@@ -1,8 +1,34 @@
+![image](https://user-images.githubusercontent.com/11842176/166847697-f2f3d58e-a01c-4b06-bf4a-d1695587d424.png)
+
 <h2>Introduction</h2>
 
 Les logiciels contenu dans Corail sont une séries de logiciels autonomes écrit en Pascal et n'ayant pas de dépendances avec d'autres fichiers Pascal mais uniquement d'un compilateur, comme par exemple Free Pascal. Un grand nombre de se programmes sont également compilable sur Turbo Pascal.
 
 Le logiciel Corail offrent des interpréteurs de commandes avec la syntaxe du AmigaDOS, FLEX, OS-9, DR-DOS, MS-DOS, Unix, Linux, LDOS, TRSDOS, Prompt Pascal,... De plus, de nombreux utilitaires complémentaires sont fournit avec Corail, tel que des compilateurs, des interpréteurs de langage de programmation (BASIC,...),... et des outils de bas niveau.
+
+Aperçu de la commande AMIGADOS :
+
+![image](https://user-images.githubusercontent.com/11842176/160870008-c9f4ee94-e44f-435e-995e-d6e2bb6140d1.png)
+	
+Aperçu de la commande OS9 :
+
+![image](https://user-images.githubusercontent.com/11842176/160869302-3bc16cf6-ef68-4752-83a9-822abcf0ba89.png)
+
+Aperçu du clone de Lotus 1-2-3 :
+
+![image](https://user-images.githubusercontent.com/11842176/164950397-8700d0e1-c0fe-453f-b33d-76b45d877fa5.png)
+
+Aperçu du clone de CodeView :
+
+![image](https://user-images.githubusercontent.com/11842176/163688889-1e0d5988-d2b3-4e7b-afd1-3eda1f89c385.png)
+
+Aperçu de la commande NC (North Commander) :
+
+![image](https://user-images.githubusercontent.com/11842176/162598150-5dd1d97c-fb13-4943-a74e-bac731ee2f18.png)
+
+Aperçu de la commande VIEWHEX :
+
+![image](https://user-images.githubusercontent.com/11842176/164950448-9166138f-38e0-4c68-a5c3-a4465650db37.png)
 
 <h2>Liste des fichiers</h2>
 
@@ -621,31 +647,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	</table>
 	
-Aperçu de la commande AMIGADOS :
 
-![image](https://user-images.githubusercontent.com/11842176/160870008-c9f4ee94-e44f-435e-995e-d6e2bb6140d1.png)
-	
-Aperçu de la commande OS9 :
-
-![image](https://user-images.githubusercontent.com/11842176/160869302-3bc16cf6-ef68-4752-83a9-822abcf0ba89.png)
-
-Aperçu du clone de Lotus 1-2-3 :
-
-![image](https://user-images.githubusercontent.com/11842176/164950397-8700d0e1-c0fe-453f-b33d-76b45d877fa5.png)
-
-Aperçu du clone de CodeView :
-
-![image](https://user-images.githubusercontent.com/11842176/163688889-1e0d5988-d2b3-4e7b-afd1-3eda1f89c385.png)
-
-Aperçu de la commande NC (North Commander) :
-
-![image](https://user-images.githubusercontent.com/11842176/162598150-5dd1d97c-fb13-4943-a74e-bac731ee2f18.png)
-
-Aperçu de la commande VIEWHEX :
-
-![image](https://user-images.githubusercontent.com/11842176/164950448-9166138f-38e0-4c68-a5c3-a4465650db37.png)
-
-	
 <h2>Compilation</h2>
 	
 Les fichiers Pascal n'ont aucune dépendances, il suffit de télécharger le fichier désiré et de le compiler avec Free Pascal avec la commande  :
