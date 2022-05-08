@@ -404,7 +404,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>LINE.PAS</b></td>
-			<td>Cette commande permet d'effectuer la lecture d'une ligne.</td>
+			<td>Cette commande permet d'effectuer la lecture d'une ligne. Cette commande est inspiré de UNIX.</td>
 		</tr>
 		<tr>
 			<td><b>LOOK.PAS</b></td>
