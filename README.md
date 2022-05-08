@@ -393,6 +393,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>IPCONFIG.PAS</b></td>
 			<td>Cette commande permet d'afficher l'adresse IP de la machine local.</td>
+		</tr>
 		<tr>
 			<td><b>LABEL.PAS</b></td>
 			<td>Cette commande permet de changer le nom d'un volume.</td>
@@ -400,6 +401,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>LESS.PAS</b></td>
 			<td>Cette commande permet d'afficher un fichier de la fin vers le début.</td>
+		</tr>
+		<tr>
+			<td><b>LINE.PAS</b></td>
+			<td>Cette commande permet d'effectuer la lecture d'une ligne.</td>
 		</tr>
 		<tr>
 			<td><b>LOOK.PAS</b></td>
