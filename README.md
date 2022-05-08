@@ -407,6 +407,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effectuer la lecture d'une ligne. Cette commande est inspiré de UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>LOGNAME.PAS</b></td>
+			<td>Cette comamnde permet de demander le nom de connexion.</td>
+		</tr>
+		<tr>
 			<td><b>LOOK.PAS</b></td>
 			<td>Cette commande permet de rechercher les lignes commençant par un texte spécifié.</td>
 		</tr>
