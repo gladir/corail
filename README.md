@@ -308,6 +308,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de calculer le facteur d'un nombre. Cette commande est inspiré de la commande factor de UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>FALSE.PAS</b></td>
+			<td>Cette commande permet de retourner faux. Cette command est inspiré de UNIX et Linux.</td>
+		</tr>
+		<tr>
 			<td><b>FILE.PAS</b></td>
 			<td>Cette commande permet de demander le type de fichier. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
@@ -598,6 +602,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>TRSDOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande <a href="https://www.gladir.com/OS/TRSDOS/intro.htm">TRSDOS</a>.</td>
 		</tr>
+		<tr>
+			<td><b>TRUE.PAS</b></td>
+			<td>Cette commande permet de retourner vrai. Cette command est inspiré de UNIX et Linux.</td>
+		</tr>				
 		<tr>
 			<td><b>TRUENAME.PAS</b></td>
 			<td>Cette commande permet d'afficher le nom complet d'un unité, d'un répertoire ou d'un nom de fichier. Cette commande est inspiré de la commande TRUENAME non-documenté du MS-DOS.</td>
