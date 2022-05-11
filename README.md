@@ -143,6 +143,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>CHD.PAS</b></td>
 			<td>Cette commande permet de fixer ou demander le répertoire courant. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/OS9/build.htm">BUILD</a> de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
 		</tr>	
+		<tr>
+			<td><b>CHMOD.PAS</b></td>
+			<td>Cette commande permet de changer le mode des fichiers. Cette commande est inspiré de UNIX et Linux.</td>
+		</tr>
 	        <tr>
 			<td><b>CHOICE.PAS</b></td>
 			<td>Cette commande permet de faire une choix. Cette commande est un équivalent de la commande MS-DOS.</td>
