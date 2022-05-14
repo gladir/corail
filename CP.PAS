@@ -57,7 +57,7 @@ BEGIN
   End
    Else
   If(CurrParam='-h')or(CurrParam='--help')Then Begin
-   WriteLn('cp   Cette commande permet d''effacer la copie de fichier vers un autre emplacement.');
+   WriteLn('cp   Cette commande permet d''effectuer la copie de fichier vers un autre emplacement.');
    WriteLn;
    WriteLn('Syntaxe:');
    WriteLn;
