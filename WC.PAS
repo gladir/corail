@@ -6,7 +6,10 @@
 
 Program WC(Input,Output);
 
+Uses DOS;
+
 Var
+ Info:SearchRec;
  Target:(_None,_Line,_Byte,_Character,_Word);
  I:LongInt;
  FRead:Text;
@@ -34,7 +37,14 @@ BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('WC : Cette commande permet de compter le nombre de mots, de lignes, de caracteres.');
   WriteLn;
-  WriteLn('Syntaxe : WC [nomdufichier] [-l]');
+  WriteLn('Syntaxe : WC [nomdefichier(s)] [-l] [-c] [-w]');
+  WriteLn;
+  WriteLn(' --byte   Ce parametre permet de compter les octets');
+  WriteLn(' -c       Ce parametre permet de compter les octets');
+  WriteLn(' -C       Ce parametre permet de compter les caracteres');
+  WriteLn(' --chars  Ce parametre permet de compter les caracteres');
+  WriteLn(' -l       Ce parametre permet de compter les lignes');
+  WriteLn(' -w       Ce parametre permet de compter les mots (2 octets)');
  End
   Else
  Begin
@@ -49,37 +59,40 @@ BEGIN
   End;
   If Target=_None Then Begin
    WriteLn('Compteur ind‚fini');
+   Halt;
   End;
   If FileName<>''Then Begin
-   Assign(FRead,FileName);
-   Reset(FRead);
-   Case Target of
-    _Line:Begin
-     I:=0;
-     While Not EOF(FRead) do Begin
-      ReadLn(FRead,CurrLine);
-      Inc(I);
+   I:=0;
+   FindFirst(FileName,AnyFile,Info);
+   While DOSError=0 do Begin
+    If Info.Attr and Directory=0 Then Begin
+     Assign(FRead,Info.Name);
+     Reset(FRead);
+     Case Target of
+      _Line:Begin
+       While Not EOF(FRead) do Begin
+        ReadLn(FRead,CurrLine);
+        Inc(I);
+       End;
+      End;
+      _Byte,_Character:Begin
+       While Not EOF(FRead) do Begin
+        ReadLn(FRead,CurrLine);
+        Inc(I,Length(CurrLine)+2);
+       End;
+      End;
+      _Word:Begin
+       While Not EOF(FRead) do Begin
+        ReadLn(FRead,CurrLine);
+        Inc(I,WordCount(CurrLine));
+       End;
+      End;
      End;
-     WriteLn(I);
+     Close(FRead);
     End;
-    _Byte,_Character:Begin
-     I:=0;
-     While Not EOF(FRead) do Begin
-       ReadLn(FRead,CurrLine);
-       Inc(I,Length(CurrLine)+2);
-     End;
-     WriteLn(I);
-    End;
-    _Word:Begin
-     I:=0;
-     While Not EOF(FRead) do Begin
-      ReadLn(FRead,CurrLine);
-      Inc(I,WordCount(CurrLine));
-     End;
-     WriteLn(I);
-    End;
+    FindNext(Info);
    End;
-   Close(FRead);
+   WriteLn(I);
   End
    Else
   Begin
