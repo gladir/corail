@@ -471,6 +471,14 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de déplacer un fichier.</td>
 		</tr>
 		<tr>
+			<td><b>NC.PAS</b></td>
+			<td>Cette commande permet de lancer le North Commander, soit un clone du <a href="https://www.gladir.com/SOFTWARE/NC/presentation.htm">Norton Commander</a>.</td>
+		</tr>
+		<tr>
+			<td><b>NDOS.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande NDOS. Il s'agit d'un équivalent du NDOS du Norton Utilities.</td>
+		</tr>					
+		<tr>
 			<td><b>NORTON.PAS</b></td>
 			<td>Cette commande permet de lancer le menu Norton Utilities.</td>
 		</tr>
@@ -478,14 +486,6 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>NUMBER.PAS</b></td>
 			<td>Cette commande permet de retourner en texte un nombre. Similaire à la commande AIX.</td>
 		</tr>
-		<tr>
-			<td><b>NC.PAS</b></td>
-			<td>Cette commande permet de lancer le North Commander, soit un clone du <a href="https://www.gladir.com/SOFTWARE/NC/presentation.htm">Norton Commander</a>.</td>
-		</tr>
-		<tr>
-			<td><b>NDOS.PAS</b></td>
-			<td>Cette commande permet de lancer l'interpréteur de commande NDOS. Il s'agit d'un équivalent du NDOS du Norton Utilities.</td>
-		</tr>	
 		<tr>
 			<td><b>OD.PAS</b></td>
 			<td>Cette commande permet d'afficher le contenu d'un fichier selon un format spécifique. Cette commande est un équivalent de UNIX.</td>
