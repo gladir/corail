@@ -243,6 +243,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		    	<td><b>DISKCOPY.PAS</b></td>
 		    	<td>Cette commande permet de copier des disquettes ou des images.</td>
 		</tr>	
+	        <tr>
+			<td><b>DISKEDIT.PAS</b></td>
+			<td>Cette commadne permet de lancer l''editeur de disque.</td>
+		</tr>
 		<tr>
 		    	<td><b>DISKINFO.PAS</b></td>
 		    	<td>Cette commande permet d''afficher les informations sur une disquette ou un fichier d'image disque.</td>
@@ -465,6 +469,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>MV.PAS</b></td>
 			<td>Cette commande permet de déplacer un fichier.</td>
+		</tr>
+		<tr>
+			<td><b>NORTON.PAS</b></td>
+			<td>Cette commande permet de lancer le menu Norton Utilities.</td>
 		</tr>
 	        <tr>
 			<td><b>NUMBER.PAS</b></td>
