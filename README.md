@@ -678,6 +678,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>WHOAMI.PAS</b></td>
 			<td>Cette commande permet de retourner l'utilisateur connecté.</td>
 		</tr>
+		<tr>
+			<td><b>WHOIS.PAS</b></td>
+			<td>Cette commande permet de rechercher l'organisme associé avec un IP en se basant sur un dictionnaire locale hors ligne.</td>
+		</tr>
 	        <tr>
 			<td><b>WIPEINFO.PAS</b></td>
 			<td>Cette commande permet d'effacer totalement les données et le fichier.</td>
