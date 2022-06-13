@@ -6,6 +6,8 @@
 
 Program _4DOS;
 
+{$M 4096,0,16384}
+
 Uses Crt,DOS;
 
 Const
