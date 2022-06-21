@@ -663,6 +663,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de fixer ou de demander l'état du drapeau de vérification de lecture de secteur ou d'unité d'allocation du système d'exploitation ou de vérifier qu'un fichier existe. Cette commande est un mixte entre la commande MS-DOS et l'Apple DOS.</td>
 		</tr>
 		<tr>
+			<td><b>VI.PAS</b></td>
+			<td>Cette commande permet de lancer l'éditeur de texte VI.</td>
+		</tr>
+		<tr>
 			<td><b>VIEWASC.PAS</b></td>
 			<td>Cette commande permet de visualiser un fichier ASCII.</td>
 		</tr>
