@@ -268,6 +268,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effectuer la conversion des caractères de saut de ligne du système d'exploitation DOS en leur équivalent UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>DOSKEY.PAS</b></td>
+			<td>Cette commande permet de charger le programme DOSKEY.</td>
+		</tr>	
+		<tr>
 			<td><b>DRDOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande DR-DOS. Il s'agit d'un équivalent du COMMAND.COM du DR-DOS.</td>
 		</tr>
