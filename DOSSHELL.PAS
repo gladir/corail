@@ -10,6 +10,10 @@ Program DOSSHELL;
 
 Uses Crt,DOS;
 
+Const
+ MaxFiles=511;
+ FileYMax=7;
+
 Type
  ProgramRec=Record
   Command:String;
@@ -19,12 +23,23 @@ Type
   Next:Pointer;
  End;
 
+ StrName=String[12];
+
 Var
- CurrZone,MenuPos,MenuY:Byte;
+ FilePos,MenuPos:Integer;
+ MenuYMax:Byte;
+ CurrZone,MenuY,FileY:Byte;
  ShowASCII128:Boolean;
  FileManager:Boolean;
  ProgramList:^ProgramRec;
  ProgramCount:Integer;
+ Nom:Array[0..MaxFiles] of StrName;
+ Temps:Array[0..MaxFiles] of LongInt;
+ Taille:Array[0..MaxFiles] of LongInt;
+ Attribt:Array[0..MaxFiles] of Byte;
+ Accepte:Array[0..MaxFiles] of 0..1;
+ NombreFichierX:0..MaxFiles;
+ TypeTri:0..4;
 
 Function StrToUpper(S:String):String;
 Var
@@ -34,6 +49,23 @@ Begin
   If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
  End;
  StrToUpper:=S;
+End;
+
+Function PadRight(S:String;Space:Byte):String;
+Var
+ I:Byte;
+Begin
+ If Length(S)<Space Then For I:=Length(S)+1 to Space do S:=S+' ';
+ PadRight:=S;
+End;
+
+Function PadZeroLeft(Value:Integer;Space:Byte):String;
+Var
+ S:String;
+Begin
+ Str(Value,S);
+ While Length(S)<Space do S:='0'+S;
+ PadZeroLeft:=S;
 End;
 
 Function DuplicateString(C:Char;Num:Integer):String;
@@ -228,6 +260,191 @@ Begin
  End;
 End;
 
+Procedure ReadFiles(Chaine:PathStr;Attribut:Word);
+Var
+ Compteur,Position:Word;
+ OK:Boolean;
+ Ecart,I,J,K,M:LongInt;
+ Sortie:Boolean;
+ X:String[12];
+ XTaille:LongInt;
+ XAttribt:Byte;
+ XSeconde:0..59;
+ XMinute:0..59;
+ XHeure:0..23;
+ XJour:1..31;
+ XMois:1..12;
+ XAnnees:Word;
+ Date_TimeB:DateTime;
+ Palette:SearchRec;
+ Directory:DirStr;
+ FileName:NameStr;
+ Extension:ExtStr;
+ Erreur:Integer;
+
+ Procedure SousTri;
+ Var
+  Date_Time:DateTime;
+ Begin
+  UnpackTime(Temps[I],Date_Time);
+  UnPackTime(Temps[M],Date_TimeB);
+  X               := Nom[I];
+  XTaille         := Taille[I];
+  XAttribt        := Attribt[I];
+  XSeconde        := Date_Time.Sec;
+  XMinute         := Date_Time.Min;
+  XHeure          := Date_Time.Hour;
+  XJour           := Date_Time.Day;
+  XMois           := Date_Time.Month;
+  XAnnees  	  := Date_Time.Year;
+  Nom[I]     := Nom[M];
+  Taille[I]  := Taille[M];
+  Attribt[I] := Attribt[M];
+  Date_Time.Sec   := Date_TimeB.Sec;
+  Date_Time.Min   := Date_TimeB.Min;
+  Date_Time.Hour  := Date_TimeB.Hour;
+  Date_Time.Day   := Date_TimeB.Day;
+  Date_Time.Month := Date_TimeB.Month;
+  Date_Time.Year  := Date_TimeB.Year;
+  Nom[M]     := X;
+  Taille[M]  := XTaille;
+  Attribt[M] := XAttribt;
+  Date_TimeB.Sec  := XSeconde;
+  Date_TimeB.Min  := XMinute;
+  Date_TimeB.Hour := XHeure;
+  Date_TimeB.Day  := XJour;
+  Date_TimeB.Month:= XMois;
+  Date_TimeB.Year := XAnnees;
+  PackTime(Date_Time,Temps[I]);
+  PackTime(Date_TimeB,Temps[M]);
+  Dec(I,Ecart);
+ End;
+
+ Procedure SousInit;Begin
+  Ecart := Ecart div 2;
+  J     := 1;
+  K     := NombreFichierX - Ecart;
+ End;
+
+ Procedure TriNom;Begin
+  Ecart := NombreFichierX;
+  If(Ecart>3)Then
+  Repeat
+   SousInit;
+   Repeat
+    I      := J;
+    Sortie := False;
+    Repeat
+     M := I + Ecart;
+     If Nom[I] > Nom[M] Then SousTri
+		      	Else Sortie := True;
+    Until (I<1) or (Sortie = True);
+    Inc(J);
+   Until J>K;
+  Until Ecart = 1;
+ End;
+
+ Procedure TriExtension;Begin
+  Ecart := NombreFichierX;
+  If(Ecart>3)Then
+  Repeat
+   SousInit;
+   Repeat
+    I      := J;
+    Sortie := False;
+    Repeat
+     M := I + Ecart;
+     If(Copy(Nom[I],10,3)+Copy(Nom[I],1,8) >
+	Copy(Nom[M],10,3)+Copy(Nom[M],1,8))Then
+     SousTri Else Sortie := True;
+    Until (I<1) or (Sortie = True);
+    Inc(J);
+   Until J>K;
+  Until Ecart = 1;
+ End;
+
+ Procedure TriHeure;Begin
+  Ecart := NombreFichierX;
+  If(Ecart>3)Then
+  Repeat
+   SousInit;
+   Repeat
+    I      := J;
+    Sortie := False;
+    Repeat
+     M := I + Ecart;
+     If(Temps[I]>Temps[M])Then
+      SousTri
+      Else
+     Sortie := True;
+    Until (I<1) or (Sortie = True);
+    Inc(J);
+   Until J>K;
+  Until Ecart = 1;
+ End;
+
+ Procedure TriTaille;Begin
+  Ecart := NombreFichierX;
+  If(Ecart>3)Then
+  Repeat
+   SousInit;
+   Repeat
+    I      := J;
+    Sortie := False;
+    Repeat
+     M := I + Ecart;
+     If Taille[I] > Taille[M] Then SousTri
+					Else Sortie := True;
+    Until (I<1) or (Sortie = True);
+    Inc(J);
+   Until J>K;
+  Until Ecart = 1;
+ End;
+
+Begin
+ Position:=0;
+ FindFirst(Chaine,$FFF7,Palette);
+ Erreur:=DOSERROR;
+ While Erreur = 0 do Begin
+  If((Palette.Name<>'.')and(Erreur=0))and(Palette.Attr and 16=0)Then Begin
+   Accepte[Position] := 0;
+   Attribt[Position] := Palette.Attr and 22;
+   Temps[Position]   := Palette.Time;
+   Taille[Position]  := Palette.Size;
+   If Length(Palette.Name)>12Then Begin
+    Nom[Position] := Copy(Palette.Name,1,12);
+   End
+    Else
+   Nom[Position] := Palette.Name;
+   If(Attribt[Position]<>16)Then Begin
+    FSplit(Palette.Name,Directory,FileName,Extension);
+    Repeat
+     FileName := FileName + ' ';
+    Until (Length(FileName)>=8);
+    Nom[Position] := Filename + Extension;
+   End
+    else
+   If(Attribt[Position]=16)Then Begin
+    Nom[Position] := #1 + Nom[Position];
+   End;
+   Inc(Position);
+  End;
+  If Position>=MaxFiles Then Break;
+  FindNext(Palette);
+  Erreur:=DOSERROR;
+ End;
+ NombreFichierX := Position - 1;
+ Case TypeTri of
+  0 : TriNom;
+  1 : TriExtension;
+  2 : TriHeure;
+  3 : TriTaille;
+ End;
+ For Compteur:=1 to NombreFichierX do Begin
+  If(Copy(Nom[Compteur],1,1)<#32)Then Nom[Compteur]:=Copy(Nom[Compteur],2,11);
+ End;
+End;
+
 Procedure ShowTitle;Begin
  Box(1,1,80,1,$1F);
  GotoXY(30,1);
@@ -310,10 +527,50 @@ Begin
  Write('Arbre de repertoire');
 End;
 
+Procedure ShowFileLine(Y:Byte;Line:Word;Selected:Boolean);
+Var
+ Date_Time:DateTime;
+Begin
+ TextColor(0);
+ TextBackground(7);
+ GotoXY(42,7+Y);
+ If(Selected)Then Begin
+  If CurrZone=2Then Write(' ',#26)
+               Else Write(' ':2);
+  Write(' ',#16,' ');
+ End
+  Else
+ Write(' ':5);
+ If(Selected)Then Begin
+  TextColor($F);
+   If CurrZone=2Then TextBackground(1)
+                Else TextBackground(0);
+ End;
+ Write(PadRight(Nom[Line],12));
+ If(Attribt[Line]<>16)Then Write(Taille[Line]:10) Else
+ If(Attribt[Line]=16)Then Begin
+  If(Nom[Line]='..')Then Write(PadRight(' SOUS-REP',10))
+                    Else Write(PadRight(' SUR-REP',10));
+ End;
+ UnPackTime(Temps[Line],Date_Time);
+ Write(' ':2,Date_Time.Day:2,'/',
+       PadZeroLeft(Date_Time.Month,2),'/',
+       PadZeroLeft(Date_Time.Year mod 100,2));
+End;
+
+Procedure SelectFile;Begin
+ ShowFileLine(FileY,FilePos,True);
+End;
+
+Procedure UnselectFile;Begin
+ ShowFileLine(FileY,FilePos,False);
+End;
+
 Procedure ShowFilesPanel;
 Var
  Path:String;
  ColorState:Byte;
+ I:Integer;
 Begin
  If CurrZone=2Then ColorState:=$1F
               Else ColorState:=$60;
@@ -325,6 +582,9 @@ Begin
  Path:=Copy(Path,1,36)+'*.*';
  GotoXY(60-(Length(Path) shr 1),6);
  Write(Path);
+ TextColor(0);
+ TextBackground($7);
+ For I:=0 to 7 do ShowFileLine(I,FilePos-FileY+I,I=FilePos);
 End;
 
 Procedure ShowMainPanel;
@@ -350,6 +610,8 @@ Begin
  If CurrProgram<>NIL Then Repeat
   If CurrZone=3 Then Begin
    If YP=MenuY Then Begin
+    GotoXY(2,Y);
+    Write(#26);
     TextColor($F);
     TextBackground(1);
    End
@@ -377,6 +639,8 @@ Begin
  StartY:=16;
  If Not(FileManager)Then StartY:=3;
  Y:=StartY+1+MenuY;
+ GotoXY(2,Y);
+ Write(#26);
  TextColor($F);
  TextBackground(1);
  GotoXY(6,Y);
@@ -432,13 +696,20 @@ Begin
  Write('Liste de tache active');
 End;
 
-Procedure RefreshAll;Begin
+Procedure RefreshAll;
+Var
+ Path:String;
+Begin
  ShowTitle;
  ShowMenu;
  If(FileManager)Then Begin
   ShowPath;
   ShowDrive;
   ShowDirectoryTreePanel;
+  GetDir(0,Path);
+  If Path[Length(Path)]<>'\'Then Path:=Path+'\';
+  Path:=Path+'*.*';
+  ReadFiles(Path,ReadOnly+Hidden+SysFile+Archive);
   ShowFilesPanel;
  End;
  ShowMainPanel;
@@ -447,6 +718,9 @@ Procedure RefreshAll;Begin
 End;
 
 Procedure Init;Begin
+ MenuYMax:=7;
+ FilePos:=0;
+ FileY:=0;
  MenuPos:=0;
  MenuY:=0;
  CurrZone:=3;
@@ -469,8 +743,12 @@ Begin
   Case K of
    #9:Begin { Tab }
     OldZone:=CurrZone;
-    If CurrZone=4 Then CurrZone:=1
-                  Else CurrZone:=CurrZone+1;
+    If CurrZone=4 Then Begin
+     If(FileManager)Then CurrZone:=1
+                    Else CurrZone:=3;
+    End
+     Else
+    CurrZone:=CurrZone+1;
     Case OldZone of
      1:ShowDirectoryTreePanel;
      2:ShowFilesPanel;
@@ -486,6 +764,16 @@ Begin
    End;
    #13:Begin { Enter }
     Case CurrZone of
+     2:Begin
+      TextColor(7);
+      TextBackground(0);
+      ClrScr;
+      Exec(Trim(Copy(Nom[FilePos],1,8))+Trim(Copy(Nom[FilePos],9,4)),'');
+      GotoXY(1,25);
+      Write('Presse une touche pour retourner...');
+      ReadKey;
+      RefreshAll;
+     End;
      3:Begin
       CurrProgram:=ProgramList;
       If MenuPos>0 Then Begin
@@ -509,6 +797,18 @@ Begin
     Case K of
      #72:Begin { Up }
       Case CurrZone of
+       2:If FilePos>0 Then Begin
+        UnselectFile;
+        Dec(FilePos);
+        If FileY>0Then Dec(FileY)
+         Else
+        Begin
+         Window(42,7,79,14);
+         InsLine;
+         Window(1,1,80,25);
+        End;
+        SelectFile;
+       End;
        3:If MenuPos>0 Then Begin
         UnselectProgram;
         Dec(MenuPos);
@@ -519,13 +819,32 @@ Begin
      End;
      #80:Begin { Down }
       Case CurrZone of
+       2:If FilePos<NombreFichierX-1 Then Begin
+        UnselectFile;
+        Inc(FilePos);
+        If FileY<FileYMax Then Inc(FileY)
+         Else
+        Begin
+         Window(42,7,79,14);
+         DelLine;
+         Window(1,1,80,25);
+        End;
+        SelectFile;
+       End;
        3:If MenuPos<ProgramCount-1 Then Begin
         UnselectProgram;
         Inc(MenuPos);
-        Inc(MenuY);
+        If(MenuY<MenuYMax)Then Inc(MenuY);
         SelectProgram;
        End;
       End;
+     End;
+     #92:Begin { Shift+F9 }
+      TextColor(7);
+      TextBackground(0);
+      ClrScr;
+      Exec(GetEnv('COMSPEC'),'');
+      RefreshAll;
      End;
     End;
    End;
