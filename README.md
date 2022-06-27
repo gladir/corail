@@ -67,6 +67,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>ASC2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source Pascal.</td>
 		</tr>
+	        <tr>
+			<td><b>ASCII.PAS</b></td>
+			<td>Cette commande permet d'afficvher la table ASCII de la console.</td>
+		</tr>
 		<tr>
 			<td><b>ASM6502.PAS</b></td>
 			<td>Cette commande permet de lancer le compilateur de langage de programmation assembleur pour les microprocesseur 6502.</td>
