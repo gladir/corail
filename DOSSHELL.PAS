@@ -23,6 +23,8 @@ Type
   Next:Pointer;
  End;
 
+ PProgramRec=^ProgramRec;
+
  StrName=String[12];
 
 Var
@@ -31,7 +33,7 @@ Var
  CurrZone,MenuY,FileY:Byte;
  ShowASCII128:Boolean;
  FileManager:Boolean;
- ProgramList:^ProgramRec;
+ ProgramList:PProgramRec;
  ProgramCount:Integer;
  Nom:Array[0..MaxFiles] of StrName;
  Temps:Array[0..MaxFiles] of LongInt;
@@ -168,8 +170,8 @@ End;
 
 Function AddProgramList:Pointer;
 Var
- P:^ProgramRec;
- CurrProgram:^ProgramRec;
+ P:PProgramRec;
+ CurrProgram:PProgramRec;
 Begin
  AddProgramList:=NIL;
  GetMem(P,SizeOf(ProgramRec));
@@ -197,7 +199,7 @@ Var
  CurrLine,CurrWord,ResultValue:String;
  I:Integer;
  CurrProgram:ProgramRec;
- CurrPProgram:^ProgramRec;
+ CurrPProgram:PProgramRec;
 Begin
  {$I-}Assign(FileIni,'DOSSHELL.INI');
  Reset(FileIni);{$I+}
@@ -660,7 +662,7 @@ End;
 Procedure ShowMainPanel;
 Var
  StartY,Y,YP:Byte;
- CurrProgram:^ProgramRec;
+ CurrProgram:PProgramRec;
  ColorState:Byte;
 Begin
  If CurrZone=3Then ColorState:=$1F
@@ -704,7 +706,7 @@ Procedure SelectProgram;
 Var
  StartY,Y:Byte;
  I:Integer;
- CurrProgram:^ProgramRec;
+ CurrProgram:PProgramRec;
 Begin
  StartY:=16;
  If Not(FileManager)Then StartY:=3;
@@ -730,7 +732,7 @@ Procedure UnselectProgram;
 Var
  StartY,Y:Byte;
  I:Integer;
- CurrProgram:^ProgramRec;
+ CurrProgram:PProgramRec;
 Begin
  StartY:=16;
  If Not(FileManager)Then StartY:=3;
@@ -809,7 +811,7 @@ Procedure Run;
 Var
  K:Char;
  OldZone:Byte;
- CurrProgram:^ProgramRec;
+ CurrProgram:PProgramRec;
  I:Integer;
 Begin
  Repeat
