@@ -105,6 +105,14 @@ Function Trim(S:String):String;Begin
  Trim:=TrimL(TrimR(S));
 End;
 
+Function GetCurrentDisk:Char;
+Var
+ CurrentDir:String;
+Begin
+ GetDir(0,CurrentDir);
+ GetCurrentDisk:=CurrentDir[1];
+End;
+
 Procedure Box(X1,Y1,X2,Y2,Couleur:Byte);Begin
  Window(X1,Y1,X2,Y2);
  TextBackground((Couleur shr 4)and 15);
@@ -479,22 +487,81 @@ Begin
  ClrEol;
 End;
 
-Procedure ShowDrive;
+Procedure RefreshDrive;
 Var
- I:Char;
+ CurrDrive,I:Char;
 Begin
- Box(1,4,80,5,$70);
  TextColor(0);
  TextBackground(7);
  GotoXY(1,4);
  Write(' ');
+ CurrDrive:=GetCurrentDisk;
  For I:='A' to 'Z'do Begin
   If(DiskSize(1+Ord(I)-Ord('A'))<>-1)Then Begin
+   If CurrDrive=I Then Begin
+    TextColor($F);
+    If CurrZone=0 Then TextBackground(1)
+                  Else TextBackground(0);
+   End
+    Else
+   Begin
+    TextColor(0);
+    TextBackground(7);
+   End;
    Write('[',I,':]');
+   TextColor(0);
+   TextBackground(7);
    Write('  ');
   End;
  End;
  ClrEol;
+End;
+
+Function PreviousDrive:Boolean;
+Var
+ LastDrive,CurrDrive,I:Char;
+Begin
+ PreviousDrive:=False;
+ CurrDrive:=GetCurrentDisk;
+ LastDrive:='@';
+ For I:='A' to 'Z'do Begin
+  If(DiskSize(1+Ord(I)-Ord('A'))<>-1)Then Begin
+   If CurrDrive=I Then Begin
+    If LastDrive='@'Then Exit;
+    ChDir(LastDrive+':');
+    PreviousDrive:=True;
+    Exit;
+   End
+    Else
+   LastDrive:=I;
+  End;
+ End;
+End;
+
+Function NextDrive:Boolean;
+Var
+ CurrDrive,I:Char;
+ FindCurr:Boolean;
+Begin
+ NextDrive:=False;
+ FindCurr:=False;
+ CurrDrive:=GetCurrentDisk;
+ For I:='A' to 'Z'do Begin
+  If(DiskSize(1+Ord(I)-Ord('A'))<>-1)Then Begin
+   If FindCurr Then Begin
+    ChDir(I+':');
+    NextDrive:=True;
+    Exit;
+   End
+    Else
+   If CurrDrive=I Then FindCurr:=True;
+  End;
+ End;
+End;
+
+Procedure ShowDrive;Begin
+ Box(1,4,80,5,$70);
+ RefreshDrive;
 End;
 
 Procedure ShowFunctionKey;
@@ -584,7 +651,10 @@ Begin
  Write(Path);
  TextColor(0);
  TextBackground($7);
- For I:=0 to 7 do ShowFileLine(I,FilePos-FileY+I,I=FilePos);
+ For I:=0 to 7 do Begin
+  ShowFileLine(I,FilePos-FileY+I,I=FilePos);
+  If I>NombreFichierX-1 Then Break;
+ End;
 End;
 
 Procedure ShowMainPanel;
@@ -696,21 +766,25 @@ Begin
  Write('Liste de tache active');
 End;
 
-Procedure RefreshAll;
+Procedure UpdateFiles;
 Var
  Path:String;
 Begin
+ GetDir(0,Path);
+ If Path[Length(Path)]<>'\'Then Path:=Path+'\';
+ Path:=Path+'*.*';
+ ReadFiles(Path,ReadOnly+Hidden+SysFile+Archive);
+ ShowFilesPanel;
+End;
+
+Procedure RefreshAll;Begin
  ShowTitle;
  ShowMenu;
  If(FileManager)Then Begin
   ShowPath;
   ShowDrive;
   ShowDirectoryTreePanel;
-  GetDir(0,Path);
-  If Path[Length(Path)]<>'\'Then Path:=Path+'\';
-  Path:=Path+'*.*';
-  ReadFiles(Path,ReadOnly+Hidden+SysFile+Archive);
-  ShowFilesPanel;
+  UpdateFiles;
  End;
  ShowMainPanel;
  ShowActiveTaskListPanel;
@@ -744,18 +818,20 @@ Begin
    #9:Begin { Tab }
     OldZone:=CurrZone;
     If CurrZone=4 Then Begin
-     If(FileManager)Then CurrZone:=1
+     If(FileManager)Then CurrZone:=0
                     Else CurrZone:=3;
     End
      Else
     CurrZone:=CurrZone+1;
     Case OldZone of
+     0:ShowDrive;
      1:ShowDirectoryTreePanel;
      2:ShowFilesPanel;
      3:ShowMainPanel;
      4:ShowActiveTaskListPanel;
     End;
     Case CurrZone of
+     0:ShowDrive;
      1:ShowDirectoryTreePanel;
      2:ShowFilesPanel;
      3:ShowMainPanel;
@@ -814,6 +890,22 @@ Begin
         Dec(MenuPos);
         If MenuY>0Then Dec(MenuY);
         SelectProgram;
+       End;
+      End;
+     End;
+     #75:Begin { Left }
+      Case CurrZone of
+       0:Begin
+        If PreviousDrive Then UpdateFiles;
+        RefreshDrive;
+       End;
+      End;
+     End;
+     #77:Begin { Right }
+      Case CurrZone of
+       0:Begin
+        If NextDrive Then UpdateFiles;
+        RefreshDrive;
        End;
       End;
      End;
