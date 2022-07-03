@@ -466,8 +466,37 @@ Procedure FORMATCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure FREECommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure FREECommand;
+Var
+ LabelName,FirstParam:String;
+ I:Integer;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  WriteLn('FREE  Cette commande permet d''afficher l''espace de libre ',
+                 'sur les unites.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('FREE [/?]');
+ End
+  Else
+ Begin
+  For I:=0 to 3 do Begin
+   If DiskSize(I+1)=-1Then Begin
+    WriteLn('Disque :',I,'  [Pas disque]');
+   End
+    Else
+   Begin
+    Write('Disque :',I,'  ');
+    LabelName:=GetDiskLabel(I+1);
+    If LabelName=''Then Write('PAS NOM ')
+                   Else Write(LabelName:8);
+    Write('  Espace libre = ',(DiskFree(I+1)/1024):0:2,'K/  ',(DiskSize(I+1)/1024):0:2,'K');
+    WriteLn;
+   End;
+  End;
+ End;
 End;
 
 Procedure KILLCommand;Begin
