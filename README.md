@@ -276,6 +276,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de charger le programme DOSKEY.</td>
 		</tr>	
 		<tr>
+			<td><b>DOSSHELL.PAS</b></td>
+			<td>Cette commande permet de lancer un clone du MS-DOS Shell.</td>
+		</tr>	
+		<tr>
 			<td><b>DRDOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande DR-DOS. Il s'agit d'un équivalent du COMMAND.COM du DR-DOS.</td>
 		</tr>
