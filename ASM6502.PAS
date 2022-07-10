@@ -1,3 +1,9 @@
+{ @author: Sylvain Maltais (support@gladir.com)
+  @created: 2022
+  @website(https://www.gladir.com/corail)
+  @abstract(Target: Turbo Pascal, Free Pascal)
+}
+
 Program ASM6502;
 
 {$R-}
@@ -1450,7 +1456,8 @@ Begin
 End;
 
 BEGIN
- If GetOptions(cl_SrcName,cl_ListName,cl_ObjName,cl_BinName,cl_Err)Then Begin
+ If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')or
+   GetOptions(cl_SrcName,cl_ListName,cl_ObjName,cl_BinName,cl_Err)Then Begin
   WriteLn('ASM6502 : Cette commande permet de compiler un code source assembleur 6502.');
   WriteLn;
   WriteLn('Syntaxe: ASM6502 [options] src [options]');
