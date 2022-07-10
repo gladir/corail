@@ -276,6 +276,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de charger le programme DOSKEY.</td>
 		</tr>	
 		<tr>
+			<td><b>DOSSHELL.PAS</b></td>
+			<td>Cette commande permet de lancer un clone du MS-DOS Shell.</td>
+		</tr>	
+		<tr>
 			<td><b>DRDOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande DR-DOS. Il s'agit d'un équivalent du COMMAND.COM du DR-DOS.</td>
 		</tr>
@@ -554,6 +558,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		       <td><b>RUN6502.PAS</b></td>
 		       <td>Cette commande permet d'exécuter du code machine du microprocesseur 6502.</td>
 		</tr>
+	       	<tr>
+		       <td><b>RUNZ80.PAS</b></td>
+		       <td>Cette commande permet d'exécuter du code machine du microprocesseur Z80.</td>
+		</tr>		
 	        <tr>
 			<td><b>SD.PAS</b></td>
 			<td>Cette commande permet d'imprimer le contenu de l'écran. Cette commande est inspiré du logiciel <a href="https://www.gladir.com/SOFTWARE/KIX/presentation.htm">KIX</a> de Kyan Software pour Apple II.</td>
