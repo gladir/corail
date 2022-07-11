@@ -135,6 +135,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>C40.PAS</b></td>
 			<td>Cette commande permet de passer en écran de texte de 40 colonnes.</td>
 		</tr>
+		<tr>
+			<td><b>C64.PAS</b></td>
+			<td>Cette commande permet de lancer un clone de l'interpréteur de BASIC du Commodore 64.</td>
+		</tr>
 	        <tr>
 			<td><b>C80.PAS</b></td>
 			<td>Cette commande permet de passer en écran de texte de 80 colonnes.</td>
