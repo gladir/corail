@@ -1329,6 +1329,7 @@ End;
 
 Function WidthCommand:Boolean;
 Var
+ OldTextAttr:Byte;
  Width:Real;
 Begin
  WidthCommand:=True;
@@ -1347,14 +1348,20 @@ Begin
    ClrScr;
   End;
   40:Begin
+   OldTextAttr:=TextAttr;
    CurrWidth:=40;
    TextMode(C40);
+   TextColor(OldTextAttr and$F);
+   TextBackground(OldTextATtr shr 4);
    Window(1,1,40,24);
    ClrScr;
   End;
   80:Begin
+   OldTextAttr:=TextAttr;
    CurrWidth:=80;
    TextMode(C80);
+   TextColor(OldTextAttr and$F);
+   TextBackground(OldTextAttr shr 4);
    Window(1,1,80,24);
    ClrScr;
   End;
