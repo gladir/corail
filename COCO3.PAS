@@ -6,7 +6,7 @@
 
 Program COCO3;
 
-Uses Crt,DOS;
+Uses Crt,DOS,Printer;
 
 Const
  CommandList:Array[0..84]of String[12]=(
@@ -60,7 +60,7 @@ Var
  CurrLinePtr,NumberLine:Integer;
  CurrNumberLine:Integer;
  VarList:Array[1..MaxVariable]of VarPointer;
- NumberVariable:Integer;
+ I,NumberVariable:Integer;
 
 Function RunBasic(InList:Boolean):Boolean;Forward;
 Procedure NewCommand;Forward;
@@ -817,6 +817,10 @@ Begin
        End;
       End;
       Break;
+     End
+      Else
+     Begin { Variable vide }
+      Value:='0';
      End;
     End;
    End;
@@ -1149,6 +1153,15 @@ Begin
  End;
 End;
 
+Procedure LListCommand;
+Var
+ I:Integer;
+Begin
+ If NumberLine>0Then Begin
+  For I:=1 to NumberLine do WriteLn(Lst,PA[I]^);
+ End;
+End;
+
 Procedure LoadCommand;
 Var
  FileLoad:Text;
@@ -1182,6 +1195,24 @@ Begin
  WriteLn('Chaine de caractŠres attendu');
 End;
 
+Procedure LocateCommand;
+Var
+ X,Y:Real;
+Begin
+ X:=GetNumberValue(1);
+ If GetSeparator=','Then Begin
+  Inc(CurrPos);
+  Y:=GetNumberValue(1);
+  If(X>80.0)or(X<0.0)Then Begin
+   WriteLn('?FC ERROR');
+   Exit;
+  End;
+  GotoXY(Trunc(X),Trunc(Y));
+ End
+  Else
+ WriteLn('?SN ERROR');
+End;
+
 Procedure MkDirCommand;
 Var
  Error:Word;
@@ -1203,19 +1234,45 @@ End;
 
 Procedure PrintCommand;
 Var
- R:Real;
+ Pos,R:Real;
 Begin
- If GetSeparator='"'Then Begin
-  WriteLn(GetStringValue);
+ If GetSeparator='@'Then Begin
+  Inc(CurrPos);
+  Pos:=GetNumberValue(1);
+  If GetSeparator=','Then Begin
+   Inc(CurrPos);
+   GotoXY(Trunc(Pos)mod CurrWidth,1+(Trunc(Pos) div CurrWidth));
+   If GetSeparator='"'Then Begin
+    WriteLn(GetStringValue);
+   End
+    Else
+   Begin
+    If CurrPos>Length(CurrLine)Then WriteLn
+     Else
+    Begin
+     R:=GetNumberValue(1);
+     If Frac(R)=0.0Then WriteLn(R:0:0)
+                   Else WriteLn(R);
+    End;
+   End;
+  End
+   Else
+  WriteLn('?SN ERROR');
  End
   Else
  Begin
-  If CurrPos>Length(CurrLine)Then WriteLn
+  If GetSeparator='"'Then Begin
+   WriteLn(GetStringValue);
+  End
    Else
   Begin
-   R:=GetNumberValue(1);
-   If Frac(R)=0.0Then WriteLn(R:0:0)
-                 Else WriteLn(R);
+   If CurrPos>Length(CurrLine)Then WriteLn
+    Else
+   Begin
+    R:=GetNumberValue(1);
+    If Frac(R)=0.0Then WriteLn(R:0:0)
+                  Else WriteLn(R);
+   End;
   End;
  End;
 End;
@@ -1446,9 +1503,9 @@ Begin
    43:NoImplementation:=True;{LET}
    44:NoImplementation:=True;{LINE}
    45:ListCommand;{LIST}
-   46:NoImplementation:=True;{LLIST}
+   46:LListCommand;{LLIST}
    47:LoadCommand;{LOAD}
-   48:NoImplementation:=True;{LOCATE}
+   48:LocateCommand;{LOCATE}
    49:NoImplementation:=True;{LPOKE}
    50:NoImplementation:=True;{MOTOR}
    51:NewCommand;{NEW}
@@ -1468,7 +1525,10 @@ Begin
    65:NoImplementation:=True;{PUT}
    66:NoImplementation:=True;{RANDOMIZE}
    67:NoImplementation:=True;{READ}
-   68:Exit;{REM}
+   68:Begin
+    RunBasic:=True;
+    Exit;{REM}
+   End;
    69:NoImplementation:=True;{RENUM}
    70:NoImplementation:=True;{RESET}
    71:NoImplementation:=True;{RESTORE}
@@ -1479,7 +1539,7 @@ Begin
    76:NoImplementation:=True;{SET}
    77:NoImplementation:=True;{SKIPF}
    78:SoundCommand;{SOUND}
-   79:NoImplementation:=True;{STOP}
+   79:Exit;{STOP}
    80:Begin {SYSTEM}
     Terminated:=True;
     Exit;
@@ -1537,22 +1597,37 @@ Begin
 End;
 
 BEGIN
- FileName:='';
- Tron:=False;
- NumberLine:=0;CurrNumberLine:=0;
- NumberVariable:=0;
- HomeMessage;
- Terminated:=False;
- Repeat
-  WriteLn('OK');
-  ReadLn(CurrLine);
-  CurrLine:=LTrim(CurrLine);
-  RunBasic(False);
- Until Terminated;
- TextMode(CO80);
- Window(1,1,80,25);
- TextBackground(0);
- TextColor(7);
- ClrScr;
+ If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
+  WriteLn('COCO3 : Cette commande permet de lancer l''interpreteur de BASIC.');
+  WriteLn;
+  WriteLn('Syntaxe : COCO3 [fichier]');
+ End
+  Else
+ Begin
+  FileName:='';
+  Tron:=False;
+  NumberLine:=0;CurrNumberLine:=0;
+  NumberVariable:=0;
+  For I:=1 to ParamCount do Begin
+   FileName:=ParamStr(I);
+  End;
+  HomeMessage;
+  If FileName<>''Then Begin
+   CurrLine:='LOAD "'+FileName+'":RUN';
+   RunBasic(False);
+  End;
+  Terminated:=False;
+  Repeat
+   WriteLn('OK');
+   ReadLn(CurrLine);
+   CurrLine:=LTrim(CurrLine);
+   RunBasic(False);
+  Until Terminated;
+  TextMode(CO80);
+  Window(1,1,80,25);
+  TextBackground(0);
+  TextColor(7);
+  ClrScr;
+ End;
 END.
 
