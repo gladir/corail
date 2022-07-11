@@ -4,23 +4,23 @@
   @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
-Program BASIC;
+Program COCO3;
 
 Uses Crt,DOS;
 
 Const
- CommandList:Array[0..91]of String[12]=(
-  'AND','AUTO','BEEP','BLOAD','BSAVE','CALL','CAT','CHAIN','CHDIR',
-  'CIRCLE','CLEAR','CLOSE','CLR','CLS','COLOR','COM','COMMON','CONT',
-  'DATA','DEF','DELETE','DIM','DRAW','EDIT','ELSE','END','ERASE','ERROR',
-  'FIELD','FILES','FOR','GET','GOSUB','GOTO','HELP','IF','INPUT','KEY',
-  'KILL','LET','LINE','LIST','LLIST','LOAD','LOCATE','LPRINT',
-  'LSET','MERGE','MKDIR','NAME','NEW','NEXT','ON','OPEN','OPTION',
-  'OR','OUT','PAINT','PALETTE','POKE','PLAY','PRESET','PRINT',
-  'PSET','PUT','RANDOMIZE','READ','REM','RENUM','RESET','RESUME',
-  'RESTORE','RETURN','RMDIR','RSET','RUN','SAVE','SCREEN','SHELL','SLEEP',
-  'STOP','SYSTEM','THEN','TROFF','TRON','VIEW','WAIT','WEND','WHILE',
-  'WIDTH','WINDOW','WRITE'
+ CommandList:Array[0..84]of String[12]=(
+  'AND','ATTR','AUDIO','CIRCLE','CLEAR','CLOAD','CLOADM','CLOSE','CLS',
+  'COLOR','CONT','CSAVE','CSAVEM','DATA','DEF','DEFUSR','DEL','DIM',
+  'DRAW','EDIT','ELSE','END','EXEC','FOR','GET','GOSUB','GOTO',
+  'HELP','HBUFF','HCIRCLE','HCLS','HCOLOR','HDRAW','HGET',
+  'HLINE','HPAINT','HPRINT','HPUT','HRESET','HSCREEN','HSET','IF',
+  'INPUT','LET','LINE','LIST','LLIST','LOAD','LOCATE','LPOKE','MOTOR',
+  'NEW','NEXT','ON','OPEN','PAINT','PALETTE','PCLEAR','PCLS',
+  'PLAY','PMODE','POKE','PRESET','PRINT','PSET','PUT','RANDOMIZE',
+  'READ','REM','RENUM','RESET','RESTORE','RETURN','RUN','SAVE','SCREEN',
+  'SET','SKIPF','SOUND','STOP','SYSTEM','THEN','TROFF','TRON',
+  'WIDTH'
  );
 
  FunctionList:Array[0..53]of String[12]=(
@@ -52,6 +52,7 @@ Type
 
 Var
  Terminated,Tron:Boolean;
+ CurrWidth:Byte;
  CurrCommand:String;
  FileName,CurrLine:String;
  CurrPos:Byte;
@@ -134,8 +135,20 @@ Function GetErrorMessage(Code:Word):String;Begin
 End;
 
 Procedure HomeMessage;Begin
+ CurrWidth:=32;
+ TextMode(CO40);
+ Window(1,1,40,25);
+ TextBackground(0);
+ TextColor($F);
  ClrScr;
- WriteLn('Corail BASIC 2022 tous droits reserves Gladir.com');
+ Window(1+4,1+4,32+4,16+4);
+ TextBackground($2);
+ TextColor(0);
+ ClrScr;
+ WriteLn('EXTENDED COLOR BASIC 2.0');
+ WriteLn('CORP. 2021, 2022 PAR GLADIR.COM');
+ WriteLn('SOUS LICENCE MIT DE GLADIR.COM');
+ WriteLn('ET SYLVAIN MALTAIS');
 End;
 
 Function ExtractCommand:Byte;
@@ -920,6 +933,26 @@ Begin
 End;
 
  { Traitement des commandes }
+Procedure AttrCommand;
+Var
+ Foreground,Background:Real;
+Begin
+ Background:=GetNumberValue(1);
+ TextBackground(Trunc(Background));
+ If GetSeparator=','Then Begin
+  Inc(CurrPos);
+  Foreground:=GetNumberValue(1);
+  If GetSeparator=','Then Begin
+   Inc(CurrPos);
+   If UpCase(CurrLine[CurrPos])='B'Then Begin
+    Inc(CurrPos);
+    Foreground:=Foreground+Blink;
+   End;
+  End;
+  TextColor(Trunc(Foreground));
+ End;
+End;
+
 Procedure BeepCommand;Begin
  Sound(1550);
  Delay(182);
@@ -986,7 +1019,10 @@ Procedure HelpCommand;
 Var
  I:Byte;
 Begin
- For I:=Low(CommandList) to High(CommandList) do Write(PadRight(CommandList[I],10));
+ For I:=Low(CommandList) to High(CommandList) do Begin
+  If CurrWidth=32 Then Write(PadRight(CommandList[I],16))
+                  Else Write(PadRight(CommandList[I],10));
+ End;
  WriteLn;
 End;
 
@@ -1263,6 +1299,26 @@ Begin
  Delay(Trunc(N*1000));
 End;
 
+Procedure SoundCommand;
+Var
+ Frequence,Intervalle:Real;
+Begin
+ Frequence:=GetNumberValue(1);
+ If GetSeparator=','Then Begin
+  Inc(CurrPos);
+  Intervalle:=GetNumberValue(1);
+  If(Frequence>255.0)or(Intervalle>255.0)Then Begin
+   WriteLn('?FC ERROR');
+   Exit;
+  End;
+  Sound(Trunc(Frequence*255));
+  Delay(Trunc(Intervalle*20));
+  NoSound;
+ End
+  Else
+ WriteLn('?SN ERROR');
+End;
+
 Procedure TroffCommand;Begin
  Tron:=False;
 End;
@@ -1278,8 +1334,30 @@ Begin
  WidthCommand:=True;
  Width:=GetNumberValue(1);
  Case Trunc(Width)of
-  40:TextMode(C40);
-  80:TextMode(C80);
+  32:Begin
+   CurrWidth:=32;
+   TextMode(C40);
+   Window(1,1,40,25);
+   TextBackground(0);
+   TextColor($F);
+   ClrScr;
+   Window(1+4,1+4,32+4,16+4);
+   TextBackground($2);
+   TextColor(0);
+   ClrScr;
+  End;
+  40:Begin
+   CurrWidth:=40;
+   TextMode(C40);
+   Window(1,1,40,24);
+   ClrScr;
+  End;
+  80:Begin
+   CurrWidth:=80;
+   TextMode(C80);
+   Window(1,1,80,24);
+   ClrScr;
+  End;
   Else Begin
    WriteLn('Valeur invalide');
    WidthCommand:=False;
@@ -1315,101 +1393,94 @@ Begin
   NoImplementation:=False;
   UnknownCommand:=False;
   Case ExtractCommand of
-   0: NoImplementation:=True;{AND}
-   1: NoImplementation:=True;{AUTO}
-   2: BeepCommand;{BEEP}
-   3: NoImplementation:=True;{BLOAD}
-   4: NoImplementation:=True;{BSAVE}
-   5: NoImplementation:=True;{CALL}
-   6: NoImplementation:=True;{CAT}
-   7: NoImplementation:=True;{CHAIN}
-   8: ChDirCommand;{CHDIR}
-   9: NoImplementation:=True;{CIRCLE}
-   10: NoImplementation:=True;{CLEAR}
-   11: NoImplementation:=True;{CLOSE}
-   12: NoImplementation:=True;{CLR}
-   13: ClrScr;{CLS}
-   14: ColorCommand;{COLOR}
-   15: NoImplementation:=True;{COM}
-   16: NoImplementation:=True;{COMMON}
-   17: NoImplementation:=True;{CONT}
-   18: NoImplementation:=True;{DATA}
-   19: NoImplementation:=True;{DEF}
-   20: NoImplementation:=True;{DELETE}
-   21: NoImplementation:=True;{DIM}
-   22: NoImplementation:=True;{DRAW}
-   23: NoImplementation:=True;{EDIT}
-   24: NoImplementation:=True;{ELSE}
-   25: NoImplementation:=True;{END}
-   26: NoImplementation:=True;{ERASE}
-   27: NoImplementation:=True;{ERROR}
-   28: NoImplementation:=True;{FIELD}
-   29: NoImplementation:=True;{FILES}
-   30: NoImplementation:=True;{FOR}
-   31: NoImplementation:=True;{GET}
-   32: NoImplementation:=True;{GOSUB}
-   33: If Not(GotoCommand)Then Exit;{GOTO}
-   34: HelpCommand;{HELP}
-   35: IfCommand;{IF}
-   36: NoImplementation:=True;{INPUT}
-   37: NoImplementation:=True;{KEY}
-   38: NoImplementation:=True;{KILL}
-   39: NoImplementation:=True;{LET}
-   40: NoImplementation:=True;{LINE}
-   41: ListCommand;{LIST}
-   42: NoImplementation:=True;{LLIST}
-   43: LoadCommand;{LOAD}
-   44: NoImplementation:=True;{LOCATE}
-   45: NoImplementation:=True;{LPRINT}
-   46: NoImplementation:=True;{LSET}
-   47: NoImplementation:=True;{MERGE}
-   48: MkDirCommand;{MKDIR}
-   49: NoImplementation:=True;{NAME}
-   50: NewCommand;{NEW}
-   51: NoImplementation:=True;{NEXT}
-   52: NoImplementation:=True;{ON}
-   53: NoImplementation:=True;{OPEN}
-   54: NoImplementation:=True;{OPTION}
-   55: NoImplementation:=True;{OR}
-   56: NoImplementation:=True;{OUT}
-   57: NoImplementation:=True;{PAINT}
-   58: NoImplementation:=True;{PALETTE}
-   59: NoImplementation:=True;{POKE}
-   60: NoImplementation:=True;{PLAY}
-   61: NoImplementation:=True;{PRESET}
-   62: PrintCommand;{PRINT}
-   63: NoImplementation:=True;{PSET}
-   64: NoImplementation:=True;{PUT}
-   65: NoImplementation:=True;{RANDOMIZE}
-   66: NoImplementation:=True;{READ}
-   67: Exit;{REM}
-   68: NoImplementation:=True;{RENUM}
-   69: NoImplementation:=True;{RESET}
-   70: NoImplementation:=True;{RESUME}
-   71: NoImplementation:=True;{RESTORE}
-   72: NoImplementation:=True;{RETURN}
-   73: NoImplementation:=True;{RMDIR}
-   74: NoImplementation:=True;{RSET}
-   75: RunCommand;{RUN}
-   76: SaveCommand;{SAVE}
-   77: NoImplementation:=True;{SCREEN}
-   78: NoImplementation:=True;{SHELL}
-   79: SleepCommand;{SLEEP}
-   80: NoImplementation:=True;{STOP}
-   81: Begin {SYSTEM}
+   0:NoImplementation:=True;{AND}
+   1:AttrCommand;{ATTR}
+   2:NoImplementation:=True;{AUDIO}
+   3:NoImplementation:=True;{CIRCLE}
+   4:NoImplementation:=True;{CLEAR}
+   5:NoImplementation:=True;{CLOAD}
+   6:NoImplementation:=True;{CLOADM}
+   7:NoImplementation:=True;{CLOSE}
+   8:ClrScr;{CLS}
+   9:ColorCommand;{COLOR}
+   10:NoImplementation:=True;{CONT}
+   11:NoImplementation:=True;{CSAVE}
+   12:NoImplementation:=True;{CSAVEM}
+   13:NoImplementation:=True;{DATA}
+   14:NoImplementation:=True;{DEF}
+   15:NoImplementation:=True;{DEFUSR}
+   16:NoImplementation:=True;{DEL}
+   17:NoImplementation:=True;{DIM}
+   18:NoImplementation:=True;{DRAW}
+   19:NoImplementation:=True;{EDIT}
+   20:NoImplementation:=True;{ELSE}
+   21:NoImplementation:=True;{END}
+   22:NoImplementation:=True;{EXEC}
+   23:NoImplementation:=True;{FOR}
+   24:NoImplementation:=True;{GET}
+   25:NoImplementation:=True;{GOSUB}
+   26:If Not(GotoCommand)Then Exit;{GOTO}
+   27:HelpCommand;{HELP}
+   28:NoImplementation:=True;{HBUFF}
+   29:NoImplementation:=True;{HCIRCLE}
+   30:NoImplementation:=True;{HCLS}
+   31:NoImplementation:=True;{HCOLOR}
+   32:NoImplementation:=True;{HDRAW}
+   33:NoImplementation:=True;{HGET}
+   34:NoImplementation:=True;{HLINE}
+   35:NoImplementation:=True;{HPAINT}
+   36:NoImplementation:=True;{HPRINT}
+   37:NoImplementation:=True;{HPUT}
+   38:NoImplementation:=True;{HRESET}
+   39:NoImplementation:=True;{HSCREEN}
+   40:NoImplementation:=True;{HSET}
+   41:IfCommand;{IF}
+   42:NoImplementation:=True;{INPUT}
+   43:NoImplementation:=True;{LET}
+   44:NoImplementation:=True;{LINE}
+   45:ListCommand;{LIST}
+   46:NoImplementation:=True;{LLIST}
+   47:LoadCommand;{LOAD}
+   48:NoImplementation:=True;{LOCATE}
+   49:NoImplementation:=True;{LPOKE}
+   50:NoImplementation:=True;{MOTOR}
+   51:NewCommand;{NEW}
+   52:NoImplementation:=True;{NEXT}
+   53:NoImplementation:=True;{ON}
+   54:NoImplementation:=True;{OPEN}
+   55:NoImplementation:=True;{PAINT}
+   56:NoImplementation:=True;{PALETTE}
+   57:NoImplementation:=True;{PCLEAR}
+   58:NoImplementation:=True;{PCLS}
+   59:NoImplementation:=True;{PLAY}
+   60:NoImplementation:=True;{PMODE}
+   61:NoImplementation:=True;{POKE}
+   62:NoImplementation:=True;{PRESET}
+   63:PrintCommand;{PRINT}
+   64:NoImplementation:=True;{PSET}
+   65:NoImplementation:=True;{PUT}
+   66:NoImplementation:=True;{RANDOMIZE}
+   67:NoImplementation:=True;{READ}
+   68:Exit;{REM}
+   69:NoImplementation:=True;{RENUM}
+   70:NoImplementation:=True;{RESET}
+   71:NoImplementation:=True;{RESTORE}
+   72:NoImplementation:=True;{RETURN}
+   73:RunCommand;{RUN}
+   74:SaveCommand;{SAVE}
+   75:NoImplementation:=True;{SCREEN}
+   76:NoImplementation:=True;{SET}
+   77:NoImplementation:=True;{SKIPF}
+   78:SoundCommand;{SOUND}
+   79:NoImplementation:=True;{STOP}
+   80:Begin {SYSTEM}
     Terminated:=True;
     Exit;
    End;
-   82: NoImplementation:=True;{THEN}
-   83: TroffCommand;{TROFF}
-   84: TronCommand;{TRON}
-   85: NoImplementation:=True;{VIEW}
-   86: NoImplementation:=True;{WAIT}
-   87: NoImplementation:=True;{WEND}
-   88: NoImplementation:=True;{WHILE}
-   89: If Not(WidthCommand)Then Break;{WIDTH}
-   90: NoImplementation:=True;{WINDOW}
-   91: NoImplementation:=True;{WRITE}
+   81:NoImplementation:=True;{THEN}
+   82:TroffCommand;{TROFF}
+   83:TronCommand;{TRON}
+   84:If Not(WidthCommand)Then Break;{WIDTH}
    Else UnknownCommand:=True;
   End;
   If(UnknownCommand)Then Begin
@@ -1440,7 +1511,7 @@ Begin
     End;
    End
     Else
-   WriteLn('Commande non reconnu');
+   WriteLn('?SN ERROR');
    Exit;
   End;
   If(NoImplementation)Then Begin
@@ -1460,14 +1531,21 @@ End;
 
 BEGIN
  FileName:='';
+ Tron:=False;
  NumberLine:=0;CurrNumberLine:=0;
  NumberVariable:=0;
  HomeMessage;
  Terminated:=False;
  Repeat
-  WriteLn('Ok');
+  WriteLn('OK');
   ReadLn(CurrLine);
   CurrLine:=LTrim(CurrLine);
   RunBasic(False);
  Until Terminated;
+ TextMode(CO80);
+ Window(1,1,80,25);
+ TextBackground(0);
+ TextColor(7);
+ ClrScr;
 END.
+
