@@ -193,7 +193,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>COCO3.PAS</b></td>
-			<td>Cette commande permet de lancer l'interpréteur BASIC du CoCoc 3.</td>
+			<td>Cette commande permet de lancer l'interpréteur BASIC du CoCo 3.</td>
 		</tr>
 		<tr>
 			<td><b>COMMAND.PAS</b></td>
