@@ -51,6 +51,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>4DOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande 4DOS. Il s'agit d'un équivalent du 4DOS du JP Software.</td>
 		</tr>
+		<tr>
+			<td><b>ADAM.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur SmartBASIC du ADAM.</td>
+		</tr>		
 	        <tr>
 			<td><b>AMIGADOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande AmigaShell/AmigaDOS.</td>
@@ -143,6 +147,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>C80.PAS</b></td>
 			<td>Cette commande permet de passer en écran de texte de 80 colonnes.</td>
 		</tr>	
+		<tr>
+			<td><b>C128.PAS</b></td>
+			<td>Cette commande permet de lancer un clone de l'interpréteur de BASIC du Commodore 128.</td>
+		</tr>
+		
 		<tr>
 			<td><b>CAL.PAS</b></td>
 			<td>Cette commande permet d'afficher un calendrier. Cette commande est un équivalent de MSX-DOS ou UNIX.</td>
