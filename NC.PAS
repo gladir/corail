@@ -6,6 +6,8 @@
 
 Program NorthCommander;
 
+{$M 8192,0,65556}
+
 Uses Crt,Dos;
 
 Const
@@ -1019,7 +1021,7 @@ Begin
 End;
 
 Procedure EditFunc;Begin
- DialogNotImplement;
+ Exec('NCEDIT.EXE',GetCurrName);
  Refresh;
 End;
 
