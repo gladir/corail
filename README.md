@@ -417,7 +417,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	        <tr>
 		        <td><b>GREP2MSG.PAS</b></td>
-			<td>Cette programme permet de capturer les messages GREP et de les retourner a Turbo Pascal.</td>
+			<td>Cette commande permet de capturer les messages GREP et de les retourner a Turbo Pascal.</td>
+		</tr>
+		<tr>
+			<td><b>GWBASIC.PAS</b></td>
+			<td>Cette commande permet de lancer un interpréteur BASIC étant un clone du GWBASIC.</td>
 		</tr>
 	        <tr>
 			<td><b>HD.PAS</b></td>
