@@ -1633,9 +1633,9 @@ End;
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('GWBASIC : Cette commande permet de lancer l''interpreteur de GWBASIC.');
+  WriteLn('MSXBASIC : Cette commande permet de lancer l''interpreteur de MSX BASIC.');
   WriteLn;
-  WriteLn('Syntaxe : GWBASIC [fichier]');
+  WriteLn('Syntaxe : MSXBASIC [fichier]');
  End
   Else
  Begin
