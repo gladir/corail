@@ -1016,11 +1016,31 @@ Procedure TEPutPos;Begin
  TextColor(7);
  TextBackground(0);
  GotoXY(20,5);
- Write('Ligne ',(P+1));
+ Write('Ligne ',(P+1),' ');
  GotoXY(35,5);
- Write('Col ',(PX+1));
+ Write('Col ',(PX+1),' ');
  ColorEditor;
  GotoXY(EditX+X,EditY+Y);
+End;
+
+Procedure RefreshEditor;
+Var
+ I:Byte;
+ CurrLine:String;
+Begin
+ ColorEditor;
+ ArrayListSetPtr(List,P-Y);
+ For I:=0 to EditNumLines-1 do Begin
+  GotoXY(EditX,EditY+I);
+  If I>ArrayListCount(List)Then ClrEol
+   Else
+  Begin
+   CurrLine:=ArrayListGetCurrStr(List);
+   Write(PadRight(Copy(CurrLine,1,EditNumColumns),EditNumColumns));
+   ArrayListNext(List);
+  End;
+ End;
+ ArrayListSetPtr(List,P);
 End;
 
 Procedure ShowEditor;
@@ -1034,7 +1054,7 @@ Begin
  TextBackground(0);
  GotoXY(7,5);
  Write(Copy(FileName,1,12));
- ColorEditor;
+{ ColorEditor;
  For I:=0 to EditNumLines-1 do Begin
   GotoXY(EditX,EditY+I);
   If I>ArrayListCount(List)Then ClrEol
@@ -1045,7 +1065,8 @@ Begin
    ArrayListNext(List);
   End;
  End;
- ArrayListSetPtr(List,P);
+ ArrayListSetPtr(List,P);}
+ RefreshEditor;
  TEPutPos;
 End;
 
@@ -1181,6 +1202,17 @@ Procedure NotImplemented;Begin
  HideSubMenu;
 End;
 
+Procedure KbdEnter;Begin
+ If P>=ArrayListMaxList(List)Then Begin
+  ArrayListAddStr(List,'');
+  Inc(P);
+  If Y<EditNumLines-1 Then Inc(Y);
+  RefreshEditor;
+ End
+  Else
+ KeyDown;
+End;
+
 Procedure RunEditor;
 Var
  PC:PChar;
@@ -1284,6 +1316,7 @@ Begin
      End;
     End;
     'H':If P>0Then Begin { Haut }
+      ArrayListSetPtr(List,P);
       Dec(P);
       ArrayListPrevious(List);
       If Y>0Then Dec(Y)
@@ -1301,6 +1334,7 @@ Begin
     #83:DeleteLetter;
    End;
    #8:BackSpaceLetter;
+   #13:KbdEnter;
    #27:Begin
     XMenu:=2;
     OnMenu:=True;
