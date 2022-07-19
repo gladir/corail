@@ -6,6 +6,8 @@
 
 Program RUNZ80;
 
+Uses Crt,DOS,Printer;
+
 Const
  FlagsC=1;
  FlagsN=2;
@@ -19,6 +21,7 @@ Const
  CpuPaused:boolean=False;
 
 Var
+ CpmOn:Boolean;
  DebugOn,Verbose:Boolean;
  InterruptCounter:Integer;
  Parity:Array[0..256] of Boolean;
@@ -45,6 +48,24 @@ Var
  intIM:Integer;
 
  memory:Array[0..16384] of Byte;
+
+Function StrToUpper(S:String):String;
+Var
+ I:Byte;
+Begin
+ For I:=1 to Length(S)do Begin
+  If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
+ End;
+ StrToUpper:=S;
+End;
+
+Function GetCurrentDisk:Char;
+Var
+ CurrentDir:String;
+Begin
+ GetDir(0,CurrentDir);
+ GetCurrentDisk:=CurrentDir[1];
+End;
 
 Function memReadByte(address:Word):Byte;Begin
  If address<0Then memReadByte:=0 Else
@@ -2258,6 +2279,94 @@ Procedure InitEmul;Begin
  intIM:=0;
 End;
 
+Procedure CallCpmFunction(Func:Byte);
+Var
+ Ch:Char;
+ I:Word;
+Begin
+ Case Func of
+  0:InitEmul; { RÇinitialise le systäme (System Reset) }
+  1:Begin { EntrÇe console (Console Input) }
+   Ch:=ReadKey;
+   Reg.A:=Byte(Ch);
+   SetL(Byte(Ch));
+  End;
+  2:Begin { Sortie console (Console Output) }
+   Ch:=Char(GetE);
+   Case Ch of
+    #9:Write(' ':8);
+    Else Write(Ch);
+   End;
+  End;
+  3:; { Lecture d'entrÇe (Reader Input) }
+  4:Begin { Ecriture sur la console brute (Punch Output) }
+   Ch:=Char(GetE);
+   Write(Ch);
+  End;
+  5:Begin { Sortir sur l'imprimante (List Output) }
+   Ch:=Char(GetE);
+   Write(Lst,Ch);
+  End;
+  6:; { EntrÇe/sortie de console directe (Direct Console I/O) }
+  7:; { Demande un octet d'entrÇe/sortie (Get I/O Byte) }
+  8:; { Fixe un octet d'entrÇe/sortie (Set I/O Byte) }
+  9:Begin { Affiche une chaåne de caractäres (Print String) }
+   I:=Reg.DE;
+   While Chr(memReadByte(I))<>'$'do Begin
+    Write(Chr(memReadByte(I)));
+    Inc(I);
+    If I=$FFFF Then Break;
+   End;
+  End;
+  10:; { Lecture d'un tampon de la console (Read Console Buffer) }
+  11:Begin { Demande l'Çtat de la console (Get Console Status) }
+   If(Keypressed)Then Reg.A:=1
+                 Else Reg.A:=0;
+   SetL(Reg.A);
+  End;
+  12:Begin { Retourne le numÇro de version (Return Version Number) }
+   Reg.B:=0; { Type 0 - 8080}
+   SetH(0);  { Type 0 - 8080}
+   Reg.A:=0; { 00h - Version 1 }
+   SetL(0);  { 00h - Version 1 }
+  End;
+  13:; { RÇinitialise le disque systäme (Reset Disk System) }
+  14:Begin { SÇlectionne un disque (Select Disk) }
+   {$I-}ChDir(Chr(GetE+65)+':');{$I+}
+   If IoResult<>0Then Reg.A:=$FF
+                 Else Reg.A:=0;
+   SetL(Reg.A);
+  End;
+  15:; { Ouvrir un fichier (Open File) }
+  16:; { Ferme un fichier (Close File) }
+  17:; { Recherche la premiäre occurrence (Search for First) }
+  18:; { Recherche le suivant (Search for Next) }
+  19:; { Supprime un fichier (Delete File) }
+  20:; { Lecture sÇquentielle (Read Sequential) }
+  21:; { Ecriture sÇquentielle (Write Sequential) }
+  22:; { CrÇe un fichier (Make File) }
+  23:; { Renomme un fichier (Rename File) }
+  24:; { Retourne le vecteur de connexion (Return Login Vector) }
+  25:Begin  { Retourne l'unitÇ de disque courante (Return Current Disk) }
+   Ch:=GetCurrentDisk;
+   Reg.A:=Byte(Ch)-65;
+  End;
+  26:; { Fixe l'adresse DMA (Set DMA Address) }
+  27:; { Demande l'adresse d'allocation (Get Addr(Alloc)) }
+  28:; { êcriture de protection disque (Write Protect Disk) }
+  29:; { Demande le vecteur de lecture seulement (Get R/O Vector) }
+  30:; { Fixe les attributs de fichier (Set File Attributes) }
+  31:; { Demande l'adresse de paramätres disque (Get Addr(Disk Parms)) }
+  32:; { Fixe/Demande le code utilisateur (Set/Get User Code) }
+  33:; { Lecture alÇatoire (Read Random) }
+  34:; { êcriture alÇatoire (Write Random) }
+  35:; { Calcul la taille d'un fichier (Compute File Size) }
+  36:; { Fixe la taille alÇatoire d'un enregistrement (Set Random Record) }
+  37:; { RÇinitialise le disque (Reset Drive) }
+  40:; { êcriture alÇatoire avec remplissage de zÇro (Write Random with Zero Fill) }
+ End;
+End;
+
 Procedure ExecEmul;
 Var
  bbb:Byte;
@@ -2581,6 +2690,10 @@ Begin
    End;
    $CD:Begin { CALL nn }
     lTemp:=NextPcw;
+    If(CpmOn)and(lTemp=$0005)Then Begin
+     CallCpmFunction(Reg.C);
+    End
+     Else
     PushWord(regPC);
     regPC:=lTemp;
    End;
@@ -2761,17 +2874,24 @@ BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('RUNZ80 : Cette commande permet d''executer du code du microprocesseur Z80.');
   WriteLn;
-  WriteLn('Syntaxe : RUNZ80 [nomdufichier.bin] [/DEBUG] [/VERBOSE]');
+  WriteLn('Syntaxe : RUNZ80 [nomdufichier.bin] [/CPM] [/DEBUG] [/VERBOSE]');
+  WriteLn;
+  WriteLn(' /CPM     Ce parametre permet de supporter les appels au CP/M');
+  WriteLn(' /DEBUG   Ce parametre permet d''activer le debugage');
+  WriteLn(' /VERBOSE Ce parametre permet de passer en mode detailles');
  End
   Else
  Begin
   FillChar(memory,SizeOf(memory),0);
+  CpmOn:=False;
   Verbose:=False;
   DebugOn:=False;
   interruptCounter:=0;
   For I:=1 to ParamCount do Begin
-   If ParamStr(I)='/DEBUG'Then DebugOn:=True Else
-   If(ParamStr(I)='/VERBOSE')or(ParamStr(I)='/V')Then Verbose:=True
+   If StrToUpper(ParamStr(I))='/CPM'Then CpmOn:=True Else
+   If StrToUpper(ParamStr(I))='/DEBUG'Then DebugOn:=True Else
+   If(StrToUpper(ParamStr(I))='/VERBOSE')or
+     (StrToUpper(ParamStr(I))='/V')Then Verbose:=True
     Else
    Begin
     If(Verbose)Then WriteLn('Chargement du fichier binaire ',ParamStr(I),' dans la RAM du 6502.');
