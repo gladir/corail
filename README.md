@@ -522,6 +522,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>MSXBASIC.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur BASIC du MSX-BASIC.</td>
 		</tr>		
+	        <tr>
+			<td><b>MSXDOS.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande <a href="https://www.gladir.com/OS/MSXDOS/intro.htm">MSX-DOS</a> pour la famille des micro-ordinateurs MSX.</td>
+		</tr>		
 		<tr>
 			<td><b>MV.PAS</b></td>
 			<td>Cette commande permet de déplacer un fichier.</td>
