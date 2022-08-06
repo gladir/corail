@@ -10,6 +10,7 @@ Uses Crt;
 
 Var
  Mode:(CursorAbsolute,CursorRelatif);
+ SpecialChar:Boolean;
  FileSource:Text;
  S:String;
  Old:Byte;
@@ -41,6 +42,12 @@ Begin
    #27:Begin
     Inc(I);
     Case S[I]of
+     '(':Begin
+      Inc(I);
+      Case S[I]of
+       'B':SpecialChar:=True;
+      End;
+     End;
      '[':Begin
       Inc(I);
       V1:=-1;
@@ -151,8 +158,8 @@ Begin
           TextColor(7);
           TextBackground(0);
          End;
-         1:TextColor((TextAttr and $F)or 8);
-         2:TextColor((TextAttr and $F)and $F7);
+         1:HighVideo;
+         2:LowVideo;
          5:TextColor((TextAttr and $F)+BLINK);
          7:Begin
           V2:=TextAttr;
@@ -178,7 +185,40 @@ Begin
      'u':PopCursor;
     End;
    End;
-   Else Write(S[I]);
+   Else Begin
+    If(SpecialChar)and(S[I]in[#95..#126])Then Begin
+      {$IFDEF FPC}
+       {$IFDEF WINDOWS}
+        SetUseACP(False);
+       {$ENDIF}
+     {$ENDIF}
+     Case S[I]of { Code ASCII IBM PC }
+      #103:Write(#241);
+      #106:Write(#217);
+      #107:Write(#191);
+      #108:Write(#218);
+      #109:Write(#192);
+      #110:Write(#197);
+      #111,#112,#113,#114,#115:Write(#196);
+      #116:Write(#195);
+      #117:Write(#180);
+      #118:Write(#193);
+      #119:Write(#194);
+      #120:Write(#179);
+      #121:Write(#243);
+      #122:Write(#242);
+      #123:Write(#227);
+      Else Write(S[I]);
+     End;
+     {$IFDEF FPC}
+      {$IFDEF WINDOWS}
+       SetUseACP(True);
+      {$ENDIF}
+     {$ENDIF}
+    End
+     Else
+    Write(S[I]);
+   End;
   End;
   Inc(I);
  End;
@@ -198,6 +238,7 @@ BEGIN
  If ParamCount>0Then Begin
   Old:=0;
   Mode:=CursorAbsolute;
+  SpecialChar:=False;
   Assign(FileSource,ParamStr(1));
   Reset(FileSource);
   While Not EOF(FileSource)do Begin
