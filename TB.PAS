@@ -2914,7 +2914,14 @@ BEGIN
   Else
  Begin
   OnMenu:=False;
-  ShowASCII128:=True;
+  ShowASCII128:=False;
+  {$IFDEF FPC}
+   {$IFDEF WINDOWS}
+    SetUseACP(False);
+   {$ELSE}
+    ShowASCII128:=True;
+   {$ENDIF}
+  {$ENDIF}
   Modified:=False;
   InsMode:=True;
   P:=0;PX:=0;
