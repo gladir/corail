@@ -457,7 +457,7 @@ Begin
  If ExtractParam(1)='/?'Then Begin
   Case Language of
    _English:Begin
-    WriteLn('Propose:  Change or view file and subdirectoryh attributes');
+    WriteLn('Purpose:  Change or view file and subdirectoryh attributes');
     WriteLn;
     WriteLn('Format:   ATTRIB file [+R|-R] [+A|-A] [+S|-S] [+H|-H]');
    End;
@@ -560,7 +560,7 @@ Begin
  If FirstParam='/?'Then Begin
   Case Language of
    _English:Begin
-    WriteLn('Propose:  Beep the speaker or play simple music');
+    WriteLn('Purpose:  Beep the speaker or play simple music');
     WriteLn;
     WriteLn('Format:   BEEP [/?]');
    End;
@@ -590,13 +590,22 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('BREAK   Cette commande permet de fixer ou de demander l''etat du Ctrl+Break.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('BREAK [/?]');
-  WriteLn;
-  WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Display, enable, or disable Ctrl-C and Ctrl-Break checking.');
+    WriteLn;
+    WriteLn('Format:  BREAK [/?]');
+   End;
+   Else Begin
+    WriteLn('BREAK   Cette commande permet de fixer ou de demander l''etat du Ctrl+Break.');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('BREAK [/?]');
+    WriteLn;
+    WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   End;
+  End;
  End
   Else
  Begin
@@ -618,15 +627,26 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('CHDIR   Cette commande permet de fixer ou de demander le repertoire courant.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('CD [/?] chemin');
-  WriteLn('CHDIR [/?] chemin');
-  WriteLn;
-  WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
-  WriteLn(' chemin  Ce parametre permet d''indiquer le chemin du repertoire.');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Display or change the current directory.');
+    WriteLn;
+    WriteLn('Format:   CD [path | -]');
+    WriteLn(' ':14,'or');
+    WriteLn(' ':10,'CHDIR [path | -]');
+   End;
+   Else Begin
+    WriteLn('CHDIR   Cette commande permet de fixer ou de demander le repertoire courant.');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('CD [/?] chemin');
+    WriteLn('CHDIR [/?] chemin');
+    WriteLn;
+    WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
+    WriteLn(' chemin  Ce parametre permet d''indiquer le chemin du repertoire.');
+   End;
+  End;
  End
   Else
  If Length(FirstParam)>0Then Begin
@@ -649,14 +669,23 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('CHCP   Cette commande permet de fixer ou de demander la page de codes.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('CHCP [/?] [code]');
-  WriteLn;
-  WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
-  WriteLn(' code    Ce parametre permet d''indiquer la page de code');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Display of change the current system code page.');
+    WriteLn;
+    WriteLn('Format:   CHCP [n]');
+   End;
+   Else Begin
+    WriteLn('CHCP   Cette commande permet de fixer ou de demander la page de codes.');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('CHCP [/?] [code]');
+    WriteLn;
+    WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
+    WriteLn(' code    Ce parametre permet d''indiquer la page de code');
+   End;
+  End;
  End
   Else
  If FirstParam<>''Then Begin
@@ -693,13 +722,22 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('CLS   Cette commande permet d''effacer l''ecran.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('CLS [/?]');
-  WriteLn;
-  WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Clear the video display and move the cursor to the upper left');
+    WriteLn;
+    WriteLn('Format:   CLS [/?]');
+   End;
+   Else Begin
+    WriteLn('CLS   Cette commande permet d''effacer l''ecran.');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('CLS [/?]');
+    WriteLn;
+    WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   End;
+  End;
  End
   Else
  Begin
@@ -729,17 +767,26 @@ Begin
   End
    Else
   If CurrParam='/?'Then Begin
-   WriteLn('COPY   Cette commande permet d''effacer la copie de fichier vers un autre emplacement.');
-   WriteLn;
-   WriteLn('Syntaxe:');
-   WriteLn;
-   WriteLn('COPY [/?] [/P] source destination');
-   WriteLn;
-   WriteLn('    /?       Ce parametre permet d''afficher l''aide sur cette commande');
-   WriteLn('    /P       Ce parametre permet d''afficher la progression de la copie');
-   WriteLn('source       Ce parametre permet d''indiquer le fichier source');
-   WriteLn('destination  Ce parametre permet d''indiquer le fichier destination');
-   Exit;
+   Case Language of
+    _English:Begin
+     WriteLn('Purpose:  Copy data between disks, directories or files.');
+     WriteLn;
+     WriteLn('Format:   COPY [/?] [/P] source destination');
+    End;
+    Else Begin
+     WriteLn('COPY   Cette commande permet d''effacer la copie de fichier vers un autre emplacement.');
+     WriteLn;
+     WriteLn('Syntaxe:');
+     WriteLn;
+     WriteLn('COPY [/?] [/P] source destination');
+     WriteLn;
+     WriteLn('    /?       Ce parametre permet d''afficher l''aide sur cette commande');
+     WriteLn('    /P       Ce parametre permet d''afficher la progression de la copie');
+     WriteLn('source       Ce parametre permet d''indiquer le fichier source');
+     WriteLn('destination  Ce parametre permet d''indiquer le fichier destination');
+     Exit;
+    End;
+   End;
   End
    Else
   If(CurrParam='/P')or(CurrParam='/p')Then ShowProgression:=True
@@ -777,14 +824,23 @@ Begin
  I:=1;
  CurrParam:=ExtractParam(1);
  If(CurrParam='/?')or(CurrParam='/H')or(CurrParam='/h')Then Begin
-  WriteLn('COLOR   Cette commande permet de fixer la couleur du texte et d''arriere-plan.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('COLOR [/?]');
-  WriteLn('COLOR [[BRIGHT] [BLINK] [fg ON bg] [BORDER bc]');
-  WriteLn;
-  WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Change the default display colors.');
+    WriteLn;
+    WriteLn('Format:   COLOR [[BRIGHT] [BLINK] [fg ON bg] [BORDER bc]');
+   End;
+   Else Begin
+    WriteLn('COLOR   Cette commande permet de fixer la couleur du texte et d''arriere-plan.');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('COLOR [/?]');
+    WriteLn('COLOR [[BRIGHT] [BLINK] [fg ON bg] [BORDER bc]');
+    WriteLn;
+    WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   End;
+  End;
  End
   Else
  While CurrParam<>''do Begin
@@ -839,13 +895,22 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('DATE   Cette commande permet de fixer ou de demander la date du systeme d''exploitation');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('DATE [/?]');
-  WriteLn;
-  WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Display and optionnally change the system date.');
+    WriteLn;
+    WriteLn('Format:   DATE [/?]');
+   End;
+   Else Begin
+    WriteLn('DATE   Cette commande permet de fixer ou de demander la date du systeme d''exploitation');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('DATE [/?]');
+    WriteLn;
+    WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   End;
+  End;
  End
   Else
  Begin
@@ -860,9 +925,18 @@ Var
  Err:Word;
 Begin
  If(ExtractParam(1)='/?')or(ExtractParam(1)='/h')or(ExtractParam(1)='/H')Then Begin
-  WriteLn('DELAY : Cette commande permet d''attendre le nombre de secondes specifies.');
-  WriteLn;
-  WriteLn('Syntaxe : DELAY nombredesecondes');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Pause for a specified length of time.');
+    WriteLn;
+    WriteLn('Format:   DELAY [seconds]');
+   End;
+   Else Begin
+    WriteLn('DELAY : Cette commande permet d''attendre le nombre de secondes specifies.');
+    WriteLn;
+    WriteLn('Syntaxe : DELAY nombredesecondes');
+   End;
+  End;
  End
   Else
  If ExtractParam(1)<>''Then Begin
@@ -873,7 +947,8 @@ Begin
  WriteLn('Nombre de parametre invalide !');
 End;
 
-Procedure DeleteCommand;Var
+Procedure DeleteCommand;
+Var
  P:Byte;
  Err:Word;
  F:File;
@@ -891,15 +966,25 @@ Begin
   End
    Else
   If CurrParam='/?'Then Begin
-   WriteLn('DEL   Cette commande permet d''effectuer la suppression de fichier sur un unite de disque.');
-   WriteLn;
-   WriteLn('Syntaxe:');
-   WriteLn;
-   WriteLn('DEL [/?] fichier');
-   WriteLn;
-   WriteLn('    /?    Ce parametre permet d''afficher l''aide sur cette commande');
-   WriteLn(' fichier  Ce parametre permet d''indiquer le nom du fichier a supprimer.');
-   Exit;
+   Case Language of
+    _English:Begin
+     WriteLn('Purpose:  Erase one file');
+     WriteLn;
+     WriteLn('Format:   DEL [/?] file');
+     Exit;
+    End;
+    Else Begin
+     WriteLn('DEL   Cette commande permet d''effectuer la suppression de fichier sur un unite de disque.');
+     WriteLn;
+     WriteLn('Syntaxe:');
+     WriteLn;
+     WriteLn('DEL [/?] fichier');
+     WriteLn;
+     WriteLn('    /?    Ce parametre permet d''afficher l''aide sur cette commande');
+     WriteLn(' fichier  Ce parametre permet d''indiquer le nom du fichier a supprimer.');
+     Exit;
+    End;
+   End;
   End;
   {$I-}Assign(F,CurrParam);
   Erase(F);
@@ -931,18 +1016,28 @@ Begin
   CurrParam:=ExtractParam(P);
   If Length(CurrParam)=0Then Break;
   If CurrParam='/?'Then Begin
-   WriteLn('DIR   Cette commande permet d''afficher le contenu d''un repertoire dans l''unite de disque.');
-   WriteLn;
-   WriteLn('Syntaxe:');
-   WriteLn;
-   WriteLn('DIR [/?] [/2|/W] [/B] [/P] [chemin]');
-   WriteLn;
-   WriteLn(' /?   Ce parametre permet d''afficher l''aide sur cette commande');
-   WriteLn(' /2   Ce parametre permet d''afficher sur 2 colonnes');
-   WriteLn(' /B   Ce parametre enleve l''entete et les details de la fin');
-   WriteLN(' /P   Ce parametre affiche une pause apres l''affichage d''une page pleine');
-   WriteLn(' /W   Ce parametre affiche seulement les fichiers sur plein de colonnes');
-   Exit;
+   Case Language of
+    _English:Begin
+     WriteLn('Purpose:  Display information about files and subdirectories.');
+     WriteLn;
+     WriteLn('Format:   DIR [/?] [/2|/W] [/B] [/P] [path]');
+     Exit;
+    End;
+    Else Begin
+     WriteLn('DIR   Cette commande permet d''afficher le contenu d''un repertoire dans l''unit‚ de disque.');
+     WriteLn;
+     WriteLn('Syntaxe:');
+     WriteLn;
+     WriteLn('DIR [/?] [/2|/W] [/B] [/P] [chemin]');
+     WriteLn;
+     WriteLn(' /?   Ce parametre permet d''afficher l''aide sur cette commande');
+     WriteLn(' /2   Ce parametre permet d''afficher sur 2 colonnes');
+     WriteLn(' /B   Ce parametre enleve l''entˆte et les d‚tails de la fin');
+     WriteLN(' /P   Ce parametre affiche une pause apres l''affichage d''une page pleine');
+     WriteLn(' /W   Ce parametre affiche seulement les fichiers sur plein de colonnes');
+     Exit;
+    End;
+   End;
   End
    Else
   If CurrParam='/2'Then Include(Column,Double) Else
@@ -1051,18 +1146,28 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('ECHO   Cette commande permet d''activer ou desactiver le prompt de commande ',
-          'ou d''afficher un message sur le console du systeme d''exploitation.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('ECHO [/?] message');
-  WriteLn('ECHO [OFF|ON]');
-  WriteLn;
-  WriteLn('       /?  Ce parametre permet d''afficher l''aide sur cette commande');
-  WriteLn('  message  Ce parametre permet d''afficher un message');
-  WriteLn('      OFF  Ce parametre permet de desactiver le prompt.');
-  WriteLn('       ON  Ce parametre permet d''activer le prompt.');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Display a message, enable or disable batch file or command-line');
+    WriteLn(' ':10,'echoing, or display the echo status.');
+    WriteLn;
+    WriteLn('Format:   ECHO [ON | OFF | message]');
+   End;
+   Else Begin
+    WriteLn('ECHO   Cette commande permet d''activer ou desactiver le prompt de commande ',
+            'ou d''afficher un message sur le console du systeme d''exploitation.');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('ECHO [/?] message');
+    WriteLn('ECHO [OFF|ON]');
+    WriteLn;
+    WriteLn('       /?  Ce parametre permet d''afficher l''aide sur cette commande');
+    WriteLn('  message  Ce parametre permet d''afficher un message');
+    WriteLn('      OFF  Ce parametre permet de desactiver le prompt.');
+    WriteLn('       ON  Ce parametre permet d''activer le prompt.');
+   End;
+  End;
  End
   Else
  If ParamList='.'Then WriteLn Else
@@ -1098,15 +1203,25 @@ Begin
   End
    Else
   If CurrParam='/?'Then Begin
-   WriteLn('ERASE   Cette commande permet d''effectuer la suppression de fichier sur un unite de disque.');
-   WriteLn;
-   WriteLn('Syntaxe:');
-   WriteLn;
-   WriteLn('ERASE [/?] fichier');
-   WriteLn;
-   WriteLn('      /?    Ce parametre permet d''afficher l''aide sur cette commande');
-   WriteLn('  fichier   Ce parametre permet d''indiquer le nom du fichier a supprimer.');
-   Exit;
+   Case Language of
+    _English:Begin
+     WriteLn('Purpose:  Erase one file');
+     WriteLn;
+     WriteLn('Format:   ERASE [/?] file');
+     Exit;
+    End;
+    Else Begin
+     WriteLn('ERASE   Cette commande permet d''effectuer la suppression de fichier sur un unit‚ de disque.');
+     WriteLn;
+     WriteLn('Syntaxe:');
+     WriteLn;
+     WriteLn('ERASE [/?] fichier');
+     WriteLn;
+     WriteLn('      /?    Ce parametre permet d''afficher l''aide sur cette commande');
+     WriteLn('  fichier   Ce parametre permet d''indiquer le nom du fichier a supprimer.');
+     Exit;
+    End;
+   End;
   End;
   {$I-}Assign(F,CurrParam);
   Erase(F);
@@ -1133,15 +1248,24 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('EXIT  Cette commande permet de quitter l''interpreteur de commande.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('EXIT [/?] [CodeSortie]');
-  WriteLn;
-  WriteLn(' CodeSortie   Ce parametre permet d''indiquer le code de sortie a ',
-                         'retourner a l''application parent');
-  WriteLn('        /?    Ce parametre permet d''afficher l''aide sur cette commande');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Return from 4DOS.');
+    WriteLn;
+    WriteLn('Format:   EXIT [value]');
+   End;
+   Else Begin
+    WriteLn('EXIT  Cette commande permet de quitter l''interpreteur de commande.');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('EXIT [/?] [CodeSortie]');
+    WriteLn;
+    WriteLn(' CodeSortie   Ce parametre permet d''indiquer le code de sortie a ',
+                           'retourner a l''application parent');
+    WriteLn('        /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   End;
+  End;
   ExitCommand:=False;
  End
   Else
@@ -1166,13 +1290,23 @@ Begin
  P:=1;
  CurrParam:=ExtractParam(1);
  If ExtractParam(1)='/?'Then Begin
-  WriteLn('FREE : Cette commande permet de demander ',
-                  'les statistiques d''un unite de disque');
-  WriteLn;
-  WriteLn('Syntaxe : FREE [/?]');
-  WriteLn('          FREE unite:');
-  WriteLn;
-  WriteLn(' unite:   Affiche les statistiques d''un unite');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose :  Display the total disk space, total bytes used, and total');
+    WriteLn('           bytes free on the specified (or default) drive(s).');
+    WriteLn;
+    WriteLn('Format:    FREE [drive: ...]');
+   End;
+   Else Begin
+    WriteLn('FREE : Cette commande permet de demander ',
+                    'les statistiques d''un unit‚ de disque');
+    WriteLn;
+    WriteLn('Syntaxe : FREE [/?]');
+    WriteLn('          FREE [unite:]');
+    WriteLn;
+    WriteLn(' unite:   Affiche les statistiques d''un unit‚');
+   End;
+  End;
  End
   Else
  Repeat
