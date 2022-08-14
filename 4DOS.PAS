@@ -1354,13 +1354,22 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('HISTORY   Cette commande permet d''afficher l''historique des commandes.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('HISTORY [/?]');
-  WriteLn;
-  WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Display, add to, clear, or read the history list.');
+    WriteLn;
+    WriteLn('Format:   HISTORY [/?]');
+   End;
+   Else Begin
+    WriteLn('HISTORY   Cette commande permet d''afficher l''historique des commandes.');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('HISTORY [/?]');
+    WriteLn;
+    WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   End;
+  End;
  End
   Else
  For I:=1 to NumberHistory do WriteLn(History[I]^);
@@ -1431,14 +1440,23 @@ Begin
   End
    Else
   If CurrParam='/?'Then Begin
-   WriteLn('MKDIR   Cette commande permet de creer un repertoire.');
-   WriteLn;
-   WriteLn('Syntaxe:');
-   WriteLn;
-   WriteLn('MKDIR [/?] nomrepertoire');
-   WriteLn;
-   WriteLn('  nomrepertoire   Ce parametre permet d''indiquer le nom du repertoire');
-   WriteLn('            /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   Case Language of
+    _English:Begin
+     WriteLn('Purpose:  Create a subdirectory.');
+     WriteLn;
+     WriteLn('MKDIR [/?] path');
+    End;
+    Else Begin
+     WriteLn('MKDIR   Cette commande permet de creer un repertoire.');
+     WriteLn;
+     WriteLn('Syntaxe:');
+     WriteLn;
+     WriteLn('MKDIR [/?] nomrepertoire');
+     WriteLn;
+     WriteLn('  nomrepertoire   Ce parametre permet d''indiquer le nom du repertoire');
+     WriteLn('            /?    Ce parametre permet d''afficher l''aide sur cette commande');
+    End;
+   End;
    Exit;
   End;
   {$I-}MkDir(CurrParam);{$I+}
@@ -1450,9 +1468,18 @@ End;
 
 Procedure MoveCommand;Begin
  If ExtractParam(1)='/?'Then Begin
-  WriteLn('MOVE : Cette commande permet de deplacer un fichier.');
-  WriteLn;
-  WriteLn('Syntaxe : MOVE source destination');
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Move files to a new directory and drive.');
+    WriteLn;
+    WriteLn('Format:   MOVE source destination');
+   End;
+   Else Begin
+    WriteLn('MOVE : Cette commande permet de deplacer un fichier.');
+    WriteLn;
+    WriteLn('Syntaxe : MOVE source destination');
+   End;
+  End;
  End
   Else
  If(ExtractParam(1)<>'')and(ExtractParam(2)<>'')Then Begin
@@ -1464,8 +1491,35 @@ Procedure MoveCommand;Begin
  WriteLn('Nombre de parametre invalide');
 End;
 
-Procedure PathCommand;Begin
- WriteLn(GetEnv('PATH'));
+Procedure PathCommand;
+Var
+ FirstParam:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Display or alter the list of directories that 4DOS will');
+    WriteLn('          search for executable files, batch files, and files with');
+    WriteLn('          executable extensions that are not in the current directory.');
+    WriteLn;
+    WriteLn('PATH [/?]');
+   End;
+   Else Begin
+    WriteLn('PATH   Cette commande permet d''afficher les chemins de recherches.');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('PATH [/?]');
+    WriteLn;
+    WriteLn('   /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   End;
+  End;
+ End
+  Else
+ Begin
+  WriteLn(GetEnv('PATH'));
+ End;
 End;
 
 Procedure PauseCommand;
