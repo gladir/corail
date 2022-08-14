@@ -31,6 +31,8 @@ Type
  StrPointer=^String;
 
 Var
+ Language:(_French,_English,_Germany,_Italian,_Spain);
+ TmpLanguage:String;
  AttrAdd,AttrRemove:Word;
  SubDirectory:Boolean;
  InCmd:Byte;
@@ -380,7 +382,13 @@ End;
 
 Procedure HomeMessage;Begin
  WriteLn;
- WriteLn('4DOS - Interpreteur de comande');
+ Case Language of
+  _English:WriteLn('4DOS - Command interpreter');
+  _Germany:WriteLn('4DOS - Befehlsinterpreter');
+  _Italian:WriteLn('4DOS - Interprete di comando');
+  _Spain:WriteLn('4DOS - Int‚rprete de comando');
+  Else WriteLn('4DOS - Interpreteur de comande');
+ End;
  WriteLn;
 End;
 
@@ -2054,6 +2062,20 @@ Begin
 End;
 
 BEGIN
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+ End;
  FillChar(History,SizeOf(History),0);
  NumberHistory:=0;
  FillChar(StackDirectory,SizeOf(StackDirectory),0);
@@ -2061,9 +2083,33 @@ BEGIN
  Echo:=True;
  InCmd:=0;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('4DOS : Cette commande permet de lancer l''interpreteur de commande 4DOS.');
-  WriteLn;
-  WriteLn('Syntaxe : 4DOS [/C command]');
+  Case Language of
+   _English:Begin
+    WriteLn('4DOS : This command allows you to launch the 4DOS command interpreter.');
+    WriteLn;
+    WriteLn('Syntax : 4DOS [/C command]');
+   End;
+   _Germany:Begin
+    WriteLn('4DOS : Mit diesem Befehl k”nnen Sie den 4DOS -Befehlsinterpreter starten.');
+    WriteLn;
+    WriteLn('Syntax : 4DOS [/C Befehl]');
+   End;
+   _Italian:Begin
+    WriteLn('4DOS : Questo comando consente di avviare l''interprete di comando 4DOS.');
+    WriteLn;
+    WriteLn('Sintassi : 4DOS [/C comando]');
+   End;
+   _Spain:Begin
+    WriteLn('4DOS : Este comando le permite iniciar el int‚rprete de comando 4DOS.');
+    WriteLn;
+    WriteLn('Sintaxis : 4DOS [/C comando]');
+   End;
+   Else Begin
+    WriteLn('4DOS : Cette commande permet de lancer l''interpreteur de commande 4DOS.');
+    WriteLn;
+    WriteLn('Syntaxe : 4DOS [/C commande]');
+   End;
+  End;
  End
   Else
  If ParamCount>1Then Begin
@@ -2093,4 +2139,3 @@ BEGIN
   Until Terminated;
  End;
 END.
-

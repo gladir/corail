@@ -48,7 +48,9 @@ BEGIN
   Else
  Begin
   {$IFDEF FPC}
-   If StrToUpper(ParamStr(1))<>'/ACP'Then SetUseACP(False);
+   {$IFDEF WINDOWS}
+    If StrToUpper(ParamStr(1))<>'/ACP'Then SetUseACP(False);
+   {$ENDIF}
   {$ENDIF}
   For J:=0 to 15 do Begin
    For I:=0 to 15 do Begin
