@@ -6,7 +6,7 @@
 
 Program EDIT;
 
-Uses Strings,Crt;
+Uses Strings,Crt,DOS;
 
 Const
  EditX=2;
@@ -19,17 +19,34 @@ Const
   'Fichier','Edition','Recherche','Vue','Options','Aide'
  );
 
+ MainMenuGermany:Array[0..5]of String[10]=(
+  'Datei','Bearbeiten','Sucdhen','Aussicht','Optionen','Hilfe'
+ );
+
  SubMenuFile:Array[0..8]of String[20]=(
   'Nouveau','Ouvrir...','Sauvegarde','Sauvegarde sous...',
   'Fermer','','Imprimer...','','Sortir'
+ );
+
+ SubMenuFileGermany:Array[0..8]of String[20]=(
+  'Neu','™ffnen...','Speichern','Speichern unter...',
+  'Nah dran','','Drucken...','','Beenden'
  );
 
  SubMenuEdit:Array[0..3]of String[10]=(
   'Couper','Copier','Coller','Efface'
  );
 
+ SubMenuEditGermany:Array[0..3]of String[10]=(
+  'Ausschneiden','Kopieren','Einfgen','L”schen'
+ );
+
  SubMenuSearch:Array[0..2]of String[30]=(
   'Recherche..','Repete la derniere recherche','Remplace...'
+ );
+
+ SubMenuSearchGermany:Array[0..2]of String[30]=(
+  'Suchen...','Weitersuchen','Žndern...'
  );
 
  SubMenuView:Array[0..2]of String[25]=(
@@ -38,6 +55,10 @@ Const
 
  SubMenuOptions:Array[0..1]of String[15]=(
   'Ajustements...','Couleurs...'
+ );
+
+ SubMenuOptionsGermany:Array[0..1]of String[15]=(
+  'Bildschirmanzeige...','Pfad fr Hilfe...'
  );
 
  SubMenuHelp:Array[0..1]of String[15]=(
@@ -90,6 +111,8 @@ Const
  MinRec=SizeOf(PCharWordRec)+1;
 
 Var
+ Language:(_French,_English,_Germany,_Italian,_Spain);
+ TmpLanguage:String;
  ShowASCII128,OnMenu:Boolean;
  YMenu,XMenu:Integer;
 
@@ -113,6 +136,16 @@ Begin
  S:='';
  For I:=1 to Num do S:=S+C;
  DuplicateString:=S;
+End;
+
+Function StrToUpper(S:String):String;
+Var
+ I:Byte;
+Begin
+ For I:=1 to Length(S)do Begin
+  If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
+ End;
+ StrToUpper:=S;
 End;
 
 Function MemAlloc(Size:Word):Pointer;
@@ -669,7 +702,15 @@ Var
 Procedure Box(X1,Y1,X2,Y2,Couleur:Byte);Begin
  Window(X1,Y1,X2,Y2);
  TextBackground((Couleur shr 4)and 15);
- TextColor(Couleur and 15);
+ {$IFDEF FPC}
+  If Couleur and $80=$80 Then Begin
+   TextColor((Couleur and 15)+BLINK);
+  End
+   Else
+  TextColor(Couleur and 15);
+ {$ELSE}
+  TextColor(Couleur and 15);
+ {$ENDIF}
  ClrScr;
  Window(1,1,80,25);
 End;
@@ -792,7 +833,10 @@ Begin
    If I+1=XMenu Then SetColorSelect
                 Else SetColorUnSelect;
   End;
-  Write(' ',MainMenu[I],' ');
+  Case Language of
+   _Germany:Write(' ',MainMenuGermany[I],' ');
+   Else Write(' ',MainMenu[I],' ');
+  End;
  End;
 End;
 
@@ -804,15 +848,21 @@ Procedure SubMenuItem(Y:Integer;Disable:Boolean);Begin
   1:Begin
    GotoXY(5,3+Y);
    If SubMenuFile[Y]=''Then Write(DuplicateString('-',25+1))
-                       Else Write(' ',PadRight(SubMenuFile[Y],25));
+    Else
+   Begin
+    If Language=_Germany Then Write(' ',PadRight(SubMenuFileGermany[Y],25))
+                         Else Write(' ',PadRight(SubMenuFile[Y],25));
+   End;
   End;
   2:Begin
    GotoXY(14,3+Y);
-   Write(' ',PadRight(SubMenuEdit[Y],28));
+   If Language=_Germany Then Write(' ',PadRight(SubMenuEditGermany[Y],28))
+                        Else Write(' ',PadRight(SubMenuEdit[Y],28))
   End;
   3:Begin
    GotoXY(23,3+Y);
-   Write(' ',PadRight(SubMenuSearch[Y],29));
+   If Language=_Germany Then Write(' ',PadRight(SubMenuSearchGermany[Y],29))
+                        Else Write(' ',PadRight(SubMenuSearch[Y],29));
   End;
   4:Begin
    GotoXY(34,3+Y);
@@ -820,7 +870,8 @@ Procedure SubMenuItem(Y:Integer;Disable:Boolean);Begin
   End;
   5:Begin
    GotoXY(39,3+Y);
-   Write(' ',PadRight(SubMenuOptions[Y],15));
+   If Language=_Germany Then Write(' ',PadRight(SubMenuOptionsGermany[Y],15))
+                        Else Write(' ',PadRight(SubMenuOptions[Y],15));
   End;
   6:Begin
    GotoXY(48,3+Y);
@@ -989,6 +1040,9 @@ Procedure AboutBox;Begin
  GotoXY(31,13);
  Write('Licence MIT 2022');
  GotoXY(37,15);
+ {$IFDEF FPC}
+  TextColor(0+BLINK);
+ {$ENDIF}
  Write('> OK <');
  ReadKey;
  ShowEditor;
@@ -1091,6 +1145,12 @@ Begin
      ShowMenu;
      ShowSubMenu;
     End;
+    #32:If Language=_Germany Then Begin { Alt+D }
+     XMenu:=1;
+     OnMenu:=True;
+     ShowMenu;
+     ShowSubMenu;
+    End;
     #31:Begin { Alt+S }
      XMenu:=3;
      OnMenu:=True;
@@ -1159,10 +1219,33 @@ Procedure DoneEditor;Begin
 End;
 
 BEGIN
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+ End;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('EDIT : Cette commande permet d''editer un fichier texte ASCII.');
-  WriteLn;
-  WriteLn('Syntaxe : EDIT nomdufichier');
+  Case Language of
+   _Germany:Begin
+    WriteLn('Startet den MS-DOS-Editor, der ASCII-Dateien erzeugt und ver„ndert.');
+    WriteLn;
+    WriteLn('EDIT [[Laufwerk:][Pfad[Dateiname]]')
+   End;
+   Else Begin
+    WriteLn('EDIT : Cette commande permet d''editer un fichier texte ASCII.');
+    WriteLn;
+    WriteLn('Syntaxe : EDIT nomdufichier');
+   End;
+  End;
  End
   Else
  Begin
