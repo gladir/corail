@@ -6,7 +6,7 @@
 
 Program _4DOS;
 
-{$M 4096,0,16384}
+{$M 8192,0,16384}
 
 Uses Crt,DOS;
 
@@ -306,32 +306,32 @@ Function GetErrorMessage(Code:Word):String;Begin
   2:GetErrorMessage:='Fichier introuvable';
   3:GetErrorMessage:='Chemin introuvable';
   4:GetErrorMessage:='Trop de fichiers ouvert';
-  5:GetErrorMessage:='Acces refuse';
+  5:GetErrorMessage:='AccŠs refuse';
   6:GetErrorMessage:='Handle de fichier invalide';
   12:GetErrorMessage:='Mode d''acces sur disque invalide';
   15:GetErrorMessage:='Num‚ro de disque invalide';
   16:GetErrorMessage:='Impossible de supprimer le r‚pertoire';
   17:GetErrorMessage:='Impossible de renommer sur plusieurs volumes';
   100:GetErrorMessage:='Erreur de lecture … partir du disque';
-  101:GetErrorMessage:='Erreur d''ecriture sur le disque';
+  101:GetErrorMessage:='Erreur d''‚criture sur le disque';
   102:GetErrorMessage:='Fichier non attribue';
   103:GetErrorMessage:='Le fichier n''est pas ouvert';
-  104:GetErrorMessage:='Le fichier n''est pas ouvert … l''entree';
+  104:GetErrorMessage:='Le fichier n''est pas ouvert … l''entr‚e';
   105:GetErrorMessage:='Le fichier n''est pas ouvert … la sortie';
-  106:GetErrorMessage:='Numero invalide';
-  150:GetErrorMessage:='Disque protege en ecriture';
-  151:GetErrorMessage:='Peripherique est inconnu';
-  152:GetErrorMessage:='Disque pas pret';
+  106:GetErrorMessage:='Num‚ro invalide';
+  150:GetErrorMessage:='Disque protege en ‚criture';
+  151:GetErrorMessage:='P‚riph‚rique est inconnu';
+  152:GetErrorMessage:='Disque pas prˆt';
   153:GetErrorMessage:='Commande inconnue';
-  154:GetErrorMessage:='Echec de verification CRC';
+  154:GetErrorMessage:='Echec de v‚rification CRC';
   155:GetErrorMessage:='Disque invalide';
   156:GetErrorMessage:='Erreur de recherche sur disque';
-  157:GetErrorMessage:='Type de media invalide';
+  157:GetErrorMessage:='Type de m‚dia invalide';
   158:GetErrorMessage:='Secteur introuvable';
   159:GetErrorMessage:='L''imprimante n''a plus de papier';
-  160:GetErrorMessage:='Erreur d''ecriture sur le peripherique';
-  161:GetErrorMessage:='Erreur de lecture sur le peripherique';
-  162:GetErrorMessage:='Defaillance materielle';
+  160:GetErrorMessage:='Erreur d''‚criture sur le p‚ripherique';
+  161:GetErrorMessage:='Erreur de lecture sur le p‚ripherique';
+  162:GetErrorMessage:='D‚faillance mat‚rielle';
   Else GetErrorMessage:='Erreur inconnue';
  End;
 End;
@@ -387,7 +387,7 @@ Procedure HomeMessage;Begin
   _Germany:WriteLn('4DOS - Befehlsinterpreter');
   _Italian:WriteLn('4DOS - Interprete di comando');
   _Spain:WriteLn('4DOS - Int‚rprete de comando');
-  Else WriteLn('4DOS - Interpreteur de comande');
+  Else WriteLn('4DOS - Interpr‚teur de commande');
  End;
  WriteLn;
 End;
@@ -439,7 +439,7 @@ Begin
 End;
 
 Procedure InvalidParam(P:Byte);Begin
- WriteLn('Le parametre suivant est invalide : ',ExtractParam(P));
+ WriteLn('Le paramŠtre suivant est invalide : ',ExtractParam(P));
 End;
 
 Procedure AliasCommand;Begin
@@ -565,13 +565,13 @@ Begin
     WriteLn('Format:   BEEP [/?]');
    End;
    Else Begin
-    WriteLn('BEEP   Cette commande permet d''emettre un bip sonore.');
+    WriteLn('BEEP   Cette commande permet d''‚mettre un bip sonore.');
     WriteLn;
     WriteLn('Syntaxe:');
     WriteLn;
     WriteLn('BEEP [/?]');
     WriteLn;
-    WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+    WriteLn('  /?    Ce paramŠtre permet d''afficher l''aide sur cette commande');
    End;
   End;
  End
@@ -597,13 +597,13 @@ Begin
     WriteLn('Format:  BREAK [/?]');
    End;
    Else Begin
-    WriteLn('BREAK   Cette commande permet de fixer ou de demander l''etat du Ctrl+Break.');
+    WriteLn('BREAK   Cette commande permet de fixer ou de demander l''‚tat du Ctrl+Break.');
     WriteLn;
     WriteLn('Syntaxe:');
     WriteLn;
     WriteLn('BREAK [/?]');
     WriteLn;
-    WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+    WriteLn('  /?    Ce paramŠtre permet d''afficher l''aide sur cette commande');
    End;
   End;
  End
@@ -636,15 +636,15 @@ Begin
     WriteLn(' ':10,'CHDIR [path | -]');
    End;
    Else Begin
-    WriteLn('CHDIR   Cette commande permet de fixer ou de demander le repertoire courant.');
+    WriteLn('CHDIR   Cette commande permet de fixer ou de demander le r‚pertoire courant.');
     WriteLn;
     WriteLn('Syntaxe:');
     WriteLn;
     WriteLn('CD [/?] chemin');
     WriteLn('CHDIR [/?] chemin');
     WriteLn;
-    WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
-    WriteLn(' chemin  Ce parametre permet d''indiquer le chemin du repertoire.');
+    WriteLn('  /?     Ce paramŠtre permet d''afficher l''aide sur cette commande');
+    WriteLn(' chemin  Ce paramŠtre permet d''indiquer le chemin du rep‚rtoire.');
    End;
   End;
  End
@@ -682,8 +682,8 @@ Begin
     WriteLn;
     WriteLn('CHCP [/?] [code]');
     WriteLn;
-    WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
-    WriteLn(' code    Ce parametre permet d''indiquer la page de code');
+    WriteLn('  /?     Ce paramŠtre permet d''afficher l''aide sur cette commande');
+    WriteLn(' code    Ce paramŠtre permet d''indiquer la page de code');
    End;
   End;
  End
@@ -729,13 +729,13 @@ Begin
     WriteLn('Format:   CLS [/?]');
    End;
    Else Begin
-    WriteLn('CLS   Cette commande permet d''effacer l''ecran.');
+    WriteLn('CLS   Cette commande permet d''effacer l''‚cran.');
     WriteLn;
     WriteLn('Syntaxe:');
     WriteLn;
     WriteLn('CLS [/?]');
     WriteLn;
-    WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+    WriteLn('  /?    Ce paramŠtre permet d''afficher l''aide sur cette commande');
    End;
   End;
  End
@@ -831,7 +831,7 @@ Begin
     WriteLn('Format:   COLOR [[BRIGHT] [BLINK] [fg ON bg] [BORDER bc]');
    End;
    Else Begin
-    WriteLn('COLOR   Cette commande permet de fixer la couleur du texte et d''arriere-plan.');
+    WriteLn('COLOR   Cette commande permet de fixer la couleur du texte et d''arriŠre-plan.');
     WriteLn;
     WriteLn('Syntaxe:');
     WriteLn;
@@ -908,7 +908,7 @@ Begin
     WriteLn;
     WriteLn('DATE [/?]');
     WriteLn;
-    WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+    WriteLn('  /?    Ce paramŠtre permet d''afficher l''aide sur cette commande');
    End;
   End;
  End
@@ -932,7 +932,7 @@ Begin
     WriteLn('Format:   DELAY [seconds]');
    End;
    Else Begin
-    WriteLn('DELAY : Cette commande permet d''attendre le nombre de secondes specifies.');
+    WriteLn('DELAY : Cette commande permet d''attendre le nombre de secondes sp‚cifi‚s.');
     WriteLn;
     WriteLn('Syntaxe : DELAY nombredesecondes');
    End;
@@ -944,7 +944,7 @@ Begin
   Delay(NombreSeconde*1000);
  End
   Else
- WriteLn('Nombre de parametre invalide !');
+ WriteLn('Nombre de paramŠtre invalide !');
 End;
 
 Procedure DeleteCommand;
@@ -974,14 +974,14 @@ Begin
      Exit;
     End;
     Else Begin
-     WriteLn('DEL   Cette commande permet d''effectuer la suppression de fichier sur un unite de disque.');
+     WriteLn('DEL   Cette commande permet d''effectuer la suppression de fichier sur un unit‚ de disque.');
      WriteLn;
      WriteLn('Syntaxe:');
      WriteLn;
      WriteLn('DEL [/?] fichier');
      WriteLn;
-     WriteLn('    /?    Ce parametre permet d''afficher l''aide sur cette commande');
-     WriteLn(' fichier  Ce parametre permet d''indiquer le nom du fichier a supprimer.');
+     WriteLn('    /?    Ce paramŠtre permet d''afficher l''aide sur cette commande');
+     WriteLn(' fichier  Ce paramŠtre permet d''indiquer le nom du fichier a supprimer.');
      Exit;
     End;
    End;
