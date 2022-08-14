@@ -142,8 +142,8 @@ Procedure HomeMessage;Begin
  TextColor($F);
  ClrScr;
  Window(1+4,1+4,32+4,16+4);
- TextBackground($2);
- TextColor(0);
+ TextBackground(Green);
+ TextColor(0{$IFDEF FPC}+BLINK{$ENDIF});
  ClrScr;
  WriteLn('EXTENDED COLOR BASIC 2.0');
  WriteLn('CORP. 2021, 2022 PAR GLADIR.COM');
@@ -1598,7 +1598,7 @@ End;
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('COCO3 : Cette commande permet de lancer l''interpreteur de BASIC.');
+  WriteLn('COCO3 : Cette commande permet de lancer l''interpreteur de BASIC du COCO3.');
   WriteLn;
   WriteLn('Syntaxe : COCO3 [fichier]');
  End
