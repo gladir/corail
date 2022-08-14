@@ -455,9 +455,18 @@ Var
 Begin
  CurrParam:=ExtractParam(1);
  If ExtractParam(1)='/?'Then Begin
-  WriteLn('ATTRIB - Cette commande permet de demander ou changer l''attribut d''un fichier');
-  WriteLn;
-  WriteLn('Syntaxe : ATTRIB nomdufichier [+R|-R] [+A|-A] [+S|-S] [+H|-H]');
+  Case Language of
+   _English:Begin
+    WriteLn('Propose:  Change or view file and subdirectoryh attributes');
+    WriteLn;
+    WriteLn('Format:   ATTRIB file [+R|-R] [+A|-A] [+S|-S] [+H|-H]');
+   End;
+   Else Begin
+    WriteLn('ATTRIB - Cette commande permet de demander ou changer l''attribut d''un fichier');
+    WriteLn;
+    WriteLn('Syntaxe : ATTRIB nomdufichier [+R|-R] [+A|-A] [+S|-S] [+H|-H]');
+   End;
+  End;
  End
   Else
  If CurrParam=''Then Begin
@@ -549,13 +558,22 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('BEEP   Cette commande permet d''emettre un bip sonore.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('BEEP [/?]');
-  WriteLn;
-  WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+  Case Language of
+   _English:Begin
+    WriteLn('Propose:  Beep the speaker or play simple music');
+    WriteLn;
+    WriteLn('Format:   BEEP [/?]');
+   End;
+   Else Begin
+    WriteLn('BEEP   Cette commande permet d''emettre un bip sonore.');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('BEEP [/?]');
+    WriteLn;
+    WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   End;
+  End;
  End
   Else
  Begin
@@ -2038,11 +2056,11 @@ Begin
   K:=ReadKey;
   Case K of
    #0:Case ReadKey of
-    #72:Begin
+    #72:If NumberHistory>0 Then Begin
      S:=History[CurrHistory]^; { Up }
      If CurrHistory>1 Then Dec(CurrHistory);
     End;
-    #80:Begin
+    #80:If NumberHistory>0 Then Begin
      S:=History[CurrHistory]^; { Down }
      If CurrHistory<NumberHistory Then Inc(CurrHistory);
     End;

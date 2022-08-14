@@ -308,11 +308,11 @@ Begin
   K:=ReadKey;
   Case K of
    #0:Case ReadKey of
-    #72:Begin
+    #72:If NumberHistory>0 Then Begin
      S:=History[CurrHistory]^; { Up }
      If CurrHistory>1 Then Dec(CurrHistory);
     End;
-    #80:Begin
+    #80:If NumberHistory>0 Then Begin
      S:=History[CurrHistory]^; { Down }
      If CurrHistory<NumberHistory Then Inc(CurrHistory);
     End;
