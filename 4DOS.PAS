@@ -2013,6 +2013,46 @@ Begin
  End;
 End;
 
+Procedure ReadLine(Var S:String);
+Var
+ K:Char;
+ X,Y:Byte;
+ CurrHistory:Integer;
+Begin
+ CurrHistory:=NumberHistory;
+ X:=WhereX;
+ Y:=WhereY;
+ S:='';
+ Repeat
+  GotoXY(X,Y);
+  Write(S);
+  ClrEol;
+  K:=ReadKey;
+  Case K of
+   #0:Case ReadKey of
+    #72:Begin
+     S:=History[CurrHistory]^; { Up }
+     If CurrHistory>1 Then Dec(CurrHistory);
+    End;
+    #80:Begin
+     S:=History[CurrHistory]^; { Down }
+     If CurrHistory<NumberHistory Then Inc(CurrHistory);
+    End;
+   End;
+   #8:Begin
+    If S<>''Then S:=Copy(S,1,Length(S)-1);
+   End;
+   Else S:=S+K;
+  End;
+  If S[Length(S)]=#13Then Begin
+   S:=Copy(S,1,Length(S)-1);
+   K:=#13;
+  End;
+ Until K=#13;
+ GotoXY(1,Y);
+ WriteLn(S);
+End;
+
 BEGIN
  FillChar(History,SizeOf(History),0);
  NumberHistory:=0;
@@ -2048,7 +2088,7 @@ BEGIN
   HomeMessage;
   Repeat
    ShowPrompt;
-   ReadLn(CmdStr);
+   ReadLine(CmdStr);
    RunCommand;
   Until Terminated;
  End;
