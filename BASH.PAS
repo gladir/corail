@@ -18,11 +18,18 @@ Const
   'umask','unalias','unset'
  );
 
+ MaxHistory=100;
+
+Type
+ StrPointer=^String;
+
 Var
  CommandFound,Terminated:Boolean;
  CmdStr:String;
  CurrCommand,ParamList:String;
  I,J:Byte;
+ History:Array[1..MaxHistory] of StrPointer;
+ NumberHistory:Integer;
 
 Function TrimL(S:String):String;
 Var
@@ -43,6 +50,30 @@ Var
 Begin
  For I:=1 to Length(Str)do Begin
   If Str[I]=OldChar Then Str[I]:=NewChar;
+ End;
+End;
+
+Function AddHistory(S:String):Boolean;
+Var
+ I:Word;
+ P:StrPointer;
+Begin
+ If NumberHistory>=MaxHistory Then Begin
+  FreeMem(History[1],Length(History[1]^)+1);
+  For I:=1 to MaxHistory-1 do History[I]:=History[I+1];
+  GetMem(P,Length(S)+1);
+  P^:=S;
+  History[MaxHistory]:=P;
+  AddHistory:=True;
+  Exit;
+ End
+  Else
+ Begin
+  Inc(NumberHistory);
+  GetMem(P,Length(S)+1);
+  P^:=S;
+  History[NumberHistory]:=P;
+  AddHistory:=True;
  End;
 End;
 
@@ -260,64 +291,115 @@ Procedure UnknownCommand;Begin
  WriteLn;
 End;
 
-BEGIN
- Terminated:=False;
- HomeMessage;
+Procedure ReadLine(Var S:String);
+Var
+ K:Char;
+ X,Y:Byte;
+ CurrHistory:Integer;
+Begin
+ CurrHistory:=NumberHistory;
+ X:=WhereX;
+ Y:=WhereY;
+ S:='';
  Repeat
-  ShowPrompt;
-  ReadLn(CmdStr);
-  ExtractCommand;
-  CommandFound:=False;
-  For J:=Low(CommandList) to High(CommandList) do Begin
-   If CurrCommand=CommandList[J]Then Begin
-    Case(J)of
-     0:AliasCommand;
-     1:BindCommand;
-     2:BreakCommand;
-     3:BuiltinCommand;
-     4:CallerCommand;
-     5:CdCommand;
-     6:CommandCommand;
-     7:ContinueCommand;
-     8:DeclareCommand;
-     9:EchoCommand;
-     10:EnableCommand;
-     11:EvalCommand;
-     12:ExecCommand;
-     13:ExitCommand;
-     14:ExportCommand;
-     15:GetopsCommand;
-     16:HashCommand;
-     17:HelpCommand;
-     18:LetCommand;
-     19:LocalCommand;
-     20:LogoutCommand;
-     21:MapfileCommand;
-     22:PrintfCommand;
-     23:PwdCommand;
-     24:ReadCommand;
-     25:ReadarrayCommand;
-     26:ReadonlyCommand;
-     27:ReturnCommand;
-     28:ShiftCommand;
-     29:SourceCommand;
-     30:TestCommand;
-     31:TimesCommand;
-     32:TrapCommand;
-     33:TypeCommand;
-     34:TypesetCommand;
-     35:UlimitCommand;
-     36:UmaskCommand;
-     37:UnaliasCommand;
-     38:UnsetCommand;
+  GotoXY(X,Y);
+  Write(S);
+  ClrEol;
+  K:=ReadKey;
+  Case K of
+   #0:Case ReadKey of
+    #72:Begin
+     S:=History[CurrHistory]^; { Up }
+     If CurrHistory>1 Then Dec(CurrHistory);
     End;
-    If J<=High(CommandList)Then Begin
-     CommandFound:=True;
-     WriteLn;
-     Break;
+    #80:Begin
+     S:=History[CurrHistory]^; { Down }
+     If CurrHistory<NumberHistory Then Inc(CurrHistory);
     End;
    End;
+   #8:Begin
+    If S<>''Then S:=Copy(S,1,Length(S)-1);
+   End;
+   Else S:=S+K;
   End;
-  If Not(CommandFound)Then UnknownCommand;
- Until Terminated;
+  If S[Length(S)]=#13Then Begin
+   S:=Copy(S,1,Length(S)-1);
+   K:=#13;
+  End;
+ Until K=#13;
+ GotoXY(X,Y);
+ WriteLn(S);
+End;
+
+BEGIN
+ If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
+  WriteLn('BASH : Cette commande permet de lancer l''interpreteur de commande BASH.');
+  WriteLn;
+  WriteLn('Syntaxe : BASH');
+ End
+  Else
+ Begin
+  FillChar(History,SizeOf(History),0);
+  NumberHistory:=0;
+  Terminated:=False;
+  HomeMessage;
+  Repeat
+   ShowPrompt;
+   ReadLine(CmdStr);
+   AddHistory(CmdStr);
+   ExtractCommand;
+   CommandFound:=False;
+   For J:=Low(CommandList) to High(CommandList) do Begin
+    If CurrCommand=CommandList[J]Then Begin
+     Case(J)of
+      0:AliasCommand;
+      1:BindCommand;
+      2:BreakCommand;
+      3:BuiltinCommand;
+      4:CallerCommand;
+      5:CdCommand;
+      6:CommandCommand;
+      7:ContinueCommand;
+      8:DeclareCommand;
+      9:EchoCommand;
+      10:EnableCommand;
+      11:EvalCommand;
+      12:ExecCommand;
+      13:ExitCommand;
+      14:ExportCommand;
+      15:GetopsCommand;
+      16:HashCommand;
+      17:HelpCommand;
+      18:LetCommand;
+      19:LocalCommand;
+      20:LogoutCommand;
+      21:MapfileCommand;
+      22:PrintfCommand;
+      23:PwdCommand;
+      24:ReadCommand;
+      25:ReadarrayCommand;
+      26:ReadonlyCommand;
+      27:ReturnCommand;
+      28:ShiftCommand;
+      29:SourceCommand;
+      30:TestCommand;
+      31:TimesCommand;
+      32:TrapCommand;
+      33:TypeCommand;
+      34:TypesetCommand;
+      35:UlimitCommand;
+      36:UmaskCommand;
+      37:UnaliasCommand;
+      38:UnsetCommand;
+     End;
+     If J<=High(CommandList)Then Begin
+      CommandFound:=True;
+      WriteLn;
+      Break;
+     End;
+    End;
+   End;
+   If Not(CommandFound)Then UnknownCommand;
+  Until Terminated;
+ End;
 END.

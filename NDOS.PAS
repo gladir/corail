@@ -2047,7 +2047,7 @@ Begin
    K:=#13;
   End;
  Until K=#13;
- GotoXY(1,Y);
+ GotoXY(X,Y);
  WriteLn(S);
 End;
 
