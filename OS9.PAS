@@ -545,7 +545,8 @@ Begin
 End;
 
 Procedure HomeMessage;Begin
- TextColor(0);
+ Window(1,1,80,25);
+ TextColor(0{$IFDEF FPC}+BLINK{$ENDIF});
  TextBackground(Green);
  WriteLn;
  WriteLn('Clone de l''interpreteur de commande OS-9');
