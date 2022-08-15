@@ -19,6 +19,10 @@ Const
   'Fichier','Edition','Recherche','Vue','Options','Aide'
  );
 
+ MainMenuEnglish:Array[0..5]of String[10]=(
+  'File','Edit','Search','View','Options','Help'
+ );
+
  MainMenuGermany:Array[0..5]of String[10]=(
   'Datei','Bearbeiten','Sucdhen','Aussicht','Optionen','Hilfe'
  );
@@ -26,6 +30,11 @@ Const
  SubMenuFile:Array[0..8]of String[20]=(
   'Nouveau','Ouvrir...','Sauvegarde','Sauvegarde sous...',
   'Fermer','','Imprimer...','','Sortir'
+ );
+
+ SubMenuFileEnglish:Array[0..8]of String[20]=(
+  'New','Open...','Save','Save As...',
+  'Close','','Print...','','Exit'
  );
 
  SubMenuFileGermany:Array[0..8]of String[20]=(
@@ -37,12 +46,20 @@ Const
   'Couper','Copier','Coller','Efface'
  );
 
+ SubMenuEditEnglish:Array[0..3]of String[10]=(
+  'Cut','Copy','Paste','Clear'
+ );
+
  SubMenuEditGermany:Array[0..3]of String[10]=(
   'Ausschneiden','Kopieren','Einfgen','L”schen'
  );
 
  SubMenuSearch:Array[0..2]of String[30]=(
   'Recherche..','Repete la derniere recherche','Remplace...'
+ );
+
+ SubMenuSearchEnglish:Array[0..2]of String[30]=(
+  'Find..','Repeat Last Find','Replace...'
  );
 
  SubMenuSearchGermany:Array[0..2]of String[30]=(
@@ -53,8 +70,16 @@ Const
   'Fragmente une fenetre','Taille de la fenetre','Ferme la fenetre'
  );
 
+ SubMenuViewEnglish:Array[0..2]of String[25]=(
+  'Split window','Size Window','Close Window'
+ );
+
  SubMenuOptions:Array[0..1]of String[15]=(
   'Ajustements...','Couleurs...'
+ );
+
+ SubMenuOptionsEnglish:Array[0..1]of String[15]=(
+  'Settings...','Colors...'
  );
 
  SubMenuOptionsGermany:Array[0..1]of String[15]=(
@@ -65,6 +90,10 @@ Const
   'Commandes...','A propos...'
  );
 
+ SubMenuHelpEnglish:Array[0..1]of String[15]=(
+  'Commands...','About...'
+ );
+
  YMenuMax:Array[1..6]of Byte=(
   High(SubMenuFile),High(SubMenuEdit),High(SubMenuSearch),
   High(SubMenuView),High(SubMenuOptions),
@@ -73,12 +102,12 @@ Const
 
 Type
 
- PCharByteRec = Record
+ PCharByteRec=Record
   PChr:PChar;
   Nm:Byte;
  End;
 
- StrByteRec = Record
+ StrByteRec=Record
   PChr:PChar;
   Nm:Byte;
   Len:Word;
@@ -774,6 +803,11 @@ Begin
  Close(TextFile);
 End;
 
+Procedure ColorEditor;Begin
+ TextBackground(0);
+ TextColor(7);
+End;
+
 Procedure SaveText(FileName:String);
 Var
  TextFile:Text;
@@ -792,6 +826,13 @@ Begin
  End;
  Close(TextFile);
  Modified:=False;
+ If Not(Modified)Then Begin
+  TextColor(7);
+  TextBackground(0);
+  GotoXY(3,2);
+  Write(' ');
+  ColorEditor;
+ End;
  ArrayListSetPtr(List,P);
 End;
 
@@ -804,12 +845,37 @@ Procedure TEPutPos;Begin
  TextColor(0);
  TextBackground(7);
  GotoXY(40,25);
- Write('| Colonne : ',(PX+1):6);
+ Case Language of
+  _English:Write('| Column : ',(PX+1):6);
+  Else Write('| Colonne : ',(PX+1):6);
+ End;
  GotoXY(60,25);
- Write('Ligne : ',(P+1):6);
- TextBackground(0);
- TextColor(7);
+ Case Language of
+  _English:Write('Line : ',(P+1):6);
+  Else Write('Line : ',(P+1):6);
+ End;
+ ColorEditor;
  GotoXY(EditX+X,EditY+Y);
+End;
+
+Procedure RefreshEditor;
+Var
+ I:Byte;
+ CurrLine:String;
+Begin
+ ColorEditor;
+ ArrayListSetPtr(List,P-Y);
+ For I:=0 to EditNumLines-1 do Begin
+  GotoXY(EditX,EditY+I);
+  If I>ArrayListCount(List)Then Write(' ':EditNumColumns)
+   Else
+  Begin
+   CurrLine:=ArrayListGetCurrStr(List);
+   Write(PadRight(Copy(CurrLine,1,EditNumColumns),EditNumColumns));
+   ArrayListNext(List);
+  End;
+ End;
+ ArrayListSetPtr(List,P);
 End;
 
 Procedure SetColorSelect;Begin
@@ -834,6 +900,7 @@ Begin
                 Else SetColorUnSelect;
   End;
   Case Language of
+   _English:Write(' ',MainMenuEnglish[I],' ');
    _Germany:Write(' ',MainMenuGermany[I],' ');
    Else Write(' ',MainMenu[I],' ');
   End;
@@ -849,33 +916,91 @@ Procedure SubMenuItem(Y:Integer;Disable:Boolean);Begin
    GotoXY(5,3+Y);
    If SubMenuFile[Y]=''Then Write(DuplicateString('-',25+1))
     Else
-   Begin
-    If Language=_Germany Then Write(' ',PadRight(SubMenuFileGermany[Y],25))
-                         Else Write(' ',PadRight(SubMenuFile[Y],25));
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuFileEnglish[Y],25));
+    _Germany:Write(' ',PadRight(SubMenuFileGermany[Y],25));
+    Else Write(' ',PadRight(SubMenuFile[Y],25));
    End;
   End;
   2:Begin
-   GotoXY(14,3+Y);
-   If Language=_Germany Then Write(' ',PadRight(SubMenuEditGermany[Y],28))
-                        Else Write(' ',PadRight(SubMenuEdit[Y],28))
+   Case Language of
+    _English:Begin
+     GotoXY(11,3+Y);
+     Write(' ',PadRight(SubMenuEditEnglish[Y],28));
+    End;
+    _Germany:Begin
+     GotoXY(12,3+Y);
+     Write(' ',PadRight(SubMenuEditGermany[Y],28));
+    End;
+    Else Begin
+     GotoXY(14,3+Y);
+     Write(' ',PadRight(SubMenuEdit[Y],28))
+    End;
+   End;
   End;
   3:Begin
-   GotoXY(23,3+Y);
-   If Language=_Germany Then Write(' ',PadRight(SubMenuSearchGermany[Y],29))
-                        Else Write(' ',PadRight(SubMenuSearch[Y],29));
+   Case Language of
+    _English:Begin
+     GotoXY(17,3+Y);
+     Write(' ',PadRight(SubMenuSearchEnglish[Y],29));
+    End;
+    _Germany:Begin
+     GotoXY(24,3+Y);
+     Write(' ',PadRight(SubMenuSearchGermany[Y],29));
+    End;
+    Else Begin
+     GotoXY(23,3+Y);
+     Write(' ',PadRight(SubMenuSearch[Y],29));
+    End;
+   End;
   End;
   4:Begin
-   GotoXY(34,3+Y);
-   Write(' ',PadRight(SubMenuView[Y],22));
+   Case Language of
+    _English:Begin
+     GotoXY(25,3+Y);
+     Write(' ',PadRight(SubMenuViewEnglish[Y],22));
+    End;
+    _Germany:Begin
+     GotoXY(33,3+Y);
+     Write(' ',PadRight(SubMenuView[Y],22));
+    End;
+    Else Begin
+     GotoXY(34,3+Y);
+     Write(' ',PadRight(SubMenuView[Y],22));
+    End;
+   End;
   End;
   5:Begin
-   GotoXY(39,3+Y);
-   If Language=_Germany Then Write(' ',PadRight(SubMenuOptionsGermany[Y],15))
-                        Else Write(' ',PadRight(SubMenuOptions[Y],15));
+   Case Language of
+    _English:Begin
+     GotoXY(31,3+Y);
+     Write(' ',PadRight(SubMenuOptionsEnglish[Y],15));
+    End;
+    _Germany:Begin
+     GotoXY(43,3+Y);
+     Write(' ',PadRight(SubMenuOptionsGermany[Y],20));
+    End;
+    Else Begin
+     GotoXY(39,3+Y);
+     Write(' ',PadRight(SubMenuOptions[Y],15));
+    End;
+   End;
   End;
   6:Begin
-   GotoXY(48,3+Y);
-   Write(' ',PadRight(SubMenuHelp[Y],14));
+   Case Language of
+    _English:Begin
+     GotoXY(40,3+Y);
+     Write(' ',PadRight(SubMenuHelpEnglish[Y],14));
+    End;
+    _Germany:Begin
+     GotoXY(53,3+Y);
+     Write(' ',PadRight(SubMenuHelp[Y],14));
+    End;
+    Else Begin
+     GotoXY(48,3+Y);
+     Write(' ',PadRight(SubMenuHelp[Y],14));
+    End;
+   End;
   End;
  End;
 End;
@@ -892,31 +1017,51 @@ Begin
    End;
   End;
   2:Begin
-   FrameEmpty(13,2,43,4+High(SubMenuEdit),$70);
+   Case Language of
+    _English:FrameEmpty(10,2,40,4+High(SubMenuEdit),$70);
+    _Germany:FrameEmpty(11,2,41,4+High(SubMenuEdit),$70);
+    Else FrameEmpty(13,2,43,4+High(SubMenuEdit),$70);
+   End;
    For I:=Low(SubMenuEdit)to High(SubMenuEdit)do Begin
     SubMenuItem(I,False);
    End;
   End;
   3:Begin
-   FrameEmpty(22,2,53,4+High(SubMenuSearch),$70);
+   Case Language of
+    _English: FrameEmpty(16,2,47,4+High(SubMenuSearch),$70);
+    _Germany: FrameEmpty(23,2,54,4+High(SubMenuSearch),$70);
+    Else FrameEmpty(22,2,53,4+High(SubMenuSearch),$70);
+   End;
    For I:=Low(SubMenuSearch)to High(SubMenuSearch)do Begin
     SubMenuItem(I,False);
    End;
   End;
   4:Begin
-   FrameEmpty(33,2,57,4+High(SubMenuView),$70);
+   Case Language of
+    _English: FrameEmpty(24,2,48,4+High(SubMenuView),$70);
+    _Germany: FrameEmpty(32,2,56,4+High(SubMenuView),$70);
+    Else FrameEmpty(33,2,57,4+High(SubMenuView),$70);
+   End;
    For I:=Low(SubMenuView)to High(SubMenuView)do Begin
     SubMenuItem(I,False);
    End;
   End;
   5:Begin
-   FrameEmpty(38,2,55,4+High(SubMenuOptions),$70);
+   Case Language of
+    _English: FrameEmpty(30,2,47,4+High(SubMenuOptions),$70);
+    _Germany: FrameEmpty(42,2,64,4+High(SubMenuOptions),$70);
+    Else FrameEmpty(38,2,55,4+High(SubMenuOptions),$70);
+   End;
    For I:=Low(SubMenuOptions)to High(SubMenuOptions)do Begin
     SubMenuItem(I,False);
    End;
   End;
   6:Begin
-   FrameEmpty(47,2,63,4+High(SubMenuHelp),$70);
+   Case Language of
+    _English:FrameEmpty(39,2,55,4+High(SubMenuHelp),$70);
+    _Germany:FrameEmpty(52,2,68,4+High(SubMenuHelp),$70);
+    Else FrameEmpty(47,2,63,4+High(SubMenuHelp),$70);
+   End;
    For I:=Low(SubMenuHelp)to High(SubMenuHelp)do Begin
     SubMenuItem(I,False);
    End;
@@ -940,16 +1085,33 @@ Begin
  ArrayListSetPtr(List,0);
  TextColor(0);
  TextBackground(7);
- If FileName=''Then CurrLine:='SANSNOM1'
-               Else CurrLine:=' '+FileName+' ';
+ If FileName=''Then Begin
+  Case Language of
+   _English:CurrLine:='UNTITLE1';
+   Else CurrLine:='SANSNOM1'
+  End;
+ End
+  Else
+ CurrLine:=' '+FileName+' ';
  GotoXY(((80-Length(CurrLine)) shr 1),2);
  Write(CurrLine);
  GotoXY(1,25);
  ClrEol;
  GotoXY(18,25);
  Write('Mode : ');
- If(InsMode)Then Write('Insertion')
-            Else Write('Ecrasement');
+ If(InsMode)Then Begin
+  Case Language of
+   _English:Write('Insert');
+   Else Write('Insertion');
+  End;
+ End
+  Else
+ Begin
+  Case Language of
+   _English:Write('Overwrite');
+   Else Write('Ecrasement');
+  End;
+ End;
  TextBackground(0);
  TextColor(7);
  For I:=0 to EditNumLines-1 do Begin
@@ -982,11 +1144,20 @@ Procedure NotImplemented;Begin
  ShowEditor;
 End;
 
+Procedure ShowModified;Begin
+ TextColor(7);
+ TextBackground(0);
+ GotoXY(3,2);
+ Write('*');
+ ColorEditor;
+End;
+
 Procedure InsertLetter(C:Char);
 Var
  Ptr:PChar;
  CurrLine:String;
 Begin
+ If Not(Modified)Then ShowModified;
  Modified:=True;
  If P>=ArrayListCount(List)Then Begin
   CurrLine:=PadRight('',PX)+C;
@@ -1006,6 +1177,58 @@ Begin
  Write(Copy(CurrLine,1,EditNumColumns));
  Inc(PX);
  Inc(X);
+End;
+
+Procedure DeleteLetter;
+Var
+ Ptr:PChar;
+ CurrLine:String;
+Begin
+ If Not(Modified)Then ShowModified;
+ Modified:=True;
+ If P>=ArrayListCount(List)Then Begin
+  CurrLine:='';
+  ArrayListAddStr(List,CurrLine);
+  ArrayListSetPtr(List,P);
+ End
+  Else
+ Begin
+  ArrayListSetPtr(List,P);
+  CurrLine:=ArrayListGetCurrStr(List);
+  If PX>Length(CurrLine)Then CurrLine:=PadRight(CurrLine,PX);
+  Delete(CurrLine,PX+1,1);
+  Ptr:=ArrayList_SetBuf(List,P,Length(CurrLine)+1);
+  StrPCopy(Ptr,CurrLine);
+ End;
+ GotoXY(EditX,EditY+Y);
+ Write(PadRight(Copy(CurrLine,1,EditNumColumns),EditNumColumns));
+End;
+
+Procedure BackSpaceLetter;
+Var
+ Ptr:PChar;
+ CurrLine:String;
+Begin
+ If Not(Modified)Then ShowModified;
+ Modified:=True;
+ If P>=ArrayListCount(List)Then Begin
+  CurrLine:='';
+  ArrayListAddStr(List,CurrLine);
+  ArrayListSetPtr(List,P);
+ End
+  Else
+ Begin
+  ArrayListSetPtr(List,P);
+  CurrLine:=ArrayListGetCurrStr(List);
+  If PX>Length(CurrLine)Then CurrLine:=PadRight(CurrLine,PX);
+  Delete(CurrLine,PX,1);
+  Ptr:=ArrayList_SetBuf(List,P,Length(CurrLine)+1);
+  StrPCopy(Ptr,CurrLine);
+ End;
+ GotoXY(EditX,EditY+Y);
+ Write(PadRight(Copy(CurrLine,1,EditNumColumns),EditNumColumns));
+ If PX>0Then Dec(PX);
+ If X>0Then Dec(X);
 End;
 
 Procedure KeyDown;
@@ -1046,6 +1269,17 @@ Procedure AboutBox;Begin
  Write('> OK <');
  ReadKey;
  ShowEditor;
+End;
+
+Procedure KbdEnter;Begin
+ If P>=ArrayListMaxList(List)Then Begin
+  ArrayListAddStr(List,'');
+  Inc(P);
+  If Y<EditNumLines-1 Then Inc(Y);
+  RefreshEditor;
+ End
+  Else
+ KeyDown;
 End;
 
 Procedure RunEditor;
@@ -1190,6 +1424,7 @@ Begin
      End;
     End;
     'H':If P>0Then Begin { Haut }
+      ArrayListSetPtr(List,P);
       Dec(P);
       ArrayListPrevious(List);
       If Y>0Then Dec(Y)
@@ -1204,7 +1439,10 @@ Begin
       End;
      End;
     'P':KeyDown; { Bas }
+    #83:DeleteLetter;
    End;
+   #8:BackSpaceLetter;
+   #13:KbdEnter;
    #27:Terminated:=True;
    Else If(InsMode)Then InsertLetter(K);
  End;
