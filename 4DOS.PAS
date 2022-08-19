@@ -11,11 +11,11 @@ Program _4DOS;
 Uses Crt,DOS;
 
 Const
- CommandList:Array[0..80]of String[8]=(
+ CommandList:Array[0..81]of String[8]=(
   'ALIAS','ATTRIB','BEEP','BREAK','CALL','CD','CDD','CHCP','CHDIR',
-  'CLS','COLOR','COPY','CTTY','DATE','DEL','DELAY','DELETE','DIR',
-  'DIRS','DRAWBOX','DRAWHLINE','DRAWVLINE','ECHO','ENDLOCAL',
-  'ENDTEXT','ERA','ERASE','ESET','EXCEPT','EXIT','FOR','FREE',
+  'CLS','COLOR','COPY','CTTY','DATE','DEL','DELAY','DELETE',
+  'DESCRIBE','DIR','DIRS','DRAWBOX','DRAWHLINE','DRAWVLINE','ECHO',
+  'ENDLOCAL','ENDTEXT','ERA','ERASE','ESET','EXCEPT','EXIT','FOR','FREE',
   'GLOBAL','GOSUB','GOTO','HELP','HISTORY','IF','IFF','INKEY',
   'INPUT','KEYSTACK','LH','LOADBTM','LOADHIGH','LOG','MD','MEMORY',
   'MKDIR','MOVE','PATH','PAUSE','PROMPT','PUSHD','QUIT','RD','REM',
@@ -750,8 +750,9 @@ End;
 
 Procedure ChDirCommand;
 Var
+ Drive:Char;
  Error:Word;
- FirstParam,Dir:String;
+ FirstParam,Dir,CurrPath:String;
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
@@ -778,9 +779,12 @@ Begin
  End
   Else
  If Length(FirstParam)>0Then Begin
+  GetDir(0,CurrPath);
+  Drive:=GetCurrentDisk;
   {$I-} ChDir(FirstParam);{$I+}
   Error:=IoResult;
   If Error<>0Then WriteLn(GetErrorMessage(Error));
+  If Drive<>GetCurrentDisk Then ChDir(CurrPath);
  End
   Else
  Begin
@@ -840,8 +844,42 @@ Begin
  End;
 End;
 
-Procedure CDDCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure CDDCommand;
+Var
+ Error:Word;
+ FirstParam,Dir:String;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  Case Language of
+   _English:Begin
+    WriteLn('Purpose:  Change the current disk drive and directory.');
+    WriteLn;
+    WriteLn('Format:   CDD [path | -]');
+   End;
+   Else Begin
+    WriteLn('CCD   Cette commande permet de fixer ou de demander le disque et le r‚pertoire courant.');
+    WriteLn;
+    WriteLn('Syntaxe:');
+    WriteLn;
+    WriteLn('CDD [/?] chemin');
+    WriteLn;
+    WriteLn('  /?     Ce paramŠtre permet d''afficher l''aide sur cette commande');
+    WriteLn(' chemin  Ce paramŠtre permet d''indiquer le chemin du rep‚rtoire.');
+   End;
+  End;
+ End
+  Else
+ If Length(FirstParam)>0Then Begin
+  {$I-} ChDir(FirstParam);{$I+}
+  Error:=IoResult;
+  If Error<>0Then WriteLn(GetErrorMessage(Error));
+ End
+  Else
+ Begin
+  GetDir(0,Dir);
+  WriteLn(Dir);
+ End;
 End;
 
 Procedure CLSCommand;
@@ -1123,6 +1161,10 @@ Begin
           Else WriteLn(GetErrorMessage(Err));
   If P>9Then Break;
  Until CurrParam='';
+End;
+
+Procedure DescribeCommand;Begin
+ WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure DirCommand;
@@ -2455,14 +2497,17 @@ Var
  LastEcho:Boolean;
  FileBat:Text;
  OY:Byte;
+ Error:Word;
  PipeS:String;
 Begin
  AddHistory(CmdStr);
   { Change d'unit‚ de disque A:, B:, C:, D:,... }
  If(Length(CmdStr)=2)and(CmdStr[2]=':')and(CmdStr[1]in['A'..'Z','a'..'z'])Then Begin
-  GetDir(Ord(UpCase(CmdStr[1]))-64,PipeS);
+  {$I-}GetDir(Ord(UpCase(CmdStr[1]))-64,PipeS);
   If PipeS<>''Then ChDir(PipeS)
-              Else ChDir(CmdStr+'\');
+              Else ChDir(CmdStr+'\');{$I+}
+  Error:=IoResult;
+  If Error<>0Then WriteLn(GetErrorMessage(Error));
   Exit;
  End;
   { Recherche une commande interne }
@@ -2512,70 +2557,71 @@ Restart:
     14:DeleteCommand;
     15:DelayCommand;
     16:DeleteCommand;
-    17:DirCommand;
-    18:DirsCommand;
-    19:DrawBoxCommand;
-    20:DrawHLineCommand;
-    21:DrawVLineCommand;
-    22:EchoCommand;
-    23:EndLocalCommand;
-    24:EndTextCommand;
-    25:EraseCommand;
+    17:DescribeCommand;
+    18:DirCommand;
+    19:DirsCommand;
+    20:DrawBoxCommand;
+    21:DrawHLineCommand;
+    22:DrawVLineCommand;
+    23:EchoCommand;
+    24:EndLocalCommand;
+    25:EndTextCommand;
     26:EraseCommand;
-    27:ESetCommand;
-    28:ExceptCommand;
-    29:Terminated:=ExitCommand;
-    30:ForCommand;
-    31:FreeCommand;
-    32:GlobalCommand;
-    33:GosubCommand;
-    34:GotoCommand;
-    35:HelpCommand;
-    36:HistoryCommand;
-    37:IfCommand;
-    38:IFFCommand;
-    39:InkeyCommand;
-    40:InputCommand;
-    41:KeyStackCommand;
-    42:LoadHighCommand;
-    43:LoadBTMCommand;
-    44:LoadHighCommand;
-    45:LogCommand;
-    46:MkDirCommand;
-    47:MemoryCommand;
-    48:MkDirCommand;
-    49:MoveCommand;
-    50:PathCommand;
-    51:PauseCommand;
-    52:PromptCommand;
-    53:PushDCommand;
-    54:QuitCommand;
-    55:RmDirCommand;
-    56:RemCommand;
-    57:RenameCommand;
+    27:EraseCommand;
+    28:ESetCommand;
+    29:ExceptCommand;
+    30:Terminated:=ExitCommand;
+    31:ForCommand;
+    32:FreeCommand;
+    33:GlobalCommand;
+    34:GosubCommand;
+    35:GotoCommand;
+    36:HelpCommand;
+    37:HistoryCommand;
+    38:IfCommand;
+    39:IFFCommand;
+    40:InkeyCommand;
+    41:InputCommand;
+    42:KeyStackCommand;
+    43:LoadHighCommand;
+    44:LoadBTMCommand;
+    45:LoadHighCommand;
+    46:LogCommand;
+    47:MkDirCommand;
+    48:MemoryCommand;
+    49:MkDirCommand;
+    50:MoveCommand;
+    51:PathCommand;
+    52:PauseCommand;
+    53:PromptCommand;
+    54:PushDCommand;
+    55:QuitCommand;
+    56:RmDirCommand;
+    57:RemCommand;
     58:RenameCommand;
-    59:ReturnCommand;
-    60:RmDirCommand;
-    61:ScreenCommand;
-    62:ScrPutCommand;
-    63:SetCommand;
-    64:SetDosCommand;
-    65:SetLocalCommand;
-    66:ShiftCommand;
-    67:SwappingCommand;
-    68:TeeCommand;
-    69:TextCommand;
-    70:TimeCommand;
-    71:TimerCommand;
-    72:TrueNameCommand;
-    73:TypeCommand;
-    74:UnaliasCommand;
-    75:UnsetCommand;
-    76:VerCommand;
-    77:VerifyCommand;
-    78:VolCommand;
-    79:YCommand;
-    80:PopDCommand;
+    59:RenameCommand;
+    60:ReturnCommand;
+    61:RmDirCommand;
+    62:ScreenCommand;
+    63:ScrPutCommand;
+    64:SetCommand;
+    65:SetDosCommand;
+    66:SetLocalCommand;
+    67:ShiftCommand;
+    68:SwappingCommand;
+    69:TeeCommand;
+    70:TextCommand;
+    71:TimeCommand;
+    72:TimerCommand;
+    73:TrueNameCommand;
+    74:TypeCommand;
+    75:UnaliasCommand;
+    76:UnsetCommand;
+    77:VerCommand;
+    78:VerifyCommand;
+    79:VolCommand;
+    80:YCommand;
+    81:PopDCommand;
    End;
    If J<=High(CommandList)Then Begin
     CommandFound:=True;
