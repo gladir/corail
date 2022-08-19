@@ -33,7 +33,8 @@ Type
 Var
  Language:(_French,_English,_Germany,_Italian,_Spain);
  TmpLanguage:String;
- ShowASCII128:Boolean;
+ ShowASCII128,Pipe,PipeToCommand:Boolean;
+ PipeFile:Text;
  AttrAdd,AttrRemove:Word;
  SubDirectory:Boolean;
  InCmd:Byte;
@@ -44,7 +45,7 @@ Var
  Echo:Boolean;
  CommandFound,Terminated:Boolean;
  CmdStr:String;
- CurrCommand,ParamList:String;
+ CurrCommand,ParamList,PipeCommand:String;
  I,J:Byte;
 
 Function GetConvMemory:Word;
@@ -420,12 +421,43 @@ End;
 
 Procedure ExtractCommand;
 Var
- I:Byte;
+ I,J:Byte;
 Begin
  For I:=1 to Length(CmdStr)do Begin
   If Not(CmdStr[I]in['A'..'Z','a'..'z','_','-','0'..'9'])Then Begin
    CurrCommand:=StrToUpper(Copy(CmdStr,1,I-1));
    ParamList:=TrimL(Copy(CmdStr,I,255));
+   For J:=1 to Length(ParamList)do Begin
+    Case ParamList[J]of
+     '|':Begin
+      If Not(Pipe)Then Begin
+       {$I-}Assign(PipeFile,'4DOSPIPE.TMP');
+       Rewrite(PipeFile);{$I-}
+       If IoResult<>0 Then Begin
+        WriteLn('Tuyau invalide !');
+       End;
+       Pipe:=True;
+      End;
+      PipeToCommand:=True;
+      PipeCommand:=TrimL(Copy(ParamList,J+1,255));
+      If J=1 Then ParamList:=''
+             Else ParamList:=Copy(ParamList,1,J-1);
+     End;
+     '>':Begin
+      If Not(Pipe)Then Begin
+       {$I-}Assign(PipeFile,TrimL(Copy(ParamList,J+1,255)));
+       Rewrite(PipeFile);{$I-}
+       If IoResult<>0 Then Begin
+        WriteLn('Tuyau invalide !');
+       End
+        Else
+       Pipe:=True;
+      End;
+      If J=1 Then ParamList:=''
+             Else ParamList:=Copy(ParamList,1,J-1);
+     End;
+    End;
+   End;
    Exit;
   End;
  End;
@@ -692,9 +724,17 @@ Begin
   Else
  Begin
   GetCBreak(X);
-  Write('BREAK = ');
-  If(X)Then WriteLn('on')
-       Else WriteLn('off');
+  If(Pipe)Then Begin
+   Write(PipeFile,'BREAK = ');
+   If(X)Then WriteLn(PipeFile,'on')
+        Else WriteLn(PipeFile,'off');
+  End
+   Else
+  Begin
+   Write('BREAK = ');
+   If(X)Then WriteLn('on')
+        Else WriteLn('off');
+  End;
  End;
 End;
 
@@ -997,7 +1037,8 @@ Begin
   Else
  Begin
   GetDate(Year,Month,Day,DayOfMonth);
-  WriteLn('La date du jour est ',Year:4,'-',PadZeroLeft(Month,2),'-',PadZeroLeft(Day,2));
+  If(Pipe)Then WriteLn(PipeFile,'La date du jour est ',Year:4,'-',PadZeroLeft(Month,2),'-',PadZeroLeft(Day,2))
+          Else WriteLn('La date du jour est ',Year:4,'-',PadZeroLeft(Month,2),'-',PadZeroLeft(Day,2));
  End;
 End;
 
@@ -1151,12 +1192,21 @@ Begin
  If(Double)in(Column)Then While DOSError=0 do Begin
   Write(PadRight(Info.Name,13));
   If Info.Attr and Directory=Directory Then Begin
-   Write(PadRight('<DIR>',9));
+   If(Pipe)Then Write(PipeFile,PadRight('<DIR>',9))
+           Else Write(PadRight('<DIR>',9));
   End
    Else
   Write(Info.Size:9);
   UnpackTime(Info.Time,T);
-  Write(' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2),' ');
+  If(Pipe)Then Begin
+   Write(PipeFile,' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
+         PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2),' ');
+  End
+   Else
+  Begin
+   Write(' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',PadZeroLeft(T.Day,2),' ',
+         T.Hour:2,':',PadZeroLeft(T.Min,2),' ');
+  End;
   FindNext(Info);
   If(Pause)in(Option)Then Begin
    Inc(P);
@@ -1174,18 +1224,38 @@ Begin
   TotalSize:=0;
   If Not((Brief)in(Option))Then Begin
    Inc(P,2);
-   WriteLn('Le volume de l''unite '+CurrDrive+' est '+CurrLabel);
-   WriteLn;
-  End;
-  While DOSError=0 do Begin
-   Write(PadRight(Info.Name,13));
-   If Info.Attr and Directory=Directory Then Begin
-    Write(PadRight('<DIR>',15));
+   If(Pipe)Then Begin
+    WriteLn(PipeFile,'Le volume de l''unite '+CurrDrive+' est '+CurrLabel);
+    WriteLn(PipeFile);
    End
     Else
-   Write(Info.Size:15);
+   Begin
+    WriteLn('Le volume de l''unite '+CurrDrive+' est '+CurrLabel);
+    WriteLn;
+   End;
+  End;
+  While DOSError=0 do Begin
+   If(Pipe)Then Write(PipeFile,PadRight(Info.Name,13))
+           Else Write(PadRight(Info.Name,13));
+   If Info.Attr and Directory=Directory Then Begin
+    If(Pipe)Then Write(PipeFile,PadRight('<DIR>',15))
+            Else Write(PadRight('<DIR>',15));
+   End
+    Else
+   Begin
+    If(Pipe)Then Write(PipeFile,Info.Size:15)
+            Else Write(Info.Size:15);
+   End;
    UnpackTime(Info.Time,T);
-   WriteLn(' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2));
+   If(Pipe)Then Begin
+    WriteLn(PipeFile,' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
+            PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2));
+   End
+    Else
+   Begin
+    WriteLn(' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
+            PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2));
+   End;
    FindNext(Info);
    If(Pause)in(Option)Then Begin
     Inc(P);
@@ -1200,8 +1270,15 @@ Begin
    Inc(TotalSize,Info.Size);
   End;
   If Not((Brief)in(Option))Then Begin
-   WriteLn(' Les ',TotalNumFiles,' fichier(s) utilisent ',TotalSize,' octet(s)');
-   WriteLn(DiskFree(Byte(CurrDrive)-64):10,' octet(s) de libre');
+   If(Pipe)Then Begin
+    WriteLn(PipeFile,' Les ',TotalNumFiles,' fichier(s) utilisent ',TotalSize,' octet(s)');
+    WriteLn(PipeFile,DiskFree(Byte(CurrDrive)-64):10,' octet(s) de libre');
+   End
+    Else
+   Begin
+    WriteLn(' Les ',TotalNumFiles,' fichier(s) utilisent ',TotalSize,' octet(s)');
+    WriteLn(DiskFree(Byte(CurrDrive)-64):10,' octet(s) de libre');
+   End;
   End;
  End;
 End;
@@ -2189,7 +2266,8 @@ Begin
      Inc(L);
     End;
     ReadLn(Handle,CurrLine);
-    WriteLn(CurrLine);
+    If(Pipe)Then WriteLn(PipeFile,CurrLine)
+            Else WriteLn(CurrLine);
     If(_Pause in Option)Then Begin
      Inc(ScrLine);
      If ScrLine=25 Then Begin
@@ -2365,14 +2443,42 @@ Begin
 End;
 
 Procedure RunCommand;
+Label
+ Restart;
 Var
  LastEcho:Boolean;
  FileBat:Text;
+ OY:Byte;
+ PipeS:String;
 Begin
  AddHistory(CmdStr);
+Restart:
  ExtractCommand;
  CommandFound:=False;
  For J:=Low(CommandList) to High(CommandList) do Begin
+  If(PipeToCommand)and(StrToUpper(CurrCommand)='MORE')Then Begin
+   Reset(PipeFile);
+   OY:=1;
+   While Not EOF(PipeFile)do Begin
+    ReadLn(PipeFile,PipeS);
+    WriteLn(PipeS);
+    Inc(OY);
+    If OY=25 Then Begin
+     Write('Presse ESC pour quitter ou une autre touche pour continuer...');
+     If ReadKey=#27 Then Begin
+      WriteLn;
+      Break;
+     End;
+     OY:=1;
+    End;
+   End;
+   Close(PipeFile);
+   Pipe:=False;
+   PipeToCommand:=False;
+   CommandFound:=True;
+   Exit;
+  End
+   Else
   If CurrCommand=CommandList[J]Then Begin
    Case(J)of
     0:AliasCommand;
@@ -2463,6 +2569,23 @@ Begin
     Break;
    End;
   End;
+ End;
+ If(PipeToCommand)Then Begin
+  If Not(CommandFound)Then Begin
+   WriteLn('Commande non support‚ dans un contexte du tuyau');
+   Exit;
+  End;
+  CmdStr:=PipeCommand;
+  PipeCommand:='';
+  Goto Restart;
+ End;
+ If(Pipe)Then Begin
+  If Not(CommandFound)Then Begin
+   WriteLn('Redirection non support‚ dans un contexte du tuyau');
+   Exit;
+  End;
+  Pipe:=False;
+  Close(PipeFile);
  End;
  If Not(CommandFound)Then Begin
   If CmdStr='?'Then Begin
@@ -2666,7 +2789,7 @@ BEGIN
  NumberHistory:=0;
  FillChar(StackDirectory,SizeOf(StackDirectory),0);
  NumberDirectory:=0;
- Echo:=True;
+ Echo:=True;Pipe:=False;PipeToCommand:=False;
  InCmd:=0;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   Case Language of
