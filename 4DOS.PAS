@@ -48,6 +48,12 @@ Var
  CurrCommand,ParamList,PipeCommand:String;
  I,J:Byte;
 
+Procedure PCopy(Source,Target:Byte);Begin
+ {$IFNDEF FPC}
+  Move(Mem[SegB800:Source*(MemW[$0040:$4A]*25*2)],Mem[SegB800:Target*(MemW[$0040:$4A]*25*2)],MemW[$0040:$4A]*25*2)
+ {$ENDIF}
+End;
+
 Function GetConvMemory:Word;
 Var
  Regs:Registers;
@@ -2655,6 +2661,7 @@ Var
  End;
 
 Begin
+ PCopy(0,1);
  P:=1;Y:=0;
  PopupHistory:='';
  If NumberHistory<20 Then Begin
@@ -2702,6 +2709,7 @@ Begin
  End
   Else
  Box(42,2,78,22,$07);
+ PCopy(1,0);
 End;
 
 Procedure ReadLine(Var S:String);
