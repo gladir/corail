@@ -33,6 +33,7 @@ Type
 Var
  Language:(_French,_English,_Germany,_Italian,_Spain);
  TmpLanguage:String;
+ ShowASCII128:Boolean;
  AttrAdd,AttrRemove:Word;
  SubDirectory:Boolean;
  InCmd:Byte;
@@ -115,6 +116,16 @@ Begin
  StrToUpper:=S;
 End;
 
+Function DuplicateString(C:Char;Num:Integer):String;
+Var
+ I:Byte;
+ S:String;
+Begin
+ S:='';
+ For I:=1 to Num do S:=S+C;
+ DuplicateString:=S;
+End;
+
 Function GetCurrentDisk:Char;
 Var
  CurrentDir:String;
@@ -162,6 +173,67 @@ Begin
   FindNext(Info);
  End;
  GetDiskLabel:=''
+End;
+
+Procedure Box(X1,Y1,X2,Y2,Couleur:Byte);Begin
+ Window(X1,Y1,X2,Y2);
+ TextBackground((Couleur shr 4)and 15);
+ {$IFDEF FPC}
+  If Couleur and $80=$80 Then Begin
+   TextColor((Couleur and 15)+BLINK);
+  End
+   Else
+  TextColor(Couleur and 15);
+ {$ELSE}
+  TextColor(Couleur and 15);
+ {$ENDIF}
+ ClrScr;
+ Window(1,1,80,25);
+End;
+
+Procedure FrameEmpty(X1,Y1,X2,Y2,Couleur:Byte);
+Var
+ I:Byte;
+ ChrHori,ChrVert:Char;
+ Chr218,Chr192,Chr191,Chr217:Char;
+Begin
+ TextBackground((Couleur shr 4)and 15);
+ TextColor(Couleur and 15);
+ If(ShowASCII128)Then Begin
+  ChrHori:='-';
+  ChrVert:='|';
+  Chr218:='+';
+  Chr192:='+';
+  Chr191:='+';
+  Chr217:='+';
+ End
+  Else
+ Begin
+  ChrHori:=#$C4;
+  ChrVert:=#$B3;
+  Chr218:=#218;
+  Chr192:=#192;
+  Chr191:=#191;
+  Chr217:=#217;
+ End;
+ For I:=Y1+1 to Y2-1 do Begin
+  GotoXY(X1,I);
+  Write(ChrVert);
+  GotoXY(X2,I);
+  Write(ChrVert);
+ End;
+ GotoXY(X1+1,Y1);
+ Write(DuplicateString(ChrHori,X2-X1-1));
+ GotoXY(X1+1,Y2);
+ Write(DuplicateString(ChrHori,X2-X1-1));
+ GotoXY(X1,Y1);
+ Write(Chr218);
+ GotoXY(X1,Y2);
+ Write(Chr192);
+ GotoXY(X2,Y1);
+ Write(Chr191);
+ GotoxY(X2,Y2);
+ Write(Chr217);
 End;
 
 Function AddHistory(S:String):Boolean;
@@ -2426,6 +2498,89 @@ Begin
  End;
 End;
 
+Function PopupHistory:String;
+Var
+ K:Char;
+ I:Byte;
+ P,Y:LongInt;
+
+ Procedure ShowItem;Begin
+  TextColor(7);
+  TextBackground(Black);
+  GotoXY(44,3+Y);
+  Write(PadRight(Copy(History[P]^,1,34),34));
+  GotoXY(44,3+Y);
+ End;
+
+ Procedure HideItem;Begin
+  TextColor(0);
+  TextBackground(7);
+  GotoXY(44,3+Y);
+  Write(PadRight(Copy(History[P]^,1,34),34));
+ End;
+
+ Procedure RefreshList;
+ Var
+  J:Byte;
+ Begin
+  TextColor(0);
+  TextBackground(7);
+  For J:=1 to 19 do Begin
+   GotoXY(44,2+J);
+   Write(PadRight(Copy(History[P-Y+J-1]^,1,34),34));
+  End;
+ End;
+
+Begin
+ P:=1;Y:=0;
+ PopupHistory:='';
+ If NumberHistory<20 Then Begin
+  Box(42,2,78,NumberHistory+3,$70);
+  FrameEmpty(42,2,78,NumberHistory+3,$70);
+ End
+  Else
+ Begin
+  Box(42,2,78,22,$70);
+  FrameEmpty(42,2,78,22,$70);
+ End;
+ For I:=1 to NumberHistory do Begin
+  If I>=20 Then Break;
+  GotoXY(44,2+I);
+  Write(History[I]^);
+ End;
+ ShowItem;
+ Repeat
+  K:=ReadKey;
+  Case K of
+   #0:Case ReadKey of
+    #72:If P>1 Then Begin { Up }
+     HideItem;
+     Dec(P);
+     If Y>0 Then Dec(Y)
+            Else RefreshList;
+     ShowItem;
+    End;
+    #80:If P<NumberHistory Then Begin { Down }
+     HideItem;
+     Inc(P);
+     If Y<18 Then Inc(Y)
+             Else RefreshList;
+     ShowItem;
+    End;
+   End;
+   #13:Begin
+    PopupHistory:=History[P]^;
+    Break;
+   End;
+  End;
+ Until K=#27;
+ If NumberHistory<20 Then Begin
+  Box(42,2,78,NumberHistory+3,$07);
+ End
+  Else
+ Box(42,2,78,22,$07);
+End;
+
 Procedure ReadLine(Var S:String);
 Var
  Rec:SearchRec;
@@ -2444,9 +2599,15 @@ Begin
   K:=ReadKey;
   Case K of
    #0:Case ReadKey of
+    #61:If NumberHistory>0 Then Begin { F3 }
+     S:=History[NumberHistory]^;
+    End;
     #72:If NumberHistory>0 Then Begin
      S:=History[CurrHistory]^; { Up }
      If CurrHistory>1 Then Dec(CurrHistory);
+    End;
+    #73,#81:If NumberHistory>0 Then Begin { PgUp/PgDn }
+     S:=PopupHistory;
     End;
     #80:If NumberHistory>0 Then Begin
      S:=History[CurrHistory]^; { Down }
@@ -2493,6 +2654,14 @@ BEGIN
   If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
   If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
  End;
+ ShowASCII128:=False;
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ELSE}
+   ShowASCII128:=True;
+  {$ENDIF}
+ {$ENDIF}
  FillChar(History,SizeOf(History),0);
  NumberHistory:=0;
  FillChar(StackDirectory,SizeOf(StackDirectory),0);
