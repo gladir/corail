@@ -2458,6 +2458,14 @@ Var
  PipeS:String;
 Begin
  AddHistory(CmdStr);
+  { Change d'unit‚ de disque A:, B:, C:, D:,... }
+ If(Length(CmdStr)=2)and(CmdStr[2]=':')and(CmdStr[1]in['A'..'Z','a'..'z'])Then Begin
+  GetDir(Ord(UpCase(CmdStr[1]))-64,PipeS);
+  If PipeS<>''Then ChDir(PipeS)
+              Else ChDir(CmdStr+'\');
+  Exit;
+ End;
+  { Recherche une commande interne }
 Restart:
  ExtractCommand;
  CommandFound:=False;
