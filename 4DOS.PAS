@@ -55,6 +55,16 @@ Begin
  GetConvMemory:=Regs.AX;
 End;
 
+Function GetFreeMemory:LongInt;
+Var
+ Regs:Registers;
+Begin
+ Regs.AH:=$48;
+ Regs.BX:=$FFFF;
+ Intr($21,Regs);
+ GetFreeMemory:=LongInt(Regs.AX)*16;
+End;
+
 Function PadRight(S:String;Space:Byte):String;
 Var
  I:Byte;
@@ -1414,8 +1424,8 @@ Begin
  {$IFDEF FPC}
   WriteLn('** Information non disponible sur ce systeme');
  {$ELSE}
-  WriteLn(GetConvMemory*1024:15,' octets total de memoire RAM');
-  WriteLn(MemAvail:15,' octets de libre');
+  WriteLn(LongInt(GetConvMemory) shr 10:15,' octets total de memoire RAM');
+  WriteLn(GetFreeMemory:15,' octets de libre');
  {$ENDIF}
  WriteLn;
  EnvSize:=0;
@@ -2265,10 +2275,19 @@ Procedure YCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure UnknownCommand;Begin
+Procedure UnknownCommand;
+Var
+ Err:Word;
+Begin
  Exec(CurrCommand,ParamList);
- If DosError<>0Then Begin
-  WriteLn('Commande ou nom de fichier non reconnu');
+ Err:=DosError;
+ Case Err of
+  0:;
+  2:Case Language of
+   _English: WriteLn('Bad command or file name');
+   Else WriteLn('Commande ou nom de fichier non reconnu');
+  End;
+  Else Write(GetErrorMessage(Err));
  End;
  WriteLn;
 End;
@@ -2409,8 +2428,9 @@ End;
 
 Procedure ReadLine(Var S:String);
 Var
+ Rec:SearchRec;
  K:Char;
- X,Y:Byte;
+ X,Y,I:Byte;
  CurrHistory:Integer;
 Begin
  CurrHistory:=NumberHistory;
@@ -2435,6 +2455,17 @@ Begin
    End;
    #8:Begin
     If S<>''Then S:=Copy(S,1,Length(S)-1);
+   End;
+   #9:If S<>''Then Begin
+    For I:=Length(S) downto 1 do Begin
+     If S[I]=' 'Then Begin
+      FindFirst(Copy(S,I+1,255)+'*.*',AnyFile,Rec);
+      If DosError=0 Then Begin
+       S:=Copy(S,1,I)+Rec.Name;
+      End;
+      Break;
+     End;
+    End;
    End;
    Else S:=S+K;
   End;
