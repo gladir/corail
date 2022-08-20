@@ -154,6 +154,16 @@ Function Path2Drive(Path:String):Char;Begin
  Path2Drive:=Path[1];
 End;
 
+Function Path2Dir(S:String):String;
+Var
+ D:DirStr;
+ N:NameStr;
+ E:ExtStr;
+Begin
+ FSplit(S,D,N,E);
+ Path2Dir:=D;
+End;
+
 Function SplitFileName(s:String):String;
 Var
  D:DirStr;
@@ -265,6 +275,15 @@ Begin
   History[NumberHistory]:=P;
   AddHistory:=True;
  End;
+End;
+
+Procedure FreeHistory;
+Var
+ I:Word;
+Begin
+ For I:=1 to NumberHistory do FreeMem(History[I],Length(History[I]^)+1);
+ FillChar(History,SizeOf(History),0);
+ NumberHistory:=0;
 End;
 
 Function PushDirectory(Directory:String):Boolean;
@@ -1163,8 +1182,109 @@ Begin
  Until CurrParam='';
 End;
 
-Procedure DescribeCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure DescribeCommand;
+Var
+ Found:Boolean;
+ Source,Target:Text;
+ P:Byte;
+ CurrParam,CurrLine,CurrDescr:String;
+Begin
+ P:=0;
+ Repeat
+  Inc(P);
+  CurrParam:=ExtractParam(P);
+  If CurrParam=''Then Begin
+   If P=1Then Begin
+    WriteLn('Paramätre requis');
+   End;
+   Break;
+  End
+   Else
+  If CurrParam='/?'Then Begin
+   Case Language of
+    _English:Begin
+     WriteLn('Purpose:  Create, modify, or delete file and subdirectory descriptions');
+     WriteLn;
+     WriteLn('Format:   DESCRIBE file');
+     Exit;
+    End;
+    Else Begin
+     WriteLn('DESCRIBE  Cette commande permet d''ajouter une description Ö un fichier.');
+     WriteLn;
+     WriteLn('Syntaxe:');
+     WriteLn;
+     WriteLn('DESCRIBE fichier');
+     WriteLn;
+     WriteLn('    /?    Ce paramätre permet d''afficher l''aide sur cette commande');
+     WriteLn(' fichier  Ce paramätre permet d''indiquer le nom du fichier a identifier.');
+     Exit;
+    End;
+   End;
+  End;
+  Found:=False;
+  {$I-}Assign(Source,'DESCRIPT.ION');
+  Reset(Source);{$I+}
+  If IoResult<>0 Then Begin
+   Assign(Target,'DESCRIPT.ION');
+   Rewrite(Target);
+   Write('Description "',CurrParam,'": ');
+   ReadLn(CurrDescr);
+   WriteLn;
+   WriteLn(Target,CurrParam,' ',CurrDescr);
+   Close(Target);
+  End
+   Else
+  Begin
+   {$I-}Assign(Target,'DESCRIPT.TMP');
+   Rewrite(Target);{$I+}
+   While Not EOF(Source)do Begin
+    ReadLn(Source,CurrLine);
+    If(StrToUpper(CurrParam+' ')=StrToUpper(Copy(CurrLine,1,Length(CurrParam)+1)))Then Begin
+     Write('Description "',CurrParam,'": ');
+     ReadLn(CurrDescr);
+     WriteLn;
+     Found:=True;
+     WriteLn(Target,CurrParam,' ',CurrDescr);
+    End
+     Else
+    WriteLn(Target,CurrLine);
+   End;
+   If Not(Found)Then Begin
+    Write('Description "',CurrParam,'": ');
+    ReadLn(CurrDescr);
+    WriteLn;
+    WriteLn(Target,CurrParam,' ',CurrDescr);
+   End;
+   Close(Source);
+   Assign(Source,'DESCRIPT.ION');
+   {$I-}Erase(Source);{$I+}
+   Close(Target);
+   Assign(Target,'DESCRIPT.TMP');
+   Rename(Target,'DESCRIPT.ION');
+  End;
+  If P>9Then Break;
+ Until CurrParam='';
+End;
+
+Function GetDescription(Path,FileName:String):String;
+Var
+ Source:Text;
+ CurrLine:String;
+Begin
+ GetDescription:='';
+ {$I-}Assign(Source,Path2Dir(FExpand(Path))+'DESCRIPT.ION');
+ Reset(Source);{$I+}
+ If IoResult=0 Then Begin
+  While Not EOF(Source)do Begin
+   ReadLn(Source,CurrLine);
+   If(StrToUpper(FileName+' ')=StrToUpper(Copy(CurrLine,1,Length(FileName)+1)))Then Begin
+    GetDescription:=Copy(CurrLine,Length(FileName)+1,255);
+    Close(Source);
+    Exit;
+   End;
+  End;
+  Close(Source);
+ End;
 End;
 
 Procedure DirCommand;
@@ -1296,14 +1416,16 @@ Begin
    End;
    UnpackTime(Info.Time,T);
    If(Pipe)Then Begin
-    WriteLn(PipeFile,' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
+    Write(PipeFile,' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
             PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2));
    End
     Else
    Begin
-    WriteLn(' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
+    Write(' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
             PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2));
    End;
+   Write(GetDescription(ShowDir,Info.Name));
+   WriteLn;
    FindNext(Info);
    If(Pause)in(Option)Then Begin
     Inc(P);
@@ -1556,8 +1678,10 @@ End;
 
 Procedure HistoryCommand;
 Var
- I:Integer;
- FirstParam:String;
+ Mode:(_None,_AddHistory,_ReadHistory);
+ P,I:Integer;
+ HistoryFile:Text;
+ CurrLine,CurrParam,FirstParam:String;
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
@@ -1565,21 +1689,94 @@ Begin
    _English:Begin
     WriteLn('Purpose:  Display, add to, clear, or read the history list.');
     WriteLn;
-    WriteLn('Format:   HISTORY [/?]');
+    WriteLn('Format:   HISTORY [/?] [/A command] [/R filename]');
    End;
    Else Begin
     WriteLn('HISTORY   Cette commande permet d''afficher l''historique des commandes.');
     WriteLn;
     WriteLn('Syntaxe:');
     WriteLn;
-    WriteLn('HISTORY [/?]');
+    WriteLn('HISTORY [/?] [/A commande] [/R nomdufichier] [/F]');
     WriteLn;
-    WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+    WriteLn('  /?              Ce paramätre permet d''afficher l''aide sur cette commande');
+    WriteLn('  /A commande     Ce paramätre permet d''ajouter un historique');
+    WriteLn('  /F              Ce paramätre permet de vider l''historique');
+    WriteLn('  /R nomdufichier Ce paramätre permet de charger un historique');
    End;
   End;
  End
   Else
- For I:=1 to NumberHistory do WriteLn(History[I]^);
+ If FirstParam=''Then Begin
+  For I:=1 to NumberHistory do Begin
+   If(Pipe)Then WriteLn(PipeFile,History[I]^)
+           Else WriteLn(History[I]^);
+  End;
+ End
+  Else
+ If(StrToUpper(FirstParam)='/P')and(ExtractParam(2)='')Then Begin
+  P:=1;
+  For I:=1 to NumberHistory do Begin
+   If(Pipe)Then WriteLn(PipeFile,History[I]^)
+           Else WriteLn(History[I]^);
+   Inc(P);
+   If P=25 Then Begin
+    P:=0;
+    Case Language of
+     _English:Begin
+      Write('Press ESC to quit or another key to continue...');
+     End;
+     Else Begin
+      Write('Presse ESC pour quitter ou une autre touche pour continuer...');
+     End;
+    End;
+    If ReadKey=#27 Then Begin
+     WriteLn;
+     Exit;
+    End;
+    WriteLn;
+   End;
+  End;
+ End
+  Else
+ Begin
+  Mode:=_None;
+  P:=0;
+  Repeat
+   Inc(P);
+   CurrParam:=ExtractParam(P);
+   Case Mode of
+    _AddHistory:Begin
+     AddHistory(CurrParam);
+     Mode:=_None;
+    End;
+    _ReadHistory:Begin
+     {$I-}Assign(HistoryFile,CurrParam);
+     Reset(HistoryFile);{$I+}
+     If IoResult=0 Then Begin
+      While Not EOF(HistoryFile)do Begin
+       ReadLn(HistoryFile,CurrLine);
+       AddHistory(CurrLine);
+      End;
+      Close(HistoryFile);
+     End
+      Else
+     WriteLn('Erreur de lecture d''historique');
+     Mode:=_None;
+    End;
+    Else Begin
+     If StrToUpper(CurrParam)='/A'Then Mode:=_AddHistory Else
+     If StrToUppeR(CurrParam)='/F'Then FreeHistory Else
+     If StrToUpper(CurrParam)='/R'Then Mode:=_ReadHistory
+      Else
+     If CurrParam<>''Then Begin
+      WriteLn('Paramätre invalide : ',CurrParam);
+      Exit;
+     End;
+    End;
+   End;
+   If P>9Then Break;
+  Until CurrParam='';
+ End;
 End;
 
 Procedure IfCommand;Begin
