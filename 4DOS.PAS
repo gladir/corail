@@ -1418,14 +1418,14 @@ Begin
    If(Pipe)Then Begin
     Write(PipeFile,' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
             PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2));
+    WriteLn(PipeFile,GetDescription(ShowDir,Info.Name));
    End
     Else
    Begin
     Write(' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
             PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2));
+    WriteLn(GetDescription(ShowDir,Info.Name));
    End;
-   Write(GetDescription(ShowDir,Info.Name));
-   WriteLn;
    FindNext(Info);
    If(Pause)in(Option)Then Begin
     Inc(P);
