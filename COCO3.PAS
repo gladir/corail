@@ -53,6 +53,11 @@ Type
   Line,Col:Word;
   LineNumber:Integer;
  End;
+ ForStackRec=Record
+  Line,Col:Word;
+  LineNumber:Integer;
+  VarName:String[20];
+ End;
 
 Var
  Terminated,Tron:Boolean;
@@ -67,6 +72,8 @@ Var
  I,NumberVariable:Integer;
  GosubStack:Array[1..10]of GosubStackRec;
  GosubPos:Byte;
+ ForStack:Array[1..10]of ForStackRec;
+ ForPos:Byte;
 
 Function RunBasic(InList:Boolean):Boolean;Forward;
 Procedure NewCommand;Forward;
@@ -517,6 +524,40 @@ Begin
    If(I<=Length(CurrLine))and(CurrLine[I]='$')Then IsStringValue:=True;
   End;
  End;
+End;
+
+Function GetVariableName:String;
+Var
+ S:String;
+Begin
+ S:='';
+ If CurrLine[CurrPos]in['A'..'Z','a'..'z']Then Begin
+  S:=S+CurrLine[CurrPos];
+  Inc(CurrPos);
+  While CurrPos<Length(CurrLine)do Begin
+   If Not(CurrLine[CurrPos]in['A'..'Z','a'..'z','0'..'9'])Then Break;
+   S:=S+CurrLine[CurrPos];
+   Inc(CurrPos);
+  End;
+ End;
+ GetVariableName:=StrToUpper(S);
+End;
+
+Function ReadWord:String;
+Var
+ S:String;
+Begin
+ S:='';
+ If CurrLine[CurrPos]in['A'..'Z','a'..'z']Then Begin
+  S:=S+CurrLine[CurrPos];
+  Inc(CurrPos);
+  While CurrPos<Length(CurrLine)do Begin
+   If Not(CurrLine[CurrPos]in['A'..'Z','a'..'z','0'..'9'])Then Break;
+   S:=S+CurrLine[CurrPos];
+   Inc(CurrPos);
+  End;
+ End;
+ ReadWord:=StrToUpper(S);
 End;
 
 Function ReadWordString:String;
@@ -1024,7 +1065,7 @@ Begin
    Else
   Inc(I);
   If(Infix[I]in StopChar)Then Break;
-  If StrToUpper(Copy(Infix,I,4))='THEN'Then Break;
+  If(StrToUpper(Copy(Infix,I,4))='THEN')or(StrToUpper(Copy(Infix,I,2))='TO')Then Break;
  Until I>Length(Infix);
  CurrPos:=I;
  While(TopOfStack>MinTopOfStack)do PostFix:=PostFix+StackPop;
@@ -1125,6 +1166,42 @@ Begin
  {$I-} ChDir(GetStringValue);{$I+}
  Error:=IoResult;
  If Error<>0Then WriteLn(GetErrorMessage(Error));
+End;
+
+Function ForCommand:Boolean;
+Var
+ R1,R2:Real;
+Begin
+ ForCommand:=False;
+ If ForPos>=High(ForStack)Then Begin
+  WriteLn('Pile de FOR pleine.');
+  Exit;
+ End;
+ Inc(ForPos);
+ ForStack[ForPos].Line:=CurrLinePtr;
+ ForStack[ForPos].LineNumber:=CurrNumberLine;
+ SkipSpace;
+ ForStack[ForPos].VarName:=Copy(GetVariableName,1,20);
+ SkipSpace;
+ If GetSeparator<>'='Then Begin
+  WriteLn('"=" attendu.');
+  Exit;
+ End;
+ Inc(CurrPos);
+ R1:=GetNumberValue(1);
+ If VariableExist(ForStack[ForPos].VarName)Then
+  SetVariableReal(ForStack[ForPos].VarName,Trunc(R1))
+ Else
+  AddVariableReal(ForStack[ForPos].VarName,Trunc(R1));
+ SkipSpace;
+ If StrToUpper(ReadWord)<>'TO'Then Begin
+  WriteLn('Mot r‚serv‚ "TO" attendu');
+  Exit;
+ End;
+ SkipSpace;
+ ForStack[ForPos].Col:=CurrPos;
+ R2:=GetNumberValue(1);
+ ForCommand:=True;
 End;
 
 Function GosubCommand:Boolean;
@@ -1414,6 +1491,35 @@ Begin
  NumberLine:=0;
 End;
 
+Function NextCommand:Boolean;
+Var
+ NextCurrPos,NextCurrLinePtr,NextCurrNumberLine:Word;
+ R2:Real;
+Begin
+ NextCommand:=False;
+ If ForPos=0 Then Begin
+  WriteLn('NEXT sans FOR');
+  Exit;
+ End;
+ NextCurrPos:=CurrPos;
+ NextCurrLinePtr:=CurrLinePtr;
+ NextCurrNumberLine:=CurrNumberLine;
+ CurrPos:=ForStack[ForPos].Col;
+ CurrLinePtr:=ForStack[ForPos].Line;
+ CurrLine:=PA[CurrLinePtr]^;
+ CurrNumberLine:=ForStack[ForPos].LineNumber;
+ SetVariableReal(ForStack[ForPos].VarName,GetVariableReal(ForStack[ForPos].VarName)+1);
+ R2:=GetNumberValue(1);
+ If GetVariableReal(ForStack[ForPos].VarName)>R2 Then Begin
+  CurrPos:=NextCurrPos;
+  CurrLinePtr:=NextCurrLinePtr;
+  CurrNumberLine:=NextCurrNumberLine;
+  CurrLine:=PA[CurrLinePtr]^;
+  Dec(ForPos);
+ End;
+ NextCommand:=True;
+End;
+
 Procedure PrintCommand;
 Var
  Pos,R:Real;
@@ -1675,7 +1781,7 @@ Begin
    20:NoImplementation:=True;{ELSE}
    21:Exit;{END}
    22:NoImplementation:=True;{EXEC}
-   23:NoImplementation:=True;{FOR}
+   23:If Not(ForCommand)Then Exit;{FOR}
    24:NoImplementation:=True;{GET}
    25:If Not(GosubCommand)Then Exit;{GOSUB}
    26:If Not(GotoCommand)Then Exit;{GOTO}
@@ -1704,7 +1810,7 @@ Begin
    49:NoImplementation:=True;{LPOKE}
    50:NoImplementation:=True;{MOTOR}
    51:NewCommand;{NEW}
-   52:NoImplementation:=True;{NEXT}
+   52:If Not(NextCommand)Then Exit;{NEXT}
    53:NoImplementation:=True;{ON}
    54:NoImplementation:=True;{OPEN}
    55:NoImplementation:=True;{PAINT}
@@ -1800,8 +1906,13 @@ Begin
 End;
 
 BEGIN
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('COCO3 : Cette commande permet de lancer l''interpreteur de BASIC du COCO3.');
+  WriteLn('COCO3 : Cette commande permet de lancer l''interpr‚teur de BASIC du COCO3.');
   WriteLn;
   WriteLn('Syntaxe : COCO3 [fichier]');
  End
@@ -1810,7 +1921,7 @@ BEGIN
   FileName:='';
   Tron:=False;
   NumberLine:=0;CurrNumberLine:=0;
-  NumberVariable:=0;GosubPos:=0;
+  NumberVariable:=0;GosubPos:=0;ForPos:=0;
   For I:=1 to ParamCount do Begin
    FileName:=ParamStr(I);
   End;
