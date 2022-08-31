@@ -672,9 +672,10 @@ Begin
   Dec(CurrPos,3);
  End;
  Repeat
-  If Infix[I]in['A'..'Z','a'..'z']Then Begin
-   VarName:='';
-   While Infix[I]in['A'..'Z','a'..'z','%','!','#']do Begin
+  If(I<=Length(Infix))and(Infix[I]in['A'..'Z','a'..'z'])Then Begin
+   VarName:=Infix[I];
+   Inc(I);
+   While(I<=Length(Infix))and(Infix[I]in['A'..'Z','a'..'z','%','!','#'])do Begin
     VarName:=VarName+Infix[I];
     Inc(I);
    End;
