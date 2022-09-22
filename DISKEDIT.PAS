@@ -230,6 +230,10 @@ End;
 Procedure Box(X1,Y1,X2,Y2,Couleur:Byte);Begin
  Window(X1,Y1,X2,Y2);
  TextBackground((Couleur shr 4)and 15);
+ If Couleur and $80=$80 Then Begin
+  TextColor((Couleur and 15)+BLINK);
+ End
+  Else
  TextColor(Couleur and 15);
  ClrScr;
  Window(1,1,80,25);
@@ -242,6 +246,10 @@ Var
  Chr218,Chr192,Chr191,Chr217:Char;
 Begin
  TextBackground((Couleur shr 4)and 15);
+ If Couleur and $80=$80 Then Begin
+  TextColor((Couleur and 15)+BLINK);
+ End
+  Else
  TextColor(Couleur and 15);
  If(ShowASCII128)Then Begin
   ChrHori:='-';
@@ -289,7 +297,7 @@ Const
 Var
  I:Byte;
 Begin
- Box(1,1,80,1,$70);
+ Box(1,1,80,1,$F0);
  For I:=0 to 7 do Begin
   GotoXY(MenuPos[I],1);
   Write(MenuItem[I]);
@@ -445,7 +453,13 @@ Procedure ShowView;Begin
  End;
 End;
 
-Procedure Init;Begin
+Procedure Init;
+Var
+ Regs:Registers;
+Begin
+ Regs.AX:=$1003;
+ Regs.BL:=$0;
+ Intr($10,Regs);
  ClrScr;
  ShowMenu;
  ShowView;
@@ -500,6 +514,11 @@ Begin
 End;
 
 BEGIN
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('DISKEDIT : Cette commande permet de lancer l''editeur de disque.');
   WriteLn;

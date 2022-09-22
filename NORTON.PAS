@@ -6,12 +6,12 @@
 
 Program NORTON;
 
-{$M 4096,0,0}
+{$M 16384,0,0}
 
 Uses Strings,Crt,DOS;
 
 Const
- CommandsTitleList:Array[0..10]of String[20]=(
+ CommandsTitleList:Array[0..11]of String[20]=(
   '^RECUPERATION',
   'DiskEdit',
   '',
@@ -22,10 +22,11 @@ Const
   'BE (Batch Enhancer)',
   'FA (Attributs)',
   'FS (Taille)',
+  'System Info',
   'TS (Recherche texte)'
  );
 
- CommandsList:Array[0..10]of String[12]=(
+ CommandsList:Array[0..11]of String[12]=(
   '',
   'DISKEDIT',
   '',
@@ -36,10 +37,11 @@ Const
   'BE',
   'FA',
   'FS',
+  'SYSINFO',
   'TS'
  );
 
- CommandsPause:Array[0..10]of Boolean=(
+ CommandsPause:Array[0..11]of Boolean=(
   False,
   False,
   False,
@@ -50,10 +52,11 @@ Const
   True,
   True,
   True,
+  False,
   True
  );
 
- CommandsDescr:Array[0..10]of PChar=(
+ CommandsDescr:Array[0..11]of PChar=(
   '',
 
   '^Editeur disque (Disk Editor)^'+#13+
@@ -86,6 +89,11 @@ Const
   'FS [/P] [chemin]'+#13+
   #13+
   'Calcul la taille de fichiers',
+
+  '^Information systäme^'+#13+
+  'SYSINFO'+#13+
+  #13+
+  'Demande des informations techniques sur '+#13+'le systäme',
 
   '^Recherche de texte^'+#13+
   'TS "chaine" [fichier] [/CS]'+#13+
@@ -130,6 +138,10 @@ End;
 Procedure Box(X1,Y1,X2,Y2,Couleur:Byte);Begin
  Window(X1,Y1,X2,Y2);
  TextBackground((Couleur shr 4)and 15);
+ If Couleur and $80=$80 Then Begin
+  TextColor((Couleur and 15)+BLINK);
+ End
+  Else
  TextColor(Couleur and 15);
  ClrScr;
  Window(1,1,80,25);
@@ -142,6 +154,10 @@ Var
  Chr218,Chr192,Chr191,Chr217:Char;
 Begin
  TextBackground((Couleur shr 4)and 15);
+ If Couleur and $80=$80 Then Begin
+  TextColor((Couleur and 15)+BLINK);
+ End
+  Else
  TextColor(Couleur and 15);
  If(ShowASCII128)Then Begin
   ChrHori:='-';
@@ -189,7 +205,7 @@ Const
 Var
  I:Byte;
 Begin
- Box(1,1,80,1,$70);
+ Box(1,1,80,1,$F0);
  For I:=0 to 4 do Begin
   GotoXY(MenuPos[I],1);
   Write(MenuItem[I]);
@@ -202,35 +218,47 @@ Var
 Begin
  For I:=Low(CommandsTitleList) to High(CommandsTitleList)do Begin
   If CommandsTitleList[I][1]='^'Then Begin
-   TextColor(Yellow);
+   TextColor(Yellow+BLINK);
    GotoXY(8+((21-Length(CommandsTitleList[I])) div 2),6+I);
    Write(Copy(CommandsTitleList[I],2,255))
   End
    Else
   Begin
-   TextColor(White);
+   TextColor(White+BLINK);
    GotoXY(8,6+I);
    Write(CommandsTitleList[I]);
   End;
  End;
 End;
 
+Procedure BoxInfo(X1,Y1,X2,Y2:Byte;Title:String);Begin
+ Box(X1+2,Y1+1,X2+2,Y2+1,$07);
+ Box(X1,Y1,X2,Y2,$9F);
+ FrameEmpty(X1,Y1,X2,Y2,$9F);
+ Box(X1,Y1,X2,Y1,$F9);
+ Title:=' '+Title+' ';
+ GotoXY(X1+(((X2-X1)-Length(Title))shr 1),Y1);
+ Write(Title);
+ TextColor(White+BLINK);
+ TextBackground(9);
+End;
+
 Procedure ShowPanel;Begin
- Box(1,2,80,24,$80);
- Box(3,3,78,22,$1F);
- FrameEmpty(3,3,78,22,$1F);
- GotoXY(28,3);
- Write('Le clone Norton Utilities');
- FrameEmpty(6,5,30,19,$1F);
+ BoxInfo(3,3,78,22,'Le clone Norton Utilities');
+ FrameEmpty(6,5,30,19,$9F);
+ Box(6,5,30,5,$F9);
  GotoXY(14,5);
  Write('Commandes');
- FrameEmpty(32,5,76,19,$1F);
+ FrameEmpty(32,5,76,19,$9F);
+ Box(32,5,76,5,$F9);
  GotoXY(49,5);
  Write('Description');
+ TextBackground(1);
+ TextColor(White+BLINK);
 End;
 
 Procedure ShowFunctionKey;Begin
- TextColor(0);
+ TextColor(0+BLINK);
  TextBackground(7);
  GotoXY(1,25);
  ClrEol;
@@ -239,9 +267,18 @@ Procedure ShowFunctionKey;Begin
  Write('| Norton Utilities Clone')
 End;
 
-Procedure Init;Begin
+Procedure Init;
+Var
+ Regs:Registers;
+Begin
+  { DÇsactive le clignotement }
+ Regs.AX:=$1003;
+ Regs.BL:=$0;
+ Intr($10,Regs);
  CurrPos:=1;
  ParamString:='';
+ TextColor(White+BLINK);
+ TextBackground(8);
  ClrScr;
  ShowMenu;
  ShowFunctionKey;
@@ -260,7 +297,7 @@ Begin
  Write(PadRight(CommandsTitleList[CurrPos],21));
  GotoXY(7,21);
  Write(CommandsList[CurrPos],' ',DuplicateString('.',68-Length(CommandsList[CurrPos])));
- Box(33,6,75,18,$1F);
+ Box(33,6,75,18,$9F);
  TextBackground(Blue);
  GotoXY(33,6);
  Y:=6;
@@ -269,8 +306,8 @@ Begin
   Case CommandsDescr[CurrPos][I]of
    '^':Begin
     HighColor:=Not HighColor;
-    If(HighColor)Then TextColor(Yellow)
-                 Else TextColor(White);
+    If(HighColor)Then TextColor(Yellow+BLINK)
+                 Else TextColor(White+BLINK);
    End;
    #13:Begin
     Inc(Y);
@@ -285,7 +322,7 @@ End;
 
 Procedure UnselectItem;Begin
  TextBackground(Blue);
- TextColor(White);
+ TextColor(White+BLINK);
  GotoXY(8,6+CurrPos);
  Write(PadRight(CommandsTitleList[CurrPos],21));
 End;
@@ -357,10 +394,17 @@ Begin
 End;
 
 Procedure Done;Begin
+ TextColor(7);
+ TextBackground(Black);
  ClrScr;
 End;
 
 BEGIN
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('NORTON : Cette commande permet de lancer le menu Norton Utilities.');
   WriteLn;
