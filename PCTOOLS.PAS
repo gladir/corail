@@ -92,6 +92,59 @@ Var
  TmpLanguage:String;
  P:Byte;
 
+Function GetConvMemory:Word;
+Var
+ Regs:Registers;
+Begin
+ Regs.AX:=0;
+ Intr($12,Regs);
+ GetConvMemory:=Regs.AX;
+End;
+
+Function GetModelROM:Byte;Begin
+ {$IFDEF FPC}
+  GetModelROM:=0;
+ {$ELSE}
+  GetModelROM:=Mem[$FFFF:$E];
+ {$ENDIF}
+End;
+
+Function DateBIOS:String;
+{$IFDEF FPC}
+Begin
+ DateBIOS:='Non disponible';
+End;
+{$ELSE}
+ Var
+  Chaine:Array[0..7] of Byte Absolute $FFFF:$5;
+  Temp:String[15];
+  Compteur:Byte;
+ Begin
+  Temp:='';
+  For Compteur:=0 to 7 do Begin
+   Temp:=Temp+Chr(Chaine[Compteur]);
+  End;
+  DateBIOS := Temp;
+ End;
+{$ENDIF}
+
+Function GetEquip:Word;
+Var
+ Regs:Registers;
+Begin
+ Regs.AX:=0;
+ Intr($11,Regs);
+ GetEquip:=Regs.AX;
+End;
+
+Function GetNumParallelPort:Word;Begin
+ GetNumParallelPort:=(GetEquip shr 14)and 3;
+End;
+
+Function GetNumSerialPort:Word;Begin
+ GetNumSerialPort:=(GetEquip shr 9) and 3;
+End;
+
 Function StrToUpper(S:String):String;
 Var
  I:Byte;
@@ -110,6 +163,17 @@ Begin
  S:='';
  For I:=1 to Num do S:=S+C;
  DuplicateString:=S;
+End;
+
+Function ByteHex2Str(value:Byte):String;
+Const
+ matrix:Array[0..15]of Char = ('0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F');
+Begin
+ ByteHex2Str:=matrix[(value shr 4) and $0F]+matrix[value and $F];
+End;
+
+Function HexWord2Str(value:Word):String;Begin
+ HexWord2Str:=ByteHex2Str(Hi(value))+ByteHex2Str(Lo(value));
 End;
 
 Procedure ShowMenu;
@@ -207,6 +271,101 @@ Procedure UnsetItem;Begin
  Window(1,1,80,25);
 End;
 
+Procedure ShowSystemInfo;
+Var
+ I:Word;
+Begin
+ ClrScr;
+ GotoXY(1,1);
+ WriteLn('PC Tools - System Information Service');
+ WriteLn(DuplicateString(#196,80));
+ WriteLn;
+ WriteLn;
+ Case Language of
+  _English:Write('Computer - ':57);
+  Else Write('Ordinateur - ':57);
+ End;
+ Case GetModelROM of
+  $55: WriteLn('Conterm Max');
+  $FB: WriteLn('IBM PC XT avec carte 256/640');
+  $FC: WriteLn('IBM PC AT');
+  $FD: WriteLn('IBM PC Junior');
+  $FE: WriteLn('IBM PC XT');
+  Else WriteLn('Inconnu');
+ End;
+ Case Language  of
+  _English:Write('The BIOS programs are dated - ':57);
+  Else Write('Le programme du BIOS est dat‚ du - ':57);
+ End;
+ WriteLn(DateBIOS);
+ Case Language of
+  _English:Write('Operating system - ':57);
+  Else Write('SystŠme d''exploitation - ':57);
+ End;
+ WriteLn(Lo(DosVersion),'.',Hi(DosVersion));
+ Case Language of
+  _English:WriteLn('Number of logical disk drives - ':57,26);
+  Else WriteLn('Nombre d''unit‚ de disque logique - ':57,26);
+ End;
+ Case Language of
+  _English:WriteLn('Logical drive letter range - ':57,'A thru Z');
+  Else WriteLn('Intervalle de lettre d''unit‚ logique - ':57,'A … Z');
+ End;
+ Case Language of
+  _English:Write('Serial Ports - ':57);
+  Else Write('Ports s‚rie - ':57);
+ End;
+ WriteLn(GetNumSerialPort);
+ Case Language of
+  _English:Write('Ports parallŠle - ':57);
+  Else Write('Parallel Ports - ':57);
+ End;
+ WriteLn(GetNumParallelPort);
+ Case Language of
+  _English:Write('User programs are loaded at HEX paragraph - ':57);
+  Else Write('Le programme utilisateur est charg‚s au paragraphe HEX - ':57);
+ End;
+ {$IFDEF FPC}
+  WriteLn('Non disponible');
+ {$ELSE}
+  WriteLn(HexWord2Str(PrefixSeg));
+ {$ENDIF}
+ Case Language of
+  _English:WriteLn('Operating system memory - ':57,0,' bytes');
+  Else WriteLn('M‚moire du systŠme d''exploitation - ':57,0,' bytes');
+ End;
+ Case Language of
+  _English:Write('Total memory reported by DOS - ':57);
+  Else Write('La m‚moire totale rapport‚ par le DOS - ':57);
+ End;
+ WriteLn(GetConvMemory,'K');
+ Case Language of
+  _English:Write('PC Tools has found has total memory to be - ':57);
+  Else Write('PC Tools a trouv‚ que la m‚moire total est - ':57);
+ End;
+ WriteLn(GetConvMemory,'K');
+ Case Language of
+  _English:Write('Additional ROM BIOS found at HEX paragraph - ':57);
+  Else Write('BIOS en ROM suppl‚mentaire trouv‚ au paragraphe HEX - ':57);
+ End;
+ {$IFNDEF FPC}
+  I:=$B000;
+  While I<$F000 do Begin
+   If(Mem[I:0]=$55)and(Mem[I:1]=$AA)Then Write(HexWord2Str(I),' ');
+   Inc(I,$800);
+  End;
+ {$ENDIF}
+ WriteLn;
+ GotoXY(1,25);
+ Case Language of
+  _English:Write('Press any key to return');
+  Else Write('Presse n''importe quel touche pour retourner');
+ End;
+ ReadKey;
+ ShowMenu;
+ SetItem;
+End;
+
 Procedure Run;
 Var
  K:Char;
@@ -230,6 +389,7 @@ Begin
     End;
    End;
    #13:Case P of
+    11:ShowSystemInfo;
     15:Exit;
    End;
   End;
