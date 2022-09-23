@@ -6,10 +6,10 @@
 
 Program CKCMOS;
 
-Const 
+Const
  RTCAdrPort:Byte=$70;
  RTCDtaPort:Byte=$71;
- 
+
 Var
  Mode:(_None,_Save,_Restore,_ShowClock);
  I,J:Integer;
@@ -17,7 +17,7 @@ Var
  FileName:String;
  Buffer:Array[0..63] of Byte;
  FileCMOS:File{$IFDEF FPC}of Byte{$ENDIF};
- 
+
 Function StrToUpper(S:String):String;
 Var
  I:Byte;
@@ -26,12 +26,12 @@ Begin
   If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
  End;
  StrToUpper:=S;
-End; 
+End;
 
 Function CMOSRead(Address:Integer):Integer;Begin
  If Address in [0..63]Then Begin
-   Port[RTCAdrPort]:=Address;     
-   CMOSRead:=Port[RTCDtaPort]                      
+   Port[RTCAdrPort]:=Address;
+   CMOSRead:=Port[RTCDtaPort]
  End
   Else
  CMOSRead:=-1;
@@ -43,8 +43,8 @@ Procedure CMOSWrite(Address:Integer;Value:Byte);Begin
 End;
 
 Function RTCDT(Address:Integer):Integer;
-Var 
- Value:Integer;                    
+Var
+ Value:Integer;
 Begin
  Value:=CMOSRead(Address);
  If(CMOSRead($0B) and 4 = 4)Then RTCDT:=Value
@@ -72,7 +72,7 @@ BEGIN
    If(StrToUpper(ParamStr(I))='/AMDEK')Then Begin
     RTCAdrPort:=$E0;
 	RTCDtaPort:=$E1;
-   End 
+   End
     Else
    If(StrToUpper(ParamStr(I))='/SHOWCLOCK')Then Mode:=_ShowClock;
    If(ParamStr(I)='/T:s')Then Mode:=_Save Else
@@ -85,7 +85,7 @@ BEGIN
     WriteLn('Il est : ', RTCDT($04), ':', RTCDT($02):2,':', RTCDT($00):2);
     WriteLn('Nous sommes le : ',RTCDT($32), RTCDT($09),'-',RTCDT($08),'-',RTCDT($07));
    end
-    Else                                          
+    Else
    WriteLn('ATTENTION ! Impossible de connaitre l''heure. Les piles de l''horloge sont vides');
   End
    Else
@@ -109,7 +109,7 @@ BEGIN
    End;
    _Restore:Begin
     {$I-}Assign(FileCMOS,FileName);
-    Reset(FileCMOS);{$I+}
+    Reset(FileCMOS,1);{$I+}
     If IOResult<>0Then Begin
      WriteLn('Fichier introuvable ou impossible a lire !');
      Halt;
