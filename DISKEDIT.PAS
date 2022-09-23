@@ -8,8 +8,148 @@ Program DISKEDIT;
 
 Uses DOS,Crt;
 
+Const
+ MainMenu:Array[0..7]of String[12]=(
+  'Objet','Edition','Lien','Vue','Informations','Outils','Quitter','F1=Aide'
+ );
+
+ MainMenuEnglish:Array[0..7]of String[12]=(
+  'Object','Edit','Link','View','Info','Tools','Quit','F1=Help'
+ );
+
+ SubMenuObject:Array[0..13]of String[30]=(
+  'UnitÇ...',
+  'RÇpertoire...',
+  'Fichier...',
+  'UnitÇ d''allocation...',
+  'Secteur...',
+  'Secteur physique...',
+  '',
+  'Table de partition',
+  'Enregistrement de dÇmarrage',
+  '1iere copie de la FAT',
+  '2ieme copie de la FAT',
+  '',
+  'Presse-papier',
+  'Sortie de mÇmoire...'
+ );
+
+ SubMenuObjectEnglish:Array[0..13]of String[20]=(
+  'Drive...',
+  'diRectory...',
+  'File...',
+  'Cluster...',
+  'Sector...',
+  'Physical sector...',
+  '',
+  'partition Table',
+  'Boot Record',
+  '1st copy of FAT',
+  '2nd copy of FAT',
+  '',
+  'cLipboard',
+  'Memory Dump...'
+ );
+
+ SubMenuEdit:Array[0..8]of String[15]=(
+  'RÇtablir',
+  '',
+  'Marquer',
+  'Copie',
+  'Coller dessus',
+  'Remplir...',
+  '',
+  'êcrire les changements...',
+  'Annuler les changements...'
+ );
+
+ SubMenuEditEnglish:Array[0..8]of String[15]=(
+  'Undo',
+  '',
+  'Mark',
+  'Copy',
+  'Paste Over',
+  'Fill...',
+  '',
+  'Write changes...',
+  'Discard changes...'
+ );
+
+ SubMenuLink:Array[0..5]of String[20]=(
+  'Fichier','RÇpertoire','Chaåne d''unitÇ d''allocation (FAT)',
+  'Partition','','Fenàtre'
+ );
+
+ SubMenuLinkEnglish:Array[0..5]of String[20]=(
+  'File','Directory','Cluster chain (FAT)','Partition','','Window'
+ );
+
+ SubMenuView:Array[0..10]of String[20]=(
+  'en Hex','en Texte','en RÇpertoire','en FAT','en Table de partition',
+  'en Enregistrement de dÇmarrage','','Divise la fenàtre',
+  'Fenàtre croissante','RÇtrÇcis la fenàtre',
+  'Echange les fenàtres'
+ );
+
+ SubMenuViewEnglish:Array[0..10]of String[20]=(
+  'as Hex','as Text','as Directory','as FAT','as Partition Table',
+  'as Boot Record','','Split window','Grow window','sHrink window',
+  'sWitch windows'
+ );
+
+ SubMenuInfo:Array[0..2]of String[30]=(
+  'Information d''objet...','Information d''unitÇ...',
+  'Cartegraphie des objets...'
+ );
+
+ SubMenuInfoEnglish:Array[0..2]of String[30]=(
+  'Object info...','Drive info...','Map of object...'
+ );
+
+ SubMenuTools:Array[0..13]of String[30]=(
+  'Rechercher...',
+  'Trouver encore',
+  'êcrire dans...',
+  'Imprimer dans...',
+  '',
+  'Recalcule la partition',
+  'Compare les fenàtres...',
+  'Fixe les attribues...',
+  'Fixe la date et l''heure...',
+  '',
+  'Convertie en hexadÇcimal...',
+  'Table ASCII...',
+  '',
+  'Configuration...'
+ );
+
+ SubMenuToolsEnglish:Array[0..13]of String[30]=(
+  'Find...',
+  'find aGain',
+  'Write to...',
+  'Print as...',
+  '',
+  'Recalculate Partition',
+  'Compare Windows...',
+  'set aTtributes...',
+  'set Date/time...',
+  '',
+  'Hex converter...',
+  'ASCII Table...',
+  '',
+  'cOnfiguration...'
+ );
+
+ YMenuMax:Array[1..8]of Byte=(
+  High(SubMenuObject),High(SubMenuEdit),High(SubMenuLink),
+  High(SubMenuView),High(SubMenuInfo),High(SubMenuTools),0,0
+ );
+
 Var
- ShowASCII128:Boolean;
+ Language:(_French,_English,_Germany,_Italian,_Spain);
+ TmpLanguage:String;
+ YMenu,XMenu:Integer;
+ ShowASCII128,OnMenu:Boolean;
  CurrDrive:Char;
  Mode:(_Hex,_Text,_Directory,_FAT,_PartitionTable,_BootRecord);
  IsDisk:Boolean;
@@ -18,6 +158,45 @@ Var
  FileName,CurrParam:String;
  Buffer:Array[0..1023]of Byte;
  CurrPos:LongInt;
+
+{$IFNDEF FPC}
+ Procedure CursorOff;
+ Var
+  Regs:Registers;
+ Begin
+  Regs.AH:=1;
+  Regs.CH:=32;
+  Regs.CL:=0;
+  Intr($10,Regs);
+ End;
+
+ Procedure CursorOn;
+ Var
+  Regs:Registers;
+ Begin
+  Regs.AX:=$0100;
+  Regs.CX:=(7 shl 8)+9;
+  Intr($10,Regs);
+ End;
+{$ENDIF}
+
+Function StrToUpper(S:String):String;
+Var
+ I:Byte;
+Begin
+ For I:=1 to Length(S)do Begin
+  If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
+ End;
+ StrToUpper:=S;
+End;
+
+Function PadRight(S:String;Space:Byte):String;
+Var
+ I:Byte;
+Begin
+ If Length(S)<Space Then For I:=Length(S)+1 to Space do S:=S+' ';
+ PadRight:=S;
+End;
 
 Procedure DiskReset;
 {$IFDEF Windows}
@@ -288,19 +467,189 @@ Begin
  Write(Chr217);
 End;
 
+Procedure ShowStatusBar;Begin
+ TextColor(Red+BLINK);
+ TextBackground(7);
+ GotoXY(1,25);
+ ClrEol;
+ GotoXY(60,25);
+ Case Language of
+  _English:Write(#179,'Disk Editor');
+  Else Write(#179,'êditeur disque');
+ End;
+ ClrEol;
+End;
+
+Procedure SetColorSelect;Begin
+ TextColor(15);
+ TextBackground(0);
+End;
+
+Procedure SetColorUnSelect;Begin
+ TextColor(0+BLINK);
+ TextBackground(15);
+End;
+
 Procedure ShowMenu;
-Const
- MenuItem:Array[0..7]of String[12]=(
-  'Objet','Edition','Lien','Vue','Informations','Outils','Quitter','F1=Aide'
- );
- MenuPos:Array[0..7]of Byte=(4,12,22,29,35,50,59,71);
 Var
  I:Byte;
 Begin
  Box(1,1,80,1,$F0);
- For I:=0 to 7 do Begin
-  GotoXY(MenuPos[I],1);
-  Write(MenuItem[I]);
+ GotoXY(1,1);
+ For I:=0 to High(MainMenu) do Begin
+  If High(MainMenu)=I Then Begin
+   SetColorUnSelect;
+   Case Language of
+    _English: Write(' ':18);
+    Else Write(' ':5);
+   End;
+  End;
+  If(OnMenu)Then Begin
+   If I+1=XMenu Then SetColorSelect
+                Else SetColorUnSelect;
+  End;
+  Case Language of
+   _English:Write(' ',MainMenuEnglish[I],' ');
+   Else Write(' ',MainMenu[I],' ');
+  End;
+  SetColorUnSelect;
+  Write(' ');
+ End;
+End;
+
+Procedure SubMenuItem(Y:Integer;Disable:Boolean);Begin
+ If(Disable)Then SetColorUnSelect Else
+ If Y=YMenu Then SetColorSelect
+            Else SetColorUnSelect;
+ Case XMenu of
+  1:Begin
+   GotoXY(2,3+Y);
+   If SubMenuObject[Y]=''Then Write(DuplicateString('-',27+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuObjectEnglish[Y],27));
+    Else Write(' ',PadRight(SubMenuObject[Y],27));
+   End;
+  End;
+  2:Begin
+   Case Language of
+    _English:GotoXY(11,3+Y);
+    Else GotoXY(10,3+Y);
+   End;
+   If SubMenuEdit[Y]=''Then Write(DuplicateString('-',27+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuEditEnglish[Y],27));
+    Else Write(' ',PadRight(SubMenuEdit[Y],27));
+   End;
+  End;
+  3:Begin
+   Case Language of
+    _English:GotoXY(18,3+Y);
+    Else GotoXY(20,3+Y);
+   End;
+   If SubMenuLink[Y]=''Then Write(DuplicateString('-',27+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuLinkEnglish[Y],27));
+    Else Write(' ',PadRight(SubMenuLink[Y],27));
+   End;
+  End;
+  4:Begin
+   Case Language of
+    _English:GotoXY(25,3+Y);
+    Else GotoXY(27,3+Y);
+   End;
+   If SubMenuView[Y]=''Then Write(DuplicateString('-',27+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuViewEnglish[Y],27));
+    Else Write(' ',PadRight(SubMenuView[Y],27));
+   End;
+  End;
+  5:Begin
+   Case Language of
+    _English:GotoXY(32,3+Y);
+    Else GotoXY(33,3+Y);
+   End;
+   If SubMenuInfo[Y]=''Then Write(DuplicateString('-',27+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuInfoEnglish[Y],27));
+    Else Write(' ',PadRight(SubMenuInfo[Y],27));
+   End;
+  End;
+  6:Begin
+   Case Language of
+    _English:GotoXY(39,3+Y);
+    Else GotoXY(48,3+Y);
+   End;
+   If SubMenuTools[Y]=''Then Write(DuplicateString('-',27+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuToolsEnglish[Y],27));
+    Else Write(' ',PadRight(SubMenuTools[Y],27));
+   End;
+  End;
+ End;
+End;
+
+Procedure ShowSubMenu;
+Var
+ I:Integer;
+Begin
+ Case XMenu of
+  1:Begin
+   FrameEmpty(1,2,30,4+High(SubMenuObject),$F0);
+   For I:=Low(SubMenuObject)to High(SubMenuObject)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  2:Begin
+   Case Language of
+    _English:FrameEmpty(10,2,39,4+High(SubMenuEdit),$F0);
+    Else FrameEmpty(9,2,38,4+High(SubMenuEdit),$F0);
+   End;
+   For I:=Low(SubMenuEdit)to High(SubMenuEdit)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  3:Begin
+   Case Language of
+    _English: FrameEmpty(17,2,46,4+High(SubMenuLink),$F0);
+    Else FrameEmpty(19,2,48,4+High(SubMenuLink),$F0);
+   End;
+   For I:=Low(SubMenuLink)to High(SubMenuLink)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  4:Begin
+   Case Language of
+    _English:FrameEmpty(24,2,53,4+High(SubMenuView),$F0);
+    Else FrameEmpty(26,2,55,4+High(SubMenuView),$F0);
+   End;
+   For I:=Low(SubMenuView)to High(SubMenuView)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  5:Begin
+   Case Language of
+    _English:FrameEmpty(31,2,60,4+High(SubMenuInfo),$F0);
+    Else FrameEmpty(32,2,61,4+High(SubMenuInfo),$F0);
+   End;
+   For I:=Low(SubMenuInfo)to High(SubMenuInfo)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  6:Begin
+   Case Language of
+    _English:FrameEmpty(38,2,67,4+High(SubMenuTools),$F0);
+    Else FrameEmpty(47,2,76,4+High(SubMenuTools),$F0);
+   End;
+   For I:=Low(SubMenuTools)to High(SubMenuTools)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
  End;
 End;
 
@@ -313,11 +662,11 @@ Begin
  Y:=2;
  For J:=0 to 19 do Begin
   If (CurrPos+J*16)and $1FF=0 Then Begin
-   TextColor(14);
+   TextColor(14+BLINK);
    Write('Secteur ',(CurrPos+J*16) shr 9);
    ClrEol;
    WriteLn;
-   TextColor(15);
+   TextColor(15+BLINK);
    Inc(Y);
   End;
   Write(LongHex2Str(CurrPos+J*16),':  ');
@@ -435,7 +784,7 @@ Begin
 End;
 
 Procedure ShowView;Begin
- Box(1,2,80,23,$1F);
+ Box(1,2,80,23,$9F);
  Case Mode of
   _Hex:View16x16;
   _Text:Begin
@@ -453,64 +802,227 @@ Procedure ShowView;Begin
  End;
 End;
 
+Procedure HideSubMenu;Begin
+ ShowView;
+ ShowStatusBar;
+ ShowMenu;
+End;
+
+Procedure NotImplemented;Begin
+ Box(5,11,75,13,$60);
+ FrameEmpty(5,11,75,13,$60);
+ GotoXY(20,12);
+ Write('Cette fonctionnalitÇ n''est pas implÇmentÇ');
+ ReadKey;
+ HideSubMenu;
+End;
+
 Procedure Init;
 Var
  Regs:Registers;
 Begin
+ OnMenu:=False;
+ CursorOff;
  Regs.AX:=$1003;
  Regs.BL:=$0;
  Intr($10,Regs);
  ClrScr;
  ShowMenu;
+ ShowStatusBar;
  ShowView;
 End;
 
 Procedure Run;
 Var
+ Terminated:Boolean;
  K:Char;
 Begin
+ Terminated:=False;
  Repeat
   K:=ReadKey;
-  If K=#0 Then Begin
-   K:=ReadKey;
-   Case K of
-    #60:Begin { F2 }
-     Mode:=_Hex;
-     ShowView;
+  If(OnMenu)Then Case K of
+   #0:Case ReadKey of
+    #61:Terminated:=True; { F3 }
+    #72:Begin { Up }
+     SubMenuItem(YMenu,True);
+     If YMenu>0Then Dec(YMenu)
+               Else YMenu:=YMenuMax[XMenu];
+     Case XMenu of
+      1:If YMenu in[6,11]Then Dec(YMenu);
+      2:If YMenu in[1,6]Then Dec(YMenu);
+      3:If YMenu in[4]Then Dec(YMenu);
+      4:If YMenu in[6]Then Dec(YMenu);
+      6:If YMenu in[4,9,12]Then Dec(YMenu);
+     End;
+     SubMenuItem(YMenu,False);
     End;
-    #61:Begin { F3 }
-     Mode:=_Text;
-     ShowView;
+    #75:Begin { Gauche }
+     HideSubMenu;
+     If XMenu>1 Then Dec(XMenu)
+                Else XMenu:=High(MainMenu)+1;
+     YMenu:=0;
+     ShowMenu;
+     ShowSubMenu;
     End;
-    #62:Begin { F4 }
-     Mode:=_Directory;
-     ShowView;
+    #77:Begin { Droite }
+     HideSubMenu;
+     If XMenu<=High(MainMenu)Then Inc(XMenu)
+                             Else XMenu:=1;
+     YMenu:=0;
+     ShowMenu;
+     ShowSubMenu;
     End;
-    #63:Begin { F5 }
-     Mode:=_FAT;
-     ShowView;
-    End;
-    #64:Begin { F6 }
-     Mode:=_PartitionTable;
-     ShowView;
-    End;
-    #65:Begin { F7 }
-     Mode:=_BootRecord;
-     ShowView;
-    End;
-    #73:If Mode=_Hex Then Begin { PgUp }
-     If CurrPos>0Then  CurrPos:=CurrPos-$140;
-     ReadCurrSector;
-     View16x16;
-    End;
-    #81:If Mode=_Hex Then Begin { PgDn }
-     CurrPos:=CurrPos+$140;
-     ReadCurrSector;
-     View16x16;
+    #80:Begin { Down }
+     SubMenuItem(YMenu,True);
+     If YMenu<YMenuMax[XMenu]Then Inc(YMenu)
+                             Else YMenu:=0;
+     Case XMenu of
+      1:If YMenu in[6,11]Then Inc(YMenu);
+      2:If YMenu in[1,6]Then Inc(YMenu);
+      3:If YMenu in[4]Then Inc(YMenu);
+      4:If YMenu in[6]Then Inc(YMenu);
+      6:If YMenu in[4,9,12]Then Inc(YMenu);
+     End;
+     SubMenuItem(YMenu,False);
     End;
    End;
+   #13:Begin
+    OnMenu:=False;
+    HideSubMenu;
+    Case XMenu of
+     1:Case YMenu of
+      0:NotImplemented;
+      Else NotImplemented;
+     End;
+     4:Case YMenu of
+      0:Begin
+       Mode:=_Hex;
+       ShowView;
+      End;
+      1:Begin
+       Mode:=_Text;
+       ShowView;
+      End;
+      2:Begin
+       Mode:=_Directory;
+       ShowView;
+      End;
+      3:Begin
+       Mode:=_FAT;
+       ShowView;
+      End;
+      4:Begin
+       Mode:=_PartitionTable;
+       ShowView;
+      End;
+      5:Begin
+       Mode:=_BootRecord;
+       ShowView;
+      End;
+      Else NotImplemented;
+     End;
+     7:Terminated:=True;
+     Else NotImplemented;
+    End;
+   End;
+   #27:Begin
+    OnMenu:=False;
+    HideSubMenu;
+   End;
+  End
+   Else
+  Case K of
+   #0:Begin
+    K:=ReadKey;
+    Case K of
+     #16:Terminated:=True;
+     #18:Begin { Alt+E }
+      XMenu:=2;YMenu:=0;
+      OnMenu:=True;
+      ShowMenu;
+      ShowSubMenu;
+     End;
+     #20:Begin { Alt+T }
+      XMenu:=6;YMenu:=0;
+      OnMenu:=True;
+      ShowMenu;
+      ShowSubMenu;
+     End;
+     #23:Begin { Alt+I }
+      XMenu:=5;YMenu:=0;
+      OnMenu:=True;
+      ShowMenu;
+      ShowSubMenu;
+     End;
+     #24:Begin { Alt+O }
+      XMenu:=1;YMenu:=0;
+      OnMenu:=True;
+      ShowMenu;
+      ShowSubMenu;
+     End;
+     #38:Begin { Alt+L }
+      XMenu:=3;YMenu:=0;
+      OnMenu:=True;
+      ShowMenu;
+      ShowSubMenu;
+     End;
+     #47:Begin { Alt+V }
+      XMenu:=4;YMenu:=0;
+      OnMenu:=True;
+      ShowMenu;
+      ShowSubMenu;
+     End;
+     #60:Begin { F2 }
+      Mode:=_Hex;
+      ShowView;
+     End;
+     #61:Begin { F3 }
+      Mode:=_Text;
+      ShowView;
+     End;
+     #62:Begin { F4 }
+      Mode:=_Directory;
+      ShowView;
+     End;
+     #63:Begin { F5 }
+      Mode:=_FAT;
+      ShowView;
+     End;
+     #64:Begin { F6 }
+      Mode:=_PartitionTable;
+      ShowView;
+     End;
+     #65:Begin { F7 }
+      Mode:=_BootRecord;
+      ShowView;
+     End;
+     #73:If Mode=_Hex Then Begin { PgUp }
+      If CurrPos>0Then  CurrPos:=CurrPos-$140;
+      ReadCurrSector;
+      View16x16;
+     End;
+     #81:If Mode=_Hex Then Begin { PgDn }
+      CurrPos:=CurrPos+$140;
+      ReadCurrSector;
+      View16x16;
+     End;
+    End;
+   End;
+   #27:Terminated:=True; { Esc }
   End;
- Until K=#27;
+ Until Terminated;
+End;
+
+Procedure Done;Begin
+ If Not(IsDisk)Then Begin
+  If FileName<>''Then Begin
+   Close(FileDiskEdit);
+  End;
+ End;
+ TextColor(7);
+ TextBackground(0);
+ ClrScr;
+ CursorOn;
 End;
 
 BEGIN
@@ -519,6 +1031,15 @@ BEGIN
    SetUseACP(False);
   {$ENDIF}
  {$ENDIF}
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+ End;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('DISKEDIT : Cette commande permet de lancer l''editeur de disque.');
   WriteLn;
@@ -550,6 +1071,6 @@ BEGIN
   End;
   Init;
   Run;
-  If Not(IsDisk)Then Close(FileDiskEdit);
+  Done;
  End;
 END.

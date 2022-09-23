@@ -671,6 +671,7 @@ Procedure Init;
 Var
  Regs:Registers;
 Begin
+ OnMenu:=False;
  CursorOff;
   { D‚sactive le clignotement }
  Regs.AX:=$1003;
