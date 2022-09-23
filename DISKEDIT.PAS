@@ -84,7 +84,7 @@ Const
   'File','Directory','Cluster chain (FAT)','Partition','','Window'
  );
 
- SubMenuView:Array[0..10]of String[20]=(
+ SubMenuView:Array[0..10]of String[30]=(
   'en Hex','en Texte','en R‚pertoire','en FAT','en Table de partition',
   'en Enregistrement de d‚marrage','','Divise la fenˆtre',
   'Fenˆtre croissante','R‚tr‚cis la fenˆtre',
@@ -560,11 +560,11 @@ Procedure SubMenuItem(Y:Integer;Disable:Boolean);Begin
     _English:GotoXY(25,3+Y);
     Else GotoXY(27,3+Y);
    End;
-   If SubMenuView[Y]=''Then Write(DuplicateString('-',27+1))
+   If SubMenuView[Y]=''Then Write(DuplicateString('-',32+1))
     Else
    Case Language of
-    _English:Write(' ',PadRight(SubMenuViewEnglish[Y],27));
-    Else Write(' ',PadRight(SubMenuView[Y],27));
+    _English:Write(' ',PadRight(SubMenuViewEnglish[Y],32));
+    Else Write(' ',PadRight(SubMenuView[Y],32));
    End;
   End;
   5:Begin
@@ -625,8 +625,8 @@ Begin
   End;
   4:Begin
    Case Language of
-    _English:FrameEmpty(24,2,53,4+High(SubMenuView),$F0);
-    Else FrameEmpty(26,2,55,4+High(SubMenuView),$F0);
+    _English:FrameEmpty(24,2,58,4+High(SubMenuView),$F0);
+    Else FrameEmpty(26,2,60,4+High(SubMenuView),$F0);
    End;
    For I:=Low(SubMenuView)to High(SubMenuView)do Begin
     SubMenuItem(I,False);
@@ -1066,7 +1066,11 @@ BEGIN
    Else
   If FileName<>''Then Begin
    {$I-}Assign(FileDiskEdit,FileName);
-   Reset(FileDiskEdit);{$I+}
+   Reset(FileDiskEdit,1);{$I+}
+   If IoResult<>0 Then Begin
+    WriteLn('Fichier d''image introuvable');
+    Halt;
+   End;
    ReadCurrSector;
   End;
   Init;
