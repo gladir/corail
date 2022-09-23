@@ -11,6 +11,81 @@ Program NORTON;
 Uses Strings,Crt,DOS;
 
 Const
+ MainMenu:Array[0..4]of String[15]=(
+  'Menu','Configuration','Conseille','Quitte!','F1=Aide'
+ );
+ MainMenuEnglish:Array[0..4]of String[15]=(
+  'Menu','Configuration','Advise','Quit!','F1=Help'
+ );
+
+ SubMenuMenu:Array[0..5]of String[30]=(
+  'Tri par Nom',
+  'Tri par Sujet',
+  '',
+  'Ajout l''ÇlÇment de menu...',
+  'Edite l''ÇlÇment de menu...',
+  'Efface l''ÇlÇment de menu...'
+ );
+
+ SubMenuMenuEnglish:Array[0..5]of String[30]=(
+  'sort by Name',
+  'sort by Topic',
+  '',
+  'Add menu item...',
+  'Edit menu item...',
+  'Delete menu item...'
+ );
+
+ SubMenuConfiguration:Array[0..10]of String[30]=(
+  'VidÇo et souris...',
+  '',
+  'Norton Cache...',
+  'Fichier CONFIG.SYS...',
+  'Fichier AUTOEXEC.BAT...',
+  '',
+  'Noms alternatif...',
+  'êtendre les programmes...',
+  '',
+  'Mots de passe...',
+  'Edition de Menu...'
+ );
+
+ SubMenuConfigurationEnglish:Array[0..10]of String[30]=(
+  'Video and mouse...',
+  '',
+  'Norton Cache...',
+  'CONFIG.SYS file...',
+  'AUTOEXEC.BAT file...',
+  '',
+  'aLternate names...',
+  'Expand programs...',
+  '',
+  'Passwords...',
+  'Menu editing...'
+ );
+
+ SubMenuAdvise:Array[0..5]of String[40]=(
+  'Probläme commun de disque...',
+  'Messages d''erreur DOS...',
+  'Messages d''erreur CHKDSK...',
+  'Messages d''erreur d''Application...',
+  '',
+  'Recherche...'
+ );
+
+ SubMenuAdviseEnglish:Array[0..5]of String[40]=(
+  'common disk Problems...',
+  'DOS error messages...',
+  'CHKDSK error messages...',
+  'Application error messages...',
+  '',
+  'Search...'
+ );
+
+ YMenuMax:Array[1..5]of Byte=(
+  High(SubMenuMenu),High(SubMenuConfiguration),High(SubMenuAdvise),0,0
+ );
+
  CommandsTitleList:Array[0..11]of String[20]=(
   '^RECUPERATION',
   'DiskEdit',
@@ -102,7 +177,10 @@ Const
  );
 
 Var
- ShowASCII128:Boolean;
+ Language:(_French,_English,_Germany,_Italian,_Spain);
+ TmpLanguage:String;
+ ShowASCII128,OnMenu:Boolean;
+ YMenu,XMenu:Integer;
  CurrPos:Byte;
  I:Integer;
  ParamString:String;
@@ -196,19 +274,101 @@ Begin
  Write(Chr217);
 End;
 
+Procedure SetColorSelect;Begin
+ TextColor(15);
+ TextBackground(0);
+End;
+
+Procedure SetColorUnSelect;Begin
+ TextColor(0+BLINK);
+ TextBackground(15);
+End;
+
 Procedure ShowMenu;
-Const
- MenuItem:Array[0..4]of String[15]=(
-  'Menu','Configuration','Conseille','Quitte','F1=Aide'
- );
- MenuPos:Array[0..4]of Byte=(4,12,29,42,71);
 Var
  I:Byte;
 Begin
  Box(1,1,80,1,$F0);
- For I:=0 to 4 do Begin
-  GotoXY(MenuPos[I],1);
-  Write(MenuItem[I]);
+ GotoXY(4,1);
+ For I:=0 to High(MainMenu) do Begin
+  If High(MainMenu)=I Then Begin
+   SetColorUnSelect;
+   Case Language of
+    _English: Write(' ':18);
+    Else Write(' ':14);
+   End;
+  End;
+  If(OnMenu)Then Begin
+   If I+1=XMenu Then SetColorSelect
+                Else SetColorUnSelect;
+  End;
+  Case Language of
+   _English:Write(' ',MainMenuEnglish[I],' ');
+   Else Write(' ',MainMenu[I],' ');
+  End;
+  SetColorUnSelect;
+  If High(MainMenu)<>I Then Write('   ');
+ End;
+End;
+
+Procedure SubMenuItem(Y:Integer;Disable:Boolean);Begin
+ If(Disable)Then SetColorUnSelect Else
+ If Y=YMenu Then SetColorSelect
+            Else SetColorUnSelect;
+ Case XMenu of
+  1:Begin
+   GotoXY(5,3+Y);
+   If SubMenuMenu[Y]=''Then Write(DuplicateString('-',27+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuMenuEnglish[Y],27));
+    Else Write(' ',PadRight(SubMenuMenu[Y],27));
+   End;
+  End;
+  2:Begin
+   GotoXY(14,3+Y);
+   If SubMenuConfiguration[Y]=''Then Write(DuplicateString('-',27+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuConfigurationEnglish[Y],27));
+    Else Write(' ',PadRight(SubMenuConfiguration[Y],27));
+   End;
+  End;
+  3:Begin
+   GotoXY(32,3+Y);
+   If SubMenuAdvise[Y]=''Then Write(DuplicateString('-',37+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuAdviseEnglish[Y],37));
+    Else Write(' ',PadRight(SubMenuAdvise[Y],37));
+   End;
+  End;
+ End;
+End;
+
+Procedure ShowSubMenu;
+Var
+ I:Integer;
+Begin
+ Case XMenu of
+  1:Begin
+   FrameEmpty(4,2,33,4+High(SubMenuMenu),$F0);
+   For I:=Low(SubMenuMenu)to High(SubMenuMenu)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  2:Begin
+   FrameEmpty(13,2,42,4+High(SubMenuConfiguration),$F0);
+   For I:=Low(SubMenuConfiguration)to High(SubMenuConfiguration)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  3:Begin
+   FrameEmpty(31,2,70,4+High(SubMenuAdvise),$F0);
+   For I:=Low(SubMenuAdvise)to High(SubMenuAdvise)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
  End;
 End;
 
@@ -271,6 +431,7 @@ Procedure Init;
 Var
  Regs:Registers;
 Begin
+ OnMenu:=False;
   { DÇsactive le clignotement }
  Regs.AX:=$1003;
  Regs.BL:=$0;
@@ -327,17 +488,105 @@ Procedure UnselectItem;Begin
  Write(PadRight(CommandsTitleList[CurrPos],21));
 End;
 
+Procedure HideSubMenu;Begin
+ TextColor(White+BLINK);
+ TextBackground(8);
+ ClrScr;
+ ShowMenu;
+ ShowFunctionKey;
+ ShowPanel;
+ ShowCommand;
+ SelectItem;
+End;
+
+Procedure NotImplemented;Begin
+ Box(5,11,75,13,$60);
+ FrameEmpty(5,11,75,13,$60);
+ GotoXY(20,12);
+ Write('Cette fonctionnalitÇ n''est pas implÇmentÇ');
+ ReadKey;
+ HideSubMenu;
+End;
+
 Procedure Run;
 Var
+ Terminated:Boolean;
  K:Char;
 Begin
+ Terminated:=False;
  SelectItem;
  Repeat
   K:=ReadKey;
+  If(OnMenu)Then Case K of
+   #0:Case ReadKey of
+    #61:Terminated:=True; { F3 }
+    #72:Begin { Up }
+     SubMenuItem(YMenu,True);
+     If YMenu>0Then Dec(YMenu)
+               Else YMenu:=YMenuMax[XMenu];
+     Case XMenu of
+      1:If YMenu in[2]Then Dec(YMenu);
+      2:If YMenu in[1,5,8]Then Dec(YMenu);
+      3:If YMenu in[4]Then Dec(YMenu);
+     End;
+     SubMenuItem(YMenu,False);
+    End;
+    #75:Begin { Gauche }
+     HideSubMenu;
+     If XMenu>1 Then Dec(XMenu)
+                Else XMenu:=High(MainMenu)+1;
+     YMenu:=0;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #77:Begin { Droite }
+     HideSubMenu;
+     If XMenu<=High(MainMenu)Then Inc(XMenu)
+                             Else XMenu:=1;
+     YMenu:=0;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #80:Begin { Down }
+     SubMenuItem(YMenu,True);
+     If YMenu<YMenuMax[XMenu]Then Inc(YMenu)
+                             Else YMenu:=0;
+     Case XMenu of
+      1:If YMenu in[2]Then Inc(YMenu);
+      2:If YMenu in[1,5,8]Then Inc(YMenu);
+      3:If YMenu in[4]Then Inc(YMenu);
+     End;
+     SubMenuItem(YMenu,False);
+    End;
+   End;
+   #13:Begin
+    OnMenu:=False;
+    HideSubMenu;
+    Case XMenu of
+     1:Case YMenu of
+      0:NotImplemented;
+      Else NotImplemented;
+     End;
+     4:Terminated:=True;
+     Else NotImplemented;
+    End;
+   End;
+   #27:Begin
+    OnMenu:=False;
+    HideSubMenu;
+   End;
+  End
+   Else
   Case K of
    #0:Begin
     K:=ReadKey;
     Case K of
+     #50:Begin { Alt+M }
+      XMenu:=1;YMenu:=0;
+      OnMenu:=True;
+      ShowMenu;
+      ShowSubMenu;
+     End;
      #72:Begin { Up }
       If CurrPos>1Then Begin
        UnselectItem;
@@ -382,15 +631,14 @@ Begin
     SelectItem;
     ParamString:='';
    End;
-   #27:Begin { ESC }
-   End;
+   #27:Terminated:=True; { Esc }
    Else Begin
     ParamString:=ParamString+K;
     GotoXY(7+Length(CommandsList[CurrPos])+1,21);
     Write(ParamString);
    End;
   End;
- Until K=#27;
+ Until Terminated;
 End;
 
 Procedure Done;Begin
@@ -405,6 +653,15 @@ BEGIN
    SetUseACP(False);
   {$ENDIF}
  {$ENDIF}
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+ End;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('NORTON : Cette commande permet de lancer le menu Norton Utilities.');
   WriteLn;
