@@ -1068,11 +1068,15 @@ BEGIN
     Else
    Begin
     If(Verbose)Then WriteLn('Chargement du fichier binaire ',ParamStr(I),' dans la RAM du 6502.');
-    Assign(FileLoad,ParamStr(I));
-    Reset(FileLoad);
-    Seek(FileLoad,0);
-    BlockRead(FileLoad,Memory[$600],SizeOf(Memory)-$600,ByteReaded);
-    Close(FileLoad);
+    {$I-}Assign(FileLoad,ParamStr(I));
+    Reset(FileLoad{$IFNDEF FPC},1{$ENDIF});{$I+}
+    If IoResult=0 Then Begin
+     Seek(FileLoad,0);
+     BlockRead(FileLoad,Memory[$600],SizeOf(Memory)-$600,ByteReaded);
+     Close(FileLoad);
+    End
+     Else
+    WriteLn('Erreur de lecture du fichier binaire');
    End;
   End;
   If(Verbose)Then WriteLn('Initialisation de l''emulateur');
