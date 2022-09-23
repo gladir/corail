@@ -961,7 +961,7 @@ Var
 Begin
  FileName:=GetCurrName;
  Assign(FileView,FileName);
- {$I-}Reset(FileView);{$I+}
+ {$I-}Reset(FileView{$IFNDEF FPC},1{$ENDIF});{$I+}
  If IoResult<>0Then Begin
   FrameFull(10,9,70,16,$4F);
   WriteCenter(12,'Probleme de lecture du fichier :',$40);
