@@ -25,7 +25,7 @@ BEGIN
  If ParamCount>0Then Begin
   FileName:=ParamStr(1);
   {$I-}Assign(FileToErase,ParamStr(1));
-  Reset(FileToErase);{$I+}
+  Reset(FileToErase{$IFNDEF FPC},1{$ENDIF});{$I+}
   If IoResult=0Then Begin
    CurrPos:=0;
    Repeat
