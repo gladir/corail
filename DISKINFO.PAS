@@ -103,7 +103,7 @@ BEGIN
   Begin
    FileName:=CurrParam;
    {$I-}Assign(FileSource,FileName);
-   Reset(FileSource);{$I+}
+   Reset(FileSource{$IFNDEF FPC},1{$ENDIF});{$I+}
    If IoResult=0Then Begin
     BlockRead(FileSource,Buffer,SizeOf(Buffer),ByteReaded);
     Close(FileSource);
