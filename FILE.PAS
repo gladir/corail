@@ -40,7 +40,7 @@ BEGIN
   For I:=1 to ParamCount do Begin
    FillChar(Buffer,SizeOf(Buffer),0);
    {$I-}Assign(FileCheck,ParamStr(1));
-   Reset(FileCheck);{$I+}
+   Reset(FileCheck{$IFNDEF FPC},1{$ENDIF});{$I+}
    If IoResult=0Then Begin
     BlockRead(FileCheck,Buffer,SizeOf(Buffer),ByteReaded);
     If Buffer[0]=$1AThen WriteLn('Archive ARC')Else
