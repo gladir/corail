@@ -2896,7 +2896,7 @@ BEGIN
    Begin
     If(Verbose)Then WriteLn('Chargement du fichier binaire ',ParamStr(I),' dans la RAM du 6502.');
     Assign(FileLoad,ParamStr(I));
-    Reset(FileLoad);
+    Reset(FileLoad{$IFNDEF FPC},1{$ENDIF});
     Seek(FileLoad,0);
     BlockRead(FileLoad,Memory[0],SizeOf(Memory),ByteReaded);
     Close(FileLoad);
