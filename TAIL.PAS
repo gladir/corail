@@ -74,7 +74,7 @@ BEGIN
   End;
   CurrLinePos:=0;
   {$I-}Assign(FileView,FileName);
-  Reset(FileView);{$I+}
+  Reset(FileView{$IFNDEF FPC},1{$ENDIF});{$I+}
   If IOResult<>0Then Begin
    WriteLn('Fichier introuvable ou impossible a lire !');
    Halt;
@@ -129,7 +129,7 @@ BEGIN
     If(DosError=0)and(Info.Size>EndPos)Then Begin
      {$I-}Assign(FileView,FileName);
      If(ForceCheck)Then FileMode:=0 + $30 + $80; { Fixe le mode Lecture seulement + Partage }
-     Reset(FileView);{$I+}
+     Reset(FileView{$IFNDEF FPC},1{$ENDIF});{$I+}
      Seek(FileView,EndPos);
      BlockRead(FileView,Buffer,SizeOf(Buffer),ByteReaded);
      If ByteReaded>0Then For I:=0 to ByteReaded-1 do Begin
