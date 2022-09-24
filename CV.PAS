@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2022
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Free Pascal)
+  @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
 Program CV;
@@ -9,6 +9,97 @@ Program CV;
 Uses Crt,DOS;
 
 Const
+ MainMenu:Array[0..8]of String[10]=(
+  'Fichier','Edition','Vue','Recherche','Execute','Surveille','Options','Appels','Aide'
+ );
+
+ MainMenuEnglish:Array[0..8]of String[10]=(
+  'File','Edit','View','Search','Run','Watch','Options','Calls','Help'
+ );
+
+ SubMenuFile:Array[0..4]of String[20]=(
+  'Ouvrir la source...','Ouvrir le module...','Imprime...','Interpr‚teur DOS','Sortir'
+ );
+
+ SubMenuFileEnglish:Array[0..4]of String[20]=(
+  'Open Source...','Open Module...','Print...','DOS Shell','Exit'
+ );
+
+ SubMenuEdit:Array[0..2]of String[20]=(
+  'R‚tablir','Copier','Coller'
+ );
+
+ SubMenuEditEnglish:Array[0..2]of String[20]=(
+  'Undo','Copy','Paste'
+ );
+
+ SubMenuView:Array[0..14]of String[20]=(
+  'Source','Memoire','','Registre','8087','Local','Surveille','Commande',
+  'Aide','','Sortie','','Maximise','Taille','Fermer'
+ );
+
+ SubMenuViewEnglish:Array[0..14]of String[20]=(
+  'Source','Memory','','Register','8087','Local','Watch','Command',
+  'Help','','Output','','Maximize','Size','Close'
+ );
+
+ SubMenuSearch:Array[0..3]of String[20]=(
+  'Recherche...','Selectionne le texte','R‚pŠte la derniŠre recherche',
+  'tiquette/Fonction...'
+ );
+
+ SubMenuSearchEnglish:Array[0..3]of String[20]=(
+  'Find...','Selected Text','Repeat Fast Find','Label/Function...'
+ );
+
+ SubMenuRun:Array[0..6]of String[20]=(
+  'Red‚marre','Anime','Fixe les paramŠtres d''ex‚cution...','',
+  'Active l''historique','R‚tablir','Rejouer'
+ );
+
+ SubMenuRunEnglish:Array[0..6]of String[20]=(
+  'Restart','Animate','Set Runtime Arguments...','',
+  'History On','Undo','Replay'
+ );
+
+ SubMenuWatch:Array[0..4]of String[20]=(
+  'Ajoute … surveiller...',
+  'Efface … surveiller...',
+  'Fixe le point d''arrˆt...',
+  'Edite le point d''arrˆt...',
+  'Surveille rapidement...'
+ );
+
+ SubMenuWatchEnglish:Array[0..4]of String[20]=(
+  'Add Watch...','Delete Watch...','Set Breakpoint...',
+  'Edit Breakpoints...','Quick Watch...'
+ );
+
+ SubMenuOptions:Array[0..7]of String[20]=(
+  'Fenˆtre source...','Fenˆtre de m‚moire...','Vitesse de tracage...',
+  'Langage...','change d''‚cran','Rejouer...','Sensible aux casses',
+  'Instructions 386'
+ );
+
+ SubMenuOptionsEnglish:Array[0..7]of String[20]=(
+  'Source Window...','Memory Window...','Trace Speed...','Language...',
+  'Screen Swap','Replay...','Case Sensitivity','386 Instructions'
+ );
+
+ SubMenuHelp:Array[0..4]of String[20]=(
+  'Index','Contenues','Sujet:','Aide dans l''Aide','A propos...'
+ );
+
+ SubMenuHelpEnglish:Array[0..4]of String[20]=(
+  'Index','Contents','Topic:','Help On Help','About...'
+ );
+
+ YMenuMax:Array[1..9]of Byte=(
+  High(SubMenuFile),High(SubMenuEdit),High(SubMenuView),
+  High(SubMenuSearch),High(SubMenuRun),High(SubMenuWatch),
+  High(SubMenuOptions),0,High(SubMenuHelp)
+ );
+
  CommandList:Array[0..48]of String[4]=(
   'A','BC','BD','BE','BL','BP',
   'C','DB','DD','DI','DL','DM','DW','DX','E','EXIT',
@@ -610,7 +701,10 @@ Type
  TByte=Array[0..65519]of Byte;
 
 Var
- ShowASCII128:Boolean;
+ Language:(_French,_English,_Germany,_Italian,_Spain);
+ TmpLanguage:String;
+ ShowASCII128,OnMenu:Boolean;
+ YMenu,XMenu:Integer;
  CommandFound,Terminated:Boolean;
  CurrZone:Byte;
  Regs_:Registers;
@@ -1818,19 +1912,209 @@ Procedure UnsetCommandWindow;Begin
  Window(1,1,80,25);
 End;
 
+Procedure SetColorSelect;Begin
+ TextColor(15);
+ TextBackground(0);
+End;
+
+Procedure SetColorUnSelect;Begin
+ TextColor(0);
+ TextBackground(7);
+End;
+
 Procedure ShowMenu;
-Const
- MenuItem:Array[0..8]of String[10]=(
-  'Fichier','Edition','Vue','Recherche','Execute','Surveille','Options','Appels','Aide'
- );
- MenuPos:Array[0..8]of Byte=(2,11,20,25,36,45,56,65,73);
 Var
  I:Byte;
 Begin
  Box(1,1,80,1,$70);
- For I:=0 to 8 do Begin
-  GotoXY(MenuPos[I],1);
-  Write(MenuItem[I]);
+ GotoXY(2,1);
+ For I:=0 to High(MainMenu) do Begin
+  If High(MainMenu)=I Then Begin
+   SetColorUnSelect;
+   Case Language of
+    _English: Write(' ':18);
+   End;
+  End;
+  If(OnMenu)Then Begin
+   If I+1=XMenu Then SetColorSelect
+                Else SetColorUnSelect;
+  End;
+  Case Language of
+   _English:Write(' ',MainMenuEnglish[I],' ');
+   Else Write(' ',MainMenu[I],' ');
+  End;
+ End;
+End;
+
+Procedure SubMenuItem(Y:Integer;Disable:Boolean);Begin
+ If(Disable)Then SetColorUnSelect Else
+ If Y=YMenu Then SetColorSelect
+            Else SetColorUnSelect;
+ Case XMenu of
+  1:Begin
+   GotoXY(3,3+Y);
+   If SubMenuFile[Y]=''Then Write(DuplicateString('-',25+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuFileEnglish[Y],25));
+    Else Write(' ',PadRight(SubMenuFile[Y],25));
+   End;
+  End;
+  2:Begin
+   Case Language of
+    _English:GotoXY(9,3+Y);
+    Else GotoXY(12,3+Y);
+   End;
+   If SubMenuEdit[Y]=''Then Write(DuplicateString('-',25+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuEditEnglish[Y],25));
+    Else Write(' ',PadRight(SubMenuEdit[Y],25));
+   End;
+  End;
+  3:Begin
+   Case Language of
+    _English:GotoXY(15,3+Y);
+    Else GotoXY(21,3+Y);
+   End;
+   If SubMenuView[Y]=''Then Write(DuplicateString('-',25+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuViewEnglish[Y],25));
+    Else Write(' ',PadRight(SubMenuView[Y],25));
+   End;
+  End;
+  4:Begin
+   Case Language of
+    _English:GotoXY(21,3+Y);
+    Else GotoXY(26,3+Y);
+   End;
+   If SubMenuSearch[Y]=''Then Write(DuplicateString('-',25+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuSearchEnglish[Y],25));
+    Else Write(' ',PadRight(SubMenuSearch[Y],25));
+   End;
+  End;
+  5:Begin
+   Case Language of
+    _English:GotoXY(29,3+Y);
+    ELse GotoXY(37,3+Y);
+   End;
+   If SubMenuRun[Y]=''Then Write(DuplicateString('-',25+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuRunEnglish[Y],25));
+    Else Write(' ',PadRight(SubMenuRun[Y],25));
+   End;
+  End;
+  6:Begin
+   Case Language of
+    _English:GotoXY(34,3+Y);
+    Else GotoXY(46,3+Y);
+   End;
+   If SubMenuWatch[Y]=''Then Write(DuplicateString('-',25+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuWatchEnglish[Y],25));
+    Else Write(' ',PadRight(SubMenuWatch[Y],25));
+   End;
+  End;
+  7:Begin
+   Case Language of
+    _English:GotoXY(41,3+Y);
+    Else GotoXY(57,3+Y);
+   End;
+   If SubMenuOptions[Y]=''Then Write(DuplicateString('-',22+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuOptionsEnglish[Y],22));
+    Else Write(' ',PadRight(SubMenuOptions[Y],22));
+   End;
+  End;
+  9:Begin
+   GotoXY(58,3+Y);
+   If SubMenuHelp[Y]=''Then Write(DuplicateString('-',21+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuHelpEnglish[Y],21));
+    Else Write(' ',PadRight(SubMenuHelp[Y],21));
+   End;
+  End;
+ End;
+End;
+
+Procedure ShowSubMenu;
+Var
+ I:Integer;
+Begin
+ Case XMenu of
+  1:Begin
+   FrameEmpty(2,2,29,4+High(SubMenuFile),$70);
+   For I:=Low(SubMenuFile)to High(SubMenuFile)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  2:Begin
+   Case Language of
+    _English:FrameEmpty(8,2,35,4+High(SubMenuEdit),$70);
+    Else FrameEmpty(11,2,38,4+High(SubMenuEdit),$70);
+   End;
+   For I:=Low(SubMenuEdit)to High(SubMenuEdit)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  3:Begin
+   Case Language of
+    _English:FrameEmpty(14,2,41,4+High(SubMenuView),$70);
+    Else FrameEmpty(20,2,47,4+High(SubMenuView),$70);
+   End;
+   For I:=Low(SubMenuView)to High(SubMenuView)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  4:Begin
+   Case Language of
+    _English:FrameEmpty(20,2,47,4+High(SubMenuSearch),$70);
+    Else FrameEmpty(25,2,52,4+High(SubMenuSearch),$70);
+   End;
+   For I:=Low(SubMenuSearch)to High(SubMenuSearch)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  5:Begin
+   Case Language of
+    _English:FrameEmpty(28,2,55,4+High(SubMenuRun),$70);
+    Else FrameEmpty(36,2,63,4+High(SubMenuRun),$70);
+   End;
+   For I:=Low(SubMenuRun)to High(SubMenuRun)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  6:Begin
+   Case Language of
+    _English:FrameEmpty(33,2,60,4+High(SubMenuWatch),$70);
+    Else FrameEmpty(45,2,72,4+High(SubMenuWatch),$70);
+   End;
+   For I:=Low(SubMenuWatch)to High(SubMenuWatch)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  7:Begin
+   Case Language of
+    _English:FrameEmpty(40,2,64,4+High(SubMenuOptions),$70);
+    Else FrameEmpty(56,2,80,4+High(SubMenuOptions),$70);
+   End;
+   For I:=Low(SubMenuOptions)to High(SubMenuOptions)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
+  9:Begin
+   FrameEmpty(57,2,80,4+High(SubMenuHelp),$70);
+   For I:=Low(SubMenuHelp)to High(SubMenuHelp)do Begin
+    SubMenuItem(I,False);
+   End;
+  End;
  End;
 End;
 
@@ -1945,6 +2229,7 @@ Begin
 End;
 
 Procedure Init;Begin
+ OnMenu:=False;
  Terminated:=False;
  StartPointer:=$100;
  SizeSector:=65520;
@@ -1967,11 +2252,30 @@ Procedure Init;Begin
  ShowFunctionKey;
 End;
 
+Procedure HideSubMenu;Begin
+ ShowMenu;
+ ShowLocal;
+ ShowWatch;
+ ShowSource;
+ ShowRegisters;
+End;
+
+Procedure NotImplemented;Begin
+ Box(5,11,75,13,$60);
+ FrameEmpty(5,11,75,13,$60);
+ GotoXY(20,12);
+ Write('Cette fonctionnalit‚ n''est pas impl‚ment‚');
+ ReadKey;
+ HideSubMenu;
+End;
+
 Procedure Run;
 Var
+ Terminated:Boolean;
  K:Char;
  J:Byte;
 Begin
+ Terminated:=False;
  Repeat
   Case CurrZone of
    0:GotoXY(2,3);
@@ -1981,9 +2285,119 @@ Begin
    4:GotoXY(69,3);
   End;
   K:=ReadKey;
+  If(OnMenu)Then Case K of
+   #0:Case ReadKey of
+     #72:Begin { Up }
+      SubMenuItem(YMenu,True);
+      If YMenu>0Then Dec(YMenu)
+                Else YMenu:=YMenuMax[XMenu];
+      Case XMenu of
+       3:If YMenu in[2,9,11]Then Dec(YMenu);
+       5:If YMenu in[3]Then Dec(YMenu);
+      End;
+      SubMenuItem(YMenu,False);
+     End;
+     #75:Begin { Gauche }
+     HideSubMenu;
+     If XMenu>1 Then Dec(XMenu)
+                Else XMenu:=High(MainMenu)+1;
+     YMenu:=0;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #77:Begin { Droite }
+     HideSubMenu;
+     If XMenu<=High(MainMenu)Then Inc(XMenu)
+                             Else XMenu:=1;
+     YMenu:=0;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #80:Begin { Down }
+     SubMenuItem(YMenu,True);
+     If YMenu<YMenuMax[XMenu]Then Inc(YMenu)
+                             Else YMenu:=0;
+     Case XMenu of
+      3:If YMenu in[2,9,11]Then Inc(YMenu);
+      5:If YMenu in[3]Then Inc(YMenu);
+     End;
+     SubMenuItem(YMenu,False);
+    End;
+   End;
+   #13:Begin
+    OnMenu:=False;
+    HideSubMenu;
+    Case XMenu of
+     1:Case YMenu of
+      4:Terminated:=True;
+      Else NotImplemented;
+     End;
+     Else NotImplemented;
+    End;
+   End;
+   #27:Begin
+    OnMenu:=False;
+    HideSubMenu;
+   End;
+  End
+   Else
   If K=#0 Then Begin
    K:=ReadKey;
    Case K of
+    #17:Begin { Alt+W }
+     XMenu:=6;
+     OnMenu:=True;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #18:Begin { Alt+E }
+     XMenu:=2;
+     OnMenu:=True;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #19:Begin { Alt+R }
+     XMenu:=5;
+     OnMenu:=True;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #24:Begin { Alt+O }
+     XMenu:=7;
+     OnMenu:=True;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #30:Begin { Alt+A }
+     XMenu:=9;
+     OnMenu:=True;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #31:Begin { Alt+S }
+     XMenu:=4;
+     OnMenu:=True;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #33:Begin { Alt+F }
+     XMenu:=1;
+     OnMenu:=True;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #35:Begin { Alt+H }
+     XMenu:=9;
+     OnMenu:=True;
+     ShowMenu;
+     ShowSubMenu;
+    End;
+    #47:Begin { Alt+V }
+     XMenu:=3;
+     OnMenu:=True;
+     ShowMenu;
+     ShowSubMenu;
+    End;
     #64:Begin { F6 }
      If CurrZone=4 Then CurrZone:=0
                    Else CurrZone:=CurrZone+1;
@@ -2005,7 +2419,8 @@ Begin
       If CmdStr<>''Then CmdStr:=Copy(CmdStr,1,Length(CmdStr)-1);
       ClrEol;
      End;
-     #9,#27:;
+     #9:;
+     #27:Terminated:=True;
      #13:Begin
       WriteLn;
       ClrEol;
@@ -2099,7 +2514,7 @@ Begin
     UnsetCommandWindow;
    End;
   End;
- Until K=#27;
+ Until Terminated;
 End;
 
 Procedure Done;Begin
@@ -2110,6 +2525,20 @@ Procedure Done;Begin
 End;
 
 BEGIN
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+ End;
  CurrProgName:='';
  ShowASCII128:=False;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
