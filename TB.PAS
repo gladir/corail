@@ -20,6 +20,11 @@ Const
   'Options','Ajustement','Fenetre','Debogue'
  );
 
+ MainMenuEnglish:Array[0..7]of String[12]=(
+  'File','Edit','Run','Compile',
+  'Options','Setup','Window','Debug'
+ );
+
  SubMenuFile:Array[0..8]of String[20]=(
   'Chargement',
   'Nouveau fichier',
@@ -30,6 +35,18 @@ Const
   'Repertoire actif',
   'Interpreteur DOS',
   'Quitter'
+ );
+
+ SubMenuFileEnglish:Array[0..8]of String[20]=(
+  'Load',
+  'New',
+  'Save',
+  'Write to',
+  'Main file',
+  'Directory',
+  'Change dir',
+  'OS shell',
+  'Quit'
  );
 
  SubMenuOptions:Array[0..9]of String[25]=(
@@ -45,12 +62,33 @@ Const
   'Meta-instructions'
  );
 
+ SubMenuOptionsEnglish:Array[0..9]of String[25]=(
+  'Compile to Memory',
+  '',
+  '8087 required - OFF',
+  'Keyboard break - OFF',
+  'Bounds - OFF',
+  'Overflow - OFF',
+  'Stack test - OFF',
+  '',
+  'Parameter line',
+  'Metastatements'
+ );
+
  SubMenuSetup:Array[0..4]of String[30]=(
   'Couleurs',
   'Repertoires',
   'Divers',
   'Lecture configuration',
   'Sauvegarde configuration'
+ );
+
+ SubMenuSetupEnglish:Array[0..4]of String[30]=(
+  'Colors',
+  'Directories',
+  'Miscellaneous',
+  'Load Option/Window/Setup',
+  'Save Option/Window/Setup'
  );
 
  SubMenuWindow:Array[0..6]of String[15]=(
@@ -63,9 +101,24 @@ Const
   'Agrandissement'
  );
 
+ SubMenuWindowEnglish:Array[0..6]of String[15]=(
+  'Open',
+  'Close',
+  'Next',
+  'Goto',
+  'Tile',
+  'Stack',
+  'Zoom'
+ );
+
  SubMenuDebug:Array[0..1]of String[20]=(
   'Trace - NON',
   'Erreur d''execution'
+ );
+
+ SubMenuDebugEnglish:Array[0..1]of String[20]=(
+  'Trace - OFF',
+  'Run-time error'
  );
 
  YMenuMax:Array[1..8]of Byte=(
@@ -114,8 +167,19 @@ Type
   VarName:String[20];
  End;
  VarPointer=^VarRec;
+ GosubStackRec=Record
+  Line,Col:Word;
+  LineNumber:Integer;
+ End;
+ ForStackRec=Record
+  Line,Col:Word;
+  LineNumber:Integer;
+  VarName:String[20];
+ End;
 
 Var
+ Language:(_French,_English,_Germany,_Italian,_Spain);
+ TmpLanguage:String;
  ShowASCII128:Boolean;
  YMenu,XMenu:Integer;
  OnMenu,Terminated,Tron,KeyFunction:Boolean;
@@ -127,6 +191,10 @@ Var
  VarList:Array[1..MaxVariable]of VarPointer;
  I,NumberVariable:Integer;
  FunctionKeyList:Array[1..10]of String[15];
+ GosubStack:Array[1..10]of GosubStackRec;
+ GosubPos:Byte;
+ ForStack:Array[1..10]of ForStackRec;
+ ForPos:Byte;
 
 Type
 
@@ -317,11 +385,17 @@ Const
  KeyMenuMessage:Array[0..5]of String[20]=(
   'Aide','Agran.','Prochain','Aller a','Taille/De.','Quitter'
  );
+ KeyMenuMessageEnglish:Array[0..5]of String[20]=(
+  'Help','Zoom','Next','Goto','Size/move','Exit'
+ );
  KeyEditList:Array[0..4]of String[6]=(
   'F1','F2','F3','F5','F6'
  );
  KeyEditMessage:Array[0..4]of String[20]=(
   'Aide','Sauve','Nouveau','Agrandis','Prochain'
+ );
+ KeyEditMessageEnglish:Array[0..4]of String[20]=(
+  'Help','Save','New','Zoom','Next'
  );
 Var
  I:Byte;
@@ -334,7 +408,10 @@ Begin
    TextColor($B);
    Write(' ',KeyMenuList[I]);
    TextColor($E);
-   Write('-',KeyMenuMessage[I],' ');
+   Case Language of
+    _English:Write('-',KeyMenuMessageEnglish[I],' ');
+    Else Write('-',KeyMenuMessage[I],' ');
+   End;
   End;
  End
   Else
@@ -343,7 +420,10 @@ Begin
    TextColor($B);
    Write(' ',KeyEditList[I]);
    TextColor($E);
-   Write('-',KeyEditMessage[I],' ');
+   Case Language of
+    _English:Write('-',KeyEditMessageEnglish[I],' ');
+    Else Write('-',KeyEditMessage[I],' ');
+   End;
   End;
  End;
  TextBackground(0);
@@ -368,7 +448,10 @@ Begin
  For I:=Low(MainMenu) to High(MainMenu)do Begin
    If(I+1=XMenu)and(OnMenu)Then SetColorSelect
                            Else SetColorUnSelect;
-  Write(' ',MainMenu[I],' ');
+  Case Language of
+   _English: Write(' ',MainMenuEnglish[I],' ');
+   Else Write(' ',MainMenu[I],' ');
+  End;
  End;
 End;
 
@@ -388,23 +471,49 @@ Procedure SubMenuItem(Y:Integer;Disable:Boolean);Begin
  Case XMenu of
   1:Begin
    GotoXY(5,5+Y);
-   Write(' ',PadRight(SubMenuFile[Y],26));
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuFileEnglish[Y],26));
+    Else Write(' ',PadRight(SubMenuFile[Y],26));
+   End;
   End;
   5:Begin
-   GotoXY(40,5+Y);
-   Write(' ',PadRight(SubMenuOptions[Y],31));
+   Case Language of
+    _English:GotoXY(31,5+Y);
+    Else GotoXY(40,5+Y);
+   End;
+   If SubMenuOptions[Y]=''Then Write(DuplicateString('-',33+1))
+    Else
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuOptionsEnglish[Y],33));
+    Else Write(' ',PadRight(SubMenuOptions[Y],33));
+   End;
   End;
   6:Begin
-   GotoXY(49,5+Y);
-   Write(' ',PadRight(SubMenuSetup[Y],25));
+   Case Language of
+    _English:GotoXY(40,5+Y);
+    Else GotoXY(49,5+Y);
+   End;
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuSetupEnglish[Y],25));
+    Else Write(' ',PadRight(SubMenuSetup[Y],25));
+   End;
   End;
   7:Begin
-   GotoXY(61,5+Y);
-   Write(' ',PadRight(SubMenuWindow[Y],16));
+   Case Language of
+    _English:GotoXY(47,5+Y);
+    Else GotoXY(61,5+Y);
+   End;
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuWindowEnglish[Y],16));
+    Else Write(' ',PadRight(SubMenuWindow[Y],16));
+   End;
   End;
   8:Begin
    GotoXY(37,5+Y);
-   Write(' ',PadRight(SubMenuDebug[Y],37));
+   Case Language of
+    _English:Write(' ',PadRight(SubMenuDebugEnglish[Y],37));
+    Else Write(' ',PadRight(SubMenuDebug[Y],37));
+   End;
   End;
  End;
 End;
@@ -422,19 +531,28 @@ Begin
    End;
   End;
   5:Begin
-   FrameEmpty(39,4,72,6+High(SubMenuOptions),$1E);
+   Case Language of
+    _English: FrameEmpty(30,4,65,6+High(SubMenuOptions),$1E);
+    Else FrameEmpty(39,4,74,6+High(SubMenuOptions),$1E);
+   End;
    For I:=Low(SubMenuOptions)to High(SubMenuOptions)do Begin
     SubMenuItem(I,False);
    End;
   End;
   6:Begin
-   FrameEmpty(48,4,75,6+High(SubMenuSetup),$1E);
+   Case Language of
+    _English:FrameEmpty(39,4,66,6+High(SubMenuSetup),$1E);
+    Else FrameEmpty(48,4,75,6+High(SubMenuSetup),$1E);
+   End;
    For I:=Low(SubMenuSetup)to High(SubMenuSetup)do Begin
     SubMenuItem(I,False);
    End;
   End;
   7:Begin
-   FrameEmpty(60,4,78,6+High(SubMenuWindow),$1E);
+   Case Language of
+    _English:FrameEmpty(46,4,64,6+High(SubMenuWindow),$1E);
+    Else FrameEmpty(60,4,78,6+High(SubMenuWindow),$1E);
+   End;
    For I:=Low(SubMenuWindow)to High(SubMenuWindow)do Begin
     SubMenuItem(I,False);
    End;
@@ -1231,8 +1349,8 @@ Begin
       SubMenuItem(YMenu,True);
       If YMenu>0Then Dec(YMenu)
                 Else YMenu:=YMenuMax[XMenu];
-      If XMenu=1 Then Begin
-       If YMenu in[5,7]Then Dec(YMenu);
+      If XMenu=5 Then Begin
+       If YMenu in[1,7]Then Dec(YMenu);
       End;
       SubMenuItem(YMenu,False);
      End;
@@ -1256,8 +1374,8 @@ Begin
      SubMenuItem(YMenu,True);
      If YMenu<YMenuMax[XMenu]Then Inc(YMenu)
                              Else YMenu:=0;
-     If XMenu=1 Then Begin
-       If YMenu in[5,7]Then Inc(YMenu);
+     If XMenu=5 Then Begin
+       If YMenu in[1,7]Then Inc(YMenu);
       End;
      SubMenuItem(YMenu,False);
     End;
@@ -1613,6 +1731,47 @@ Begin
  End;
 End;
 
+Function AddVariableString(S:String;Value:String):Boolean;
+Var
+ P:VarPointer;
+ PS:StrPointer;
+Begin
+ If NumberVariable>=MaxVariable Then Begin
+  AddVariableString:=False;
+  Exit;
+ End;
+ Inc(NumberVariable);
+ GetMem(P,SizeOf(VarRec));
+ P^.VarName:=Copy(StrToUpper(S),1,20);
+ P^.VarType:=_String;
+ GetMem(PS,SizeOf(String));
+ PS^:=Value;
+ P^.Variant.S:=PS;
+ VarList[NumberVariable]:=P;
+ AddVariableString:=True;
+End;
+
+Function GetVariableString(S:String):String;
+Var
+ I:Integer;
+Begin
+ GetVariableString:='';
+ For I:=1 to NumberVariable do If(StrToUpper(S)=VarList[I]^.VarName)Then Begin
+  GetVariableString:=VarList[I]^.Variant.S^;
+  Exit;
+ End;
+End;
+
+Procedure SetVariableString(S:String;Value:String);
+Var
+ I:Integer;
+Begin
+ For I:=1 to NumberVariable do If(S=VarList[I]^.VarName)Then Begin
+  VarList[I]^.Variant.S^:=Value;
+  Exit;
+ End;
+End;
+
 Function FirstNumberInStr(S:String):Integer;
 Var
  J,Number,Err:Integer;
@@ -1707,12 +1866,97 @@ Function GetSeparator:Char;Begin
  GetSeparator:=CurrLine[CurrPos];
 End;
 
-Function GetStringValue:String;
+Function IsStringValue:Boolean;
+Var
+ I:Byte;
+Begin
+ IsStringValue:=False;
+ If CurrLine[CurrPos]='"'Then Begin
+  IsStringValue:=True;
+ End
+  Else
+ Begin
+  I:=CurrPos;
+  While(CurrLine[I]in[' '])and(I<Length(CurrLine))do Inc(I);
+  If CurrLine[I]in['A'..'Z','a'..'z']Then Begin
+   Inc(I);
+   While I<Length(CurrLine)do Begin
+    If Not(CurrLine[I]in['A'..'Z','a'..'z','0'..'9'])Then Break;
+    Inc(I);
+   End;
+   If(I<=Length(CurrLine))and(CurrLine[I]='$')Then IsStringValue:=True;
+  End;
+ End;
+End;
+
+Function GetVariableName:String;
 Var
  S:String;
 Begin
+ S:='';
+ If CurrLine[CurrPos]in['A'..'Z','a'..'z']Then Begin
+  S:=S+CurrLine[CurrPos];
+  Inc(CurrPos);
+  While CurrPos<Length(CurrLine)do Begin
+   If Not(CurrLine[CurrPos]in['A'..'Z','a'..'z','0'..'9'])Then Break;
+   S:=S+CurrLine[CurrPos];
+   Inc(CurrPos);
+  End;
+ End;
+ GetVariableName:=StrToUpper(S);
+End;
+
+Function ReadWord:String;
+Var
+ S:String;
+Begin
+ S:='';
+ If CurrLine[CurrPos]in['A'..'Z','a'..'z']Then Begin
+  S:=S+CurrLine[CurrPos];
+  Inc(CurrPos);
+  While CurrPos<Length(CurrLine)do Begin
+   If Not(CurrLine[CurrPos]in['A'..'Z','a'..'z','0'..'9'])Then Break;
+   S:=S+CurrLine[CurrPos];
+   Inc(CurrPos);
+  End;
+ End;
+ ReadWord:=StrToUpper(S);
+End;
+
+Function ReadWordString:String;
+Var
+ S:String;
+Begin
+ S:='';
+ If CurrLine[CurrPos]in['A'..'Z','a'..'z']Then Begin
+  S:=S+CurrLine[CurrPos];
+  Inc(CurrPos);
+  While CurrPos<Length(CurrLine)do Begin
+   If Not(CurrLine[CurrPos]in['A'..'Z','a'..'z','0'..'9'])Then Break;
+   S:=S+CurrLine[CurrPos];
+   Inc(CurrPos);
+  End;
+  If CurrLine[CurrPos]='$'Then Begin
+   S:=S+'$';
+   Inc(CurrPos);
+  End;
+ End;
+ ReadWordString:=StrToUpper(S);
+End;
+
+Function GetNumberValue(MinTopOfStack:Integer):Real;Forward;
+
+Function GetStringValue:String;
+Label Restart;
+Var
+ J:Integer;
+ _Result:Real;
+ FunctionFound:Boolean;
+ S,VarName:String;
+Begin
  GetStringValue:='';
  S:='';
+Restart:
  If CurrLine[CurrPos]='"'Then Begin
   Inc(CurrPos);
   While(CurrLine[CurrPos]<>'"')and(CurrPos<=Length(CurrLine))do Begin
@@ -1720,8 +1964,51 @@ Begin
    Inc(CurrPos);
   End;
   If CurrLine[CurrPos]='"'Then Inc(CurrPos);
-  GetStringValue:=S;
+ End
+  Else
+ Begin
+  VarName:=ReadWordString;
+  SkipSpace;
+  FunctionFound:=False;
+  For J:=Low(FunctionList)to High(FunctionList)do Begin
+   If FunctionList[J]=VarName Then Begin
+    FunctionFound:=True;
+    Case J of
+     3:Begin{CHR$}
+      If CurrLine[CurrPos]<>'('Then Begin
+       WriteLn('"(" attendu');
+       Exit;
+      End;
+      Inc(CurrPos);
+      _Result:=GetNumberValue(1);
+      If CurrLine[CurrPos]<>')'Then Begin
+       WriteLn('")" attendu');
+       Exit;
+      End;
+      Inc(CurrPos);
+      S:=S+Chr(Byte(Trunc(_Result)));
+      GetStringValue:=S;
+      Break;
+     End;
+     Else Begin
+      WriteLn('Type incompatible');
+      Exit;
+     End;
+    End;
+   End;
+  End;
+  If Not(FunctionFound)Then Begin
+   If VariableExist(VarName)Then Begin
+    S:=S+GetVariableString(VarName);
+   End;
+  End;
  End;
+ SkipSpace;
+ If CurrLine[CurrPos]in['+',';']Then Begin
+  Inc(CurrPos);
+  Goto Restart;
+ End;
+ GetStringValue:=S;
 End;
 
 Function GetNumberValue(MinTopOfStack:Integer):Real;
@@ -1748,9 +2035,10 @@ Begin
   Dec(CurrPos,3);
  End;
  Repeat
-  If Infix[I]in['A'..'Z','a'..'z']Then Begin
-   VarName:='';
-   While Infix[I]in['A'..'Z','a'..'z','%','!','#']do Begin
+  If(I<=Length(Infix))and(Infix[I]in['A'..'Z','a'..'z'])Then Begin
+   VarName:=Infix[I];
+   Inc(I);
+   While(I<=Length(Infix))and(Infix[I]in['A'..'Z','a'..'z','%','!','#'])do Begin
     VarName:=VarName+Infix[I];
     Inc(I);
    End;
@@ -2141,7 +2429,7 @@ Begin
    Else
   Inc(I);
   If(Infix[I]in StopChar)Then Break;
-  If StrToUpper(Copy(Infix,I,4))='THEN'Then Break;
+  If(StrToUpper(Copy(Infix,I,4))='THEN')or(StrToUpper(Copy(Infix,I,2))='TO')Then Break;
  Until I>Length(Infix);
  CurrPos:=I;
  While(TopOfStack>MinTopOfStack)do PostFix:=PostFix+StackPop;
@@ -2238,6 +2526,89 @@ Begin
  WriteLn;
  WriteLn(' ',DiskFree(Byte(CurrDrive)-64):10,' octet(s) de libre');
  WriteLn;
+End;
+
+Function ForCommand:Boolean;
+Var
+ R1,R2:Real;
+Begin
+ ForCommand:=False;
+ If ForPos>=High(ForStack)Then Begin
+  WriteLn('Pile de FOR pleine.');
+  Exit;
+ End;
+ Inc(ForPos);
+ ForStack[ForPos].Line:=CurrLinePtr;
+ ForStack[ForPos].LineNumber:=CurrNumberLine;
+ SkipSpace;
+ ForStack[ForPos].VarName:=Copy(GetVariableName,1,20);
+ SkipSpace;
+ If GetSeparator<>'='Then Begin
+  WriteLn('"=" attendu.');
+  Exit;
+ End;
+ Inc(CurrPos);
+ R1:=GetNumberValue(1);
+ If VariableExist(ForStack[ForPos].VarName)Then
+  SetVariableReal(ForStack[ForPos].VarName,Trunc(R1))
+ Else
+  AddVariableReal(ForStack[ForPos].VarName,Trunc(R1));
+ SkipSpace;
+ If StrToUpper(ReadWord)<>'TO'Then Begin
+  WriteLn('Mot r‚serv‚ "TO" attendu');
+  Exit;
+ End;
+ SkipSpace;
+ ForStack[ForPos].Col:=CurrPos;
+ R2:=GetNumberValue(1);
+ ForCommand:=True;
+End;
+
+Function GosubCommand:Boolean;
+Var
+ JumpLine:Integer;
+ I,J,Err:Integer;
+ TempLine:String;
+Begin
+ GosubCommand:=True;
+ If GosubPos>=High(GosubStack)Then Begin
+  WriteLn('Pile de GOSUB pleine !');
+  GosubCommand:=False;
+  Exit;
+ End;
+ JumpLine:=Trunc(GetNumberValue(1));
+ If(CurrPos<=Length(CurrLine))and(CurrLine[CurrPos]=':')Then Inc(CurrPos);
+ Inc(GosubPos);
+ GosubStack[GosubPos].Line:=CurrLinePtr;
+ GosubStack[GosubPos].Col:=CurrPos;
+ GosubStack[GosubPos].LineNumber:=CurrNumberLine;
+ If ArrayListCount(List)>0Then Begin
+  For I:=1 to ArrayListCount(List)do Begin
+   ArrayListSetPtr(List,I-1);
+   TempLine:=ArrayListGetCurrStr(List);
+   If(FirstNumberInStr(TempLine)=JumpLine)Then Begin
+    CurrNumberLine:=JumpLine;
+    CurrLine:=TempLine;
+    CurrLinePtr:=I;
+    J:=1;
+    While(J<Length(CurrLine))do Begin
+     If Not(CurrLine[J]in['0'..'9'])Then Begin
+      Val(Copy(CurrLine,1,J-1),CurrNumberLine,Err);
+      Break;
+      End;
+     Inc(J);
+    End;
+    While J<=Length(CurrLine)do Begin
+     If CurrLine[J]in[' ',#9]Then Inc(J)
+                             Else Break;
+    End;
+    CurrPos:=J;
+    Exit;
+   End;
+  End;
+ End;
+ WriteLn('Etiquette introuvable');
+ GosubCommand:=False;
 End;
 
 Function GotoCommand:Boolean;
@@ -2514,21 +2885,55 @@ Procedure NewCommand;Begin
  ArrayListInit(List);
 End;
 
+Function NextCommand:Boolean;
+Var
+ NextCurrPos,NextCurrLinePtr,NextCurrNumberLine:Word;
+ R2:Real;
+Begin
+ NextCommand:=False;
+ If ForPos=0 Then Begin
+  WriteLn('NEXT sans FOR');
+  Exit;
+ End;
+ NextCurrPos:=CurrPos;
+ NextCurrLinePtr:=CurrLinePtr;
+ NextCurrNumberLine:=CurrNumberLine;
+ CurrPos:=ForStack[ForPos].Col;
+ CurrLinePtr:=ForStack[ForPos].Line;
+ ArrayListSetPtr(List,CurrLinePtr-1);
+ CurrLine:=ArrayListGetCurrStr(List);
+ CurrNumberLine:=ForStack[ForPos].LineNumber;
+ SetVariableReal(ForStack[ForPos].VarName,GetVariableReal(ForStack[ForPos].VarName)+1);
+ R2:=GetNumberValue(1);
+ If GetVariableReal(ForStack[ForPos].VarName)>R2 Then Begin
+  CurrPos:=NextCurrPos;
+  CurrLinePtr:=NextCurrLinePtr;
+  CurrNumberLine:=NextCurrNumberLine;
+  ArrayListSetPtr(List,CurrLinePtr-1);
+  CurrLine:=ArrayListGetCurrStr(List);
+  Dec(ForPos);
+ End;
+ NextCommand:=True;
+End;
+
 Procedure PrintCommand;
 Var
  R:Real;
 Begin
- If GetSeparator='"'Then Begin
-  WriteLn(GetStringValue);
- End
-  Else
+ SkipSpace;
  Begin
-  If CurrPos>Length(CurrLine)Then WriteLn
+  If IsStringValue Then Begin
+   WriteLn(GetStringValue);
+  End
    Else
   Begin
-   R:=GetNumberValue(1);
-   If Frac(R)=0.0Then WriteLn(R:0:0)
-                 Else WriteLn(R);
+   If CurrPos>Length(CurrLine)Then WriteLn
+    Else
+   Begin
+    R:=GetNumberValue(1);
+    If Frac(R)=0.0Then WriteLn(R:0:0)
+                  Else WriteLn(R);
+   End;
   End;
  End;
 End;
@@ -2542,6 +2947,19 @@ Begin
  {$I-} RmDir(GetStringValue);{$I+}
  Error:=IoResult;
  If Error<>0Then WriteLn(GetErrorMessage(Error));
+End;
+
+Procedure ReturnCommand;Begin
+ If(GosubPos=0)Then Begin
+  WriteLn('RETURN sans GOSUB');
+  Exit;
+ End;
+ CurrPos:=GosubStack[GosubPos].Col;
+ CurrLinePtr:=GosubStack[GosubPos].Line;
+ ArrayListSetPtr(List,CurrLinePtr-1);
+ CurrLine:=ArrayListGetCurrStr(List);
+ CurrNumberLine:=GosubStack[GosubPos].LineNumber;
+ Dec(GosubPos);
 End;
 
 Procedure RunCommand;
@@ -2701,6 +3119,7 @@ Var
  NoImplementation:Boolean;
  J,Err:Integer;
  R1:Real;
+ S1:String;
 Begin
  RunBasic:=False;
  If Not(InList)Then Begin
@@ -2748,14 +3167,14 @@ Begin
    22: NoImplementation:=True;{DRAW}
    23: NoImplementation:=True;{EDIT}
    24: NoImplementation:=True;{ELSE}
-   25: NoImplementation:=True;{END}
+   25: Exit;{END}
    26: NoImplementation:=True;{ERASE}
    27: NoImplementation:=True;{ERROR}
    28: NoImplementation:=True;{FIELD}
    29: FilesCommand;{FILES}
-   30: NoImplementation:=True;{FOR}
+   30: If Not(ForCommand)Then Exit;{FOR}
    31: NoImplementation:=True;{GET}
-   32: NoImplementation:=True;{GOSUB}
+   32: If Not(GosubCommand)Then Exit;{GOSUB}
    33: If Not(GotoCommand)Then Exit;{GOTO}
    34: HelpCommand;{HELP}
    35: IfCommand;{IF}
@@ -2774,7 +3193,7 @@ Begin
    48: MkDirCommand;{MKDIR}
    49: NoImplementation:=True;{NAME}
    50: NewCommand;{NEW}
-   51: NoImplementation:=True;{NEXT}
+   51: If Not(NextCommand)Then Exit;{NEXT}
    52: NoImplementation:=True;{ON}
    53: NoImplementation:=True;{OPEN}
    54: NoImplementation:=True;{OPTION}
@@ -2841,6 +3260,14 @@ Begin
       Else
        AddVariableReal(CurrCommand,Trunc(R1));
      End;
+     '$':Begin
+      Inc(CurrPos);
+      S1:=GetStringValue;
+      If VariableExist(CurrCommand)Then
+       SetVariableString(CurrCommand,S1)
+      Else
+       AddVariableString(CurrCommand,S1);
+     End;
      Else Begin
       R1:=GetNumberValue(1);
       If VariableExist(CurrCommand)Then
@@ -2882,7 +3309,10 @@ Procedure ShowRun;Begin
  FrameEmpty(41,18,70,24,$0B);
  TextColor(7);
  GotoXY(51,18);
- Write(' Execution ');
+ Case Language of
+  _English:Write(' Run ');
+  Else Write(' Execution ');
+ End;
 End;
 
 Procedure Init;Begin
@@ -2906,6 +3336,15 @@ Procedure Done;Begin
 End;
 
 BEGIN
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+ End;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('TB : Cette commande permet de lancer le Turbo Basic.');
   WriteLn;
@@ -2939,7 +3378,7 @@ BEGIN
   FunctionKeyList[10]:='SCREEN';
   Tron:=False;KeyFunction:=True;
   CurrNumberLine:=0;
-  NumberVariable:=0;
+  NumberVariable:=0;GosubPos:=0;ForPos:=0;
   For I:=1 to ParamCount do Begin
    FileName:=ParamStr(I);
   End;
