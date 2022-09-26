@@ -48,6 +48,15 @@ Type
   VarName:String[20];
  End;
  VarPointer=^VarRec;
+ GosubStackRec=Record
+  Line,Col:Word;
+  LineNumber:Integer;
+ End;
+ ForStackRec=Record
+  Line,Col:Word;
+  LineNumber:Integer;
+  VarName:String[20];
+ End;
 
 Var
  Terminated,Tron:Boolean;
@@ -60,6 +69,10 @@ Var
  CurrNumberLine:Integer;
  VarList:Array[1..MaxVariable]of VarPointer;
  I,NumberVariable:Integer;
+ GosubStack:Array[1..10]of GosubStackRec;
+ GosubPos:Byte;
+ ForStack:Array[1..10]of ForStackRec;
+ ForPos:Byte;
 
 Function RunBasic(InList:Boolean):Boolean;Forward;
 Procedure NewCommand;Forward;
@@ -364,6 +377,46 @@ Begin
  End;
 End;
 
+Function AddVariableString(S:String;Value:String):Boolean;
+Var
+ P:VarPointer;
+ PS:StrPointer;
+Begin
+ If NumberVariable>=MaxVariable Then Begin
+  AddVariableString:=False;
+  Exit;
+ End;
+ Inc(NumberVariable);
+ GetMem(P,SizeOf(VarRec));
+ P^.VarName:=Copy(StrToUpper(S),1,20);
+ P^.VarType:=_String;
+ GetMem(PS,SizeOf(String));
+ PS^:=Value;
+ P^.Variant.S:=PS;
+ VarList[NumberVariable]:=P;
+ AddVariableString:=True;
+End;
+
+Function GetVariableString(S:String):String;
+Var
+ I:Integer;
+Begin
+ GetVariableString:='';
+ For I:=1 to NumberVariable do If(StrToUpper(S)=VarList[I]^.VarName)Then Begin
+  GetVariableString:=VarList[I]^.Variant.S^;
+  Exit;
+ End;
+End;
+
+Procedure SetVariableString(S:String;Value:String);
+Var
+ I:Integer;
+Begin
+ For I:=1 to NumberVariable do If(S=VarList[I]^.VarName)Then Begin
+  VarList[I]^.Variant.S^:=Value;
+  Exit;
+ End;
+End;
 
  { Traitement de la liste }
 Function AddLine(S:String):Boolean;
@@ -501,12 +554,97 @@ Function GetSeparator:Char;Begin
  GetSeparator:=CurrLine[CurrPos];
 End;
 
-Function GetStringValue:String;
+Function IsStringValue:Boolean;
+Var
+ I:Byte;
+Begin
+ IsStringValue:=False;
+ If CurrLine[CurrPos]='"'Then Begin
+  IsStringValue:=True;
+ End
+  Else
+ Begin
+  I:=CurrPos;
+  While(CurrLine[I]in[' '])and(I<Length(CurrLine))do Inc(I);
+  If CurrLine[I]in['A'..'Z','a'..'z']Then Begin
+   Inc(I);
+   While I<Length(CurrLine)do Begin
+    If Not(CurrLine[I]in['A'..'Z','a'..'z','0'..'9'])Then Break;
+    Inc(I);
+   End;
+   If(I<=Length(CurrLine))and(CurrLine[I]='$')Then IsStringValue:=True;
+  End;
+ End;
+End;
+
+Function GetVariableName:String;
 Var
  S:String;
 Begin
+ S:='';
+ If CurrLine[CurrPos]in['A'..'Z','a'..'z']Then Begin
+  S:=S+CurrLine[CurrPos];
+  Inc(CurrPos);
+  While CurrPos<Length(CurrLine)do Begin
+   If Not(CurrLine[CurrPos]in['A'..'Z','a'..'z','0'..'9'])Then Break;
+   S:=S+CurrLine[CurrPos];
+   Inc(CurrPos);
+  End;
+ End;
+ GetVariableName:=StrToUpper(S);
+End;
+
+Function ReadWord:String;
+Var
+ S:String;
+Begin
+ S:='';
+ If CurrLine[CurrPos]in['A'..'Z','a'..'z']Then Begin
+  S:=S+CurrLine[CurrPos];
+  Inc(CurrPos);
+  While CurrPos<Length(CurrLine)do Begin
+   If Not(CurrLine[CurrPos]in['A'..'Z','a'..'z','0'..'9'])Then Break;
+   S:=S+CurrLine[CurrPos];
+   Inc(CurrPos);
+  End;
+ End;
+ ReadWord:=StrToUpper(S);
+End;
+
+Function ReadWordString:String;
+Var
+ S:String;
+Begin
+ S:='';
+ If CurrLine[CurrPos]in['A'..'Z','a'..'z']Then Begin
+  S:=S+CurrLine[CurrPos];
+  Inc(CurrPos);
+  While CurrPos<Length(CurrLine)do Begin
+   If Not(CurrLine[CurrPos]in['A'..'Z','a'..'z','0'..'9'])Then Break;
+   S:=S+CurrLine[CurrPos];
+   Inc(CurrPos);
+  End;
+  If CurrLine[CurrPos]='$'Then Begin
+   S:=S+'$';
+   Inc(CurrPos);
+  End;
+ End;
+ ReadWordString:=StrToUpper(S);
+End;
+
+Function GetNumberValue(MinTopOfStack:Integer):Real;Forward;
+
+Function GetStringValue:String;
+Label Restart;
+Var
+ J:Integer;
+ _Result:Real;
+ FunctionFound:Boolean;
+ S,VarName:String;
+Begin
  GetStringValue:='';
  S:='';
+Restart:
  If CurrLine[CurrPos]='"'Then Begin
   Inc(CurrPos);
   While(CurrLine[CurrPos]<>'"')and(CurrPos<=Length(CurrLine))do Begin
@@ -514,8 +652,51 @@ Begin
    Inc(CurrPos);
   End;
   If CurrLine[CurrPos]='"'Then Inc(CurrPos);
-  GetStringValue:=S;
+ End
+  Else
+ Begin
+  VarName:=ReadWordString;
+  SkipSpace;
+  FunctionFound:=False;
+  For J:=Low(FunctionList)to High(FunctionList)do Begin
+   If FunctionList[J]=VarName Then Begin
+    FunctionFound:=True;
+    Case J of
+     3:Begin{CHR$}
+      If CurrLine[CurrPos]<>'('Then Begin
+       WriteLn('"(" attendu');
+       Exit;
+      End;
+      Inc(CurrPos);
+      _Result:=GetNumberValue(1);
+      If CurrLine[CurrPos]<>')'Then Begin
+       WriteLn('")" attendu');
+       Exit;
+      End;
+      Inc(CurrPos);
+      S:=S+Chr(Byte(Trunc(_Result)));
+      GetStringValue:=S;
+      Break;
+     End;
+     Else Begin
+      WriteLn('Type incompatible');
+      Exit;
+     End;
+    End;
+   End;
+  End;
+  If Not(FunctionFound)Then Begin
+   If VariableExist(VarName)Then Begin
+    S:=S+GetVariableString(VarName);
+   End;
+  End;
  End;
+ SkipSpace;
+ If CurrLine[CurrPos]in['+',';']Then Begin
+  Inc(CurrPos);
+  Goto Restart;
+ End;
+ GetStringValue:=S;
 End;
 
 Function GetNumberValue(MinTopOfStack:Integer):Real;
@@ -542,9 +723,10 @@ Begin
   Dec(CurrPos,3);
  End;
  Repeat
-  If Infix[I]in['A'..'Z','a'..'z']Then Begin
-   VarName:='';
-   While Infix[I]in['A'..'Z','a'..'z','%','!','#']do Begin
+  If(I<=Length(Infix))and(Infix[I]in['A'..'Z','a'..'z'])Then Begin
+   VarName:=Infix[I];
+   Inc(I);
+   While(I<=Length(Infix))and(Infix[I]in['A'..'Z','a'..'z','%','!','#'])do Begin
     VarName:=VarName+Infix[I];
     Inc(I);
    End;
@@ -935,7 +1117,7 @@ Begin
    Else
   Inc(I);
   If(Infix[I]in StopChar)Then Break;
-  If StrToUpper(Copy(Infix,I,4))='THEN'Then Break;
+  If(StrToUpper(Copy(Infix,I,4))='THEN')or(StrToUpper(Copy(Infix,I,2))='TO')Then Break;
  Until I>Length(Infix);
  CurrPos:=I;
  While(TopOfStack>MinTopOfStack)do PostFix:=PostFix+StackPop;
@@ -1061,6 +1243,84 @@ Begin
  {$I-} ChDir(GetStringValue);{$I+}
  Error:=IoResult;
  If Error<>0Then WriteLn(GetErrorMessage(Error));
+End;
+
+Function ForCommand:Boolean;
+Var
+ R1,R2:Real;
+Begin
+ ForCommand:=False;
+ If ForPos>=High(ForStack)Then Begin
+  WriteLn('Pile de FOR pleine.');
+  Exit;
+ End;
+ Inc(ForPos);
+ ForStack[ForPos].Line:=CurrLinePtr;
+ ForStack[ForPos].LineNumber:=CurrNumberLine;
+ SkipSpace;
+ ForStack[ForPos].VarName:=Copy(GetVariableName,1,20);
+ SkipSpace;
+ If GetSeparator<>'='Then Begin
+  WriteLn('"=" attendu.');
+  Exit;
+ End;
+ Inc(CurrPos);
+ R1:=GetNumberValue(1);
+ If VariableExist(ForStack[ForPos].VarName)Then
+  SetVariableReal(ForStack[ForPos].VarName,Trunc(R1))
+ Else
+  AddVariableReal(ForStack[ForPos].VarName,Trunc(R1));
+ SkipSpace;
+ If StrToUpper(ReadWord)<>'TO'Then Begin
+  WriteLn('Mot r‚serv‚ "TO" attendu');
+  Exit;
+ End;
+ SkipSpace;
+ ForStack[ForPos].Col:=CurrPos;
+ R2:=GetNumberValue(1);
+ ForCommand:=True;
+End;
+
+Function GosubCommand:Boolean;
+Var
+ JumpLine:Integer;
+ I,J,Err:Integer;
+Begin
+ GosubCommand:=True;
+ If GosubPos>=High(GosubStack)Then Begin
+  WriteLn('Pile de GOSUB pleine !');
+  GosubCommand:=False;
+  Exit;
+ End;
+ JumpLine:=Trunc(GetNumberValue(1));
+ If(CurrPos<=Length(CurrLine))and(CurrLine[CurrPos]=':')Then Inc(CurrPos);
+ Inc(GosubPos);
+ GosubStack[GosubPos].Line:=CurrLinePtr;
+ GosubStack[GosubPos].Col:=CurrPos;
+ GosubStack[GosubPos].LineNumber:=CurrNumberLine;
+ If NumberLine>0Then Begin
+  For I:=1 to NumberLine do If(FirstNumberInStr(PA[I]^)=JumpLine)Then Begin
+   CurrNumberLine:=JumpLine;
+   CurrLine:=PA[I]^;
+   CurrLinePtr:=I;
+   J:=1;
+   While(J<Length(CurrLine))do Begin
+    If Not(CurrLine[J]in['0'..'9'])Then Begin
+     Val(Copy(CurrLine,1,J-1),CurrNumberLine,Err);
+     Break;
+    End;
+    Inc(J);
+   End;
+   While J<=Length(CurrLine)do Begin
+    If CurrLine[J]in[' ',#9]Then Inc(J)
+                            Else Break;
+   End;
+   CurrPos:=J;
+   Exit;
+  End;
+ End;
+ WriteLn('Etiquette introuvable');
+ GosubCommand:=False;
 End;
 
 Function GotoCommand:Boolean;
@@ -1329,33 +1589,78 @@ Begin
  NumberLine:=0;
 End;
 
+Function NextCommand:Boolean;
+Var
+ NextCurrPos,NextCurrLinePtr,NextCurrNumberLine:Word;
+ R2:Real;
+Begin
+ NextCommand:=False;
+ If ForPos=0 Then Begin
+  WriteLn('NEXT sans FOR');
+  Exit;
+ End;
+ NextCurrPos:=CurrPos;
+ NextCurrLinePtr:=CurrLinePtr;
+ NextCurrNumberLine:=CurrNumberLine;
+ CurrPos:=ForStack[ForPos].Col;
+ CurrLinePtr:=ForStack[ForPos].Line;
+ CurrLine:=PA[CurrLinePtr]^;
+ CurrNumberLine:=ForStack[ForPos].LineNumber;
+ SetVariableReal(ForStack[ForPos].VarName,GetVariableReal(ForStack[ForPos].VarName)+1);
+ R2:=GetNumberValue(1);
+ If GetVariableReal(ForStack[ForPos].VarName)>R2 Then Begin
+  CurrPos:=NextCurrPos;
+  CurrLinePtr:=NextCurrLinePtr;
+  CurrNumberLine:=NextCurrNumberLine;
+  CurrLine:=PA[CurrLinePtr]^;
+  Dec(ForPos);
+ End;
+ NextCommand:=True;
+End;
+
 Procedure NormalCommand;Begin
  TextColor((TextAttr and $F));
 End;
 
 Procedure PrintCommand;
 Var
- Pos,R:Real;
+ R:Real;
 Begin
- If GetSeparator='"'Then Begin
-  WriteLn(GetStringValue);
- End
-  Else
+ SkipSpace;
  Begin
-  If CurrPos>Length(CurrLine)Then WriteLn
+  If IsStringValue Then Begin
+   WriteLn(GetStringValue);
+  End
    Else
   Begin
-   R:=GetNumberValue(1);
-   If Frac(R)=0.0Then WriteLn(R:0:0)
-                 Else WriteLn(R);
+   If CurrPos>Length(CurrLine)Then WriteLn
+    Else
+   Begin
+    R:=GetNumberValue(1);
+    If Frac(R)=0.0Then WriteLn(R:0:0)
+                  Else WriteLn(R);
+   End;
   End;
  End;
+End;
+
+Procedure ReturnCommand;Begin
+ If(GosubPos=0)Then Begin
+  WriteLn('RETURN sans GOSUB');
+  Exit;
+ End;
+ CurrPos:=GosubStack[GosubPos].Col;
+ CurrLinePtr:=GosubStack[GosubPos].Line;
+ CurrLine:=PA[CurrLinePtr]^;
+ CurrNumberLine:=GosubStack[GosubPos].LineNumber;
+ Dec(GosubPos);
 End;
 
 Procedure RunCommand;
 Var
  J:Integer;
  Err:Integer;
+ S1:String;
 Begin
  If NumberLine>0Then Begin
   CurrLinePtr:=1;
@@ -1510,6 +1815,7 @@ Var
  NoImplementation:Boolean;
  J,Err:Integer;
  R1:Real;
+ S1:String;
 Begin
  RunBasic:=False;
  If Not(InList)Then Begin
@@ -1548,11 +1854,11 @@ Begin
    13:NoImplementation:=True;{DELETE}
    14:NoImplementation:=True;{DIM}
    15:NoImplementation:=True;{DRAW}
-   16:NoImplementation:=True;{END}
+   16:Exit;{END}
    17:FlashCommand;{FLASH}
-   18:NoImplementation:=True;{FOR}
+   18:If Not(ForCommand)Then Exit;{FOR}
    19:NoImplementation:=True;{GET}
-   20:NoImplementation:=True;{GOSUB}
+   20:If Not(GosubCommand)Then Exit;{GOSUB}
    21:If Not(GotoCommand)Then Exit;{GOTO}
    22:NoImplementation:=True;{GR}
    23:HelpCommand;{HELP}
@@ -1574,7 +1880,7 @@ Begin
    39:NoImplementation:=True;{LOMEM}
    40:NoImplementation:=True;{MON}
    41:NewCommand;{NEW}
-   42:NoImplementation:=True;{NEXT}
+   42:If Not(NextCommand)Then Exit;{NEXT}
    43:NoImplementation:=True;{NOMON}
    44:NormalCommand;{NORMAL}
    45:NoImplementation:=True;{NOTRACE}
@@ -1594,7 +1900,7 @@ Begin
     Exit;{REM}
    End;
    58:NoImplementation:=True;{RENAME}
-   59:NoImplementation:=True;{RESTORE}
+   59:ReturnCommand;{RETURN}
    60:NoImplementation:=True;{RETURN}
    61:RunCommand;{RUN}
    62:SaveCommand;{SAVE}
@@ -1631,6 +1937,14 @@ Begin
       Else
        AddVariableReal(CurrCommand,Trunc(R1));
      End;
+     '$':Begin
+      Inc(CurrPos);
+      S1:=GetStringValue;
+      If VariableExist(CurrCommand)Then
+       SetVariableString(CurrCommand,S1)
+      Else
+       AddVariableString(CurrCommand,S1);
+     End;
      Else Begin
       R1:=GetNumberValue(1);
       If VariableExist(CurrCommand)Then
@@ -1660,6 +1974,11 @@ Begin
 End;
 
 BEGIN
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('ADAM : Cette commande permet de lancer l''interpreteur de Adam SmartBASIC.');
   WriteLn;
@@ -1670,7 +1989,7 @@ BEGIN
   FileName:='';
   Tron:=False;
   NumberLine:=0;CurrNumberLine:=0;
-  NumberVariable:=0;
+  NumberVariable:=0;GosubPos:=0;ForPos:=0;
   For I:=1 to ParamCount do Begin
    FileName:=ParamStr(I);
   End;
