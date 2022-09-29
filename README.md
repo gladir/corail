@@ -365,7 +365,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>FALSE.PAS</b></td>
-			<td>Cette commande permet de retourner faux. Cette command est inspiré de UNIX et Linux.</td>
+			<td>Cette commande permet de retourner faux. Cette commande est inspiré de UNIX et Linux.</td>
 		</tr>
 		<tr>
 			<td><b>FDISK.PAS</b></td>
@@ -451,7 +451,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier en HTML en texte seulement (enlève le code HTML).</td>
 		</tr>
 		<tr>
-			<td><b>HYPHEN.PAS</>
+			<td><b>HYPHEN.PAS</b></td>
 			<td>Cette commande permet de rechercher les mots avec des traits-union. Cette commande est inspiré de la commande UNIX.</td>
 		</tr>
 		<tr>
@@ -476,7 +476,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>LOGNAME.PAS</b></td>
-			<td>Cette comamnde permet de demander le nom de connexion.</td>
+			<td>Cette commande permet de demander le nom de connexion.</td>
 		</tr>
 		<tr>
 			<td><b>LOOK.PAS</b></td>
@@ -700,7 +700,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>TRUE.PAS</b></td>
-			<td>Cette commande permet de retourner vrai. Cette command est inspiré de UNIX et Linux.</td>
+			<td>Cette commande permet de retourner vrai. Cette commande est inspiré de UNIX et Linux.</td>
 		</tr>				
 		<tr>
 			<td><b>TRUENAME.PAS</b></td>
