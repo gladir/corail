@@ -73,7 +73,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	        <tr>
 			<td><b>ASCII.PAS</b></td>
-			<td>Cette commande permet d'afficvher la table ASCII de la console.</td>
+			<td>Cette commande permet d'afficher la table ASCII de la console.</td>
 		</tr>
 		<tr>
 			<td><b>ASM6502.PAS</b></td>
