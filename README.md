@@ -281,7 +281,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>	
 	        <tr>
 			<td><b>DISKEDIT.PAS</b></td>
-			<td>Cette commadne permet de lancer l''editeur de disque.</td>
+			<td>Cette commande permet de lancer l'éditeur de disque.</td>
 		</tr>
 		<tr>
 		    	<td><b>DISKINFO.PAS</b></td>
