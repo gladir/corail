@@ -290,7 +290,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 	        <tr>
 			<td><b>DISPLAY.PAS</b></td>
 			<td>Cette commande permet d'afficher un message encodée en hexadécimal. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/OS9/display.htm">DISPLAY</a> de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
-		</tr>	
+		</tr>
+		<tr>
+			<td><b>DIVT.PAS</b></td>
+			<td>Cette commande permet d'afficher les adresses de la tables des interruptions d'un microprocesseur 8086/8088.</td>
+		</tr>
 		<tr>
 			<td><b>DOS2UNIX.PAS</b></td>
 			<td>Cette commande permet d'effectuer la conversion des caractères de saut de ligne du système d'exploitation DOS en leur équivalent UNIX.</td>
