@@ -6,6 +6,8 @@
 
 Program DISKEDIT;
 
+{$A-}
+
 Uses DOS,Crt;
 
 Const
@@ -157,7 +159,30 @@ Var
  FileDiskEdit:File {$IFDEF FPC} of Byte{$ENDIF};
  FileName,CurrParam:String;
  Buffer:Array[0..1023]of Byte;
- CurrPos:LongInt;
+ StartPos,CurrPos,FatPos:LongInt;
+
+Type
+ {Structure de lecture pour le disque }
+ SecPosType=Record
+  Head:Byte;
+  Sector:Byte;
+  Track:Byte;
+ End;
+
+ {Structure de partition}
+ PartEntry=Record
+  Status:Byte;
+  StartSec:SecPosType;
+  PartType:Byte;
+  EndSec:SecPosType;
+  SecOfs,NumSec:LongInt;
+ End;
+
+ PartSec=Record { d‚crit le secteur de partition }
+  BootCode:Array[0..$1BD]of Byte;    { Code de d‚marrage du disque dur }
+  PartTable:Array[0..3]of PartEntry; { Table des partitions de disque dur }
+  IdCode:Word;                       { Signature: AA55h }
+ End;
 
 {$IFNDEF FPC}
  Procedure CursorOff;
@@ -188,6 +213,16 @@ Begin
   If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
  End;
  StrToUpper:=S;
+End;
+
+Function DuplicateString(C:Char;Num:Integer):String;
+Var
+ I:Byte;
+ S:String;
+Begin
+ S:='';
+ For I:=1 to Num do S:=S+C;
+ DuplicateString:=S;
 End;
 
 Function PadRight(S:String;Space:Byte):String;
@@ -341,6 +376,22 @@ Function FourByteToLongInt(A,B,C,D:Byte):LongInt;Begin
  FourByteToLongInt:=D*16777216+C*65536+B*256+A;
 End;
 
+Procedure FindStartSector;
+Var
+ ByteReaded:Integer;
+ Partition:PartSec;
+Begin
+ Seek(FileDiskEdit,0);
+ BlockRead(FileDiskEdit,Partition,512,ByteReaded);
+ If Partition.IdCode=$AA55 Then Begin
+  If Partition.PartTable[0].SecOfs<>-1 Then Begin
+   If FileSize(FileDiskEdit)>Partition.PartTable[0].SecOfs Then Begin
+    StartPos:=Partition.PartTable[0].SecOfs*512;
+   End;
+  End;
+ End;
+End;
+
 Procedure ReadCurrSector;
 Var
  ByteReaded:Integer;
@@ -351,7 +402,7 @@ Begin
  End
   Else
  If FileName<>''Then Begin
-  Seek(FileDiskEdit,CurrPos);
+  Seek(FileDiskEdit,StartPos+CurrPos);
   BlockRead(FileDiskEdit,Buffer,512,ByteReaded);
  End;
 End;
@@ -366,14 +417,22 @@ Begin
  End
   Else
  If FileName<>''Then Begin
-  Seek(FileDiskEdit,CurrPos);
+  Seek(FileDiskEdit,StartPos);
   BlockRead(FileDiskEdit,Buffer,512,ByteReaded);
  End;
 End;
 
-Procedure ReadPartitionRecord;Begin
+Procedure ReadPartitionRecord;
+Var
+ ByteReaded:Word;
+Begin
  If(IsDisk)Then Begin
   ReadTrack(Lecteur,0,0,1,1,Buffer);
+ End
+  Else
+ If FileName<>''Then Begin
+  Seek(FileDiskEdit,0);
+  BlockRead(FileDiskEdit,Buffer,512,ByteReaded);
  End;
 End;
 
@@ -394,16 +453,6 @@ Begin
               ByteHex2Str((value shr 16)and $FF)+
               ByteHex2Str((value shr 8)and $FF)+
               ByteHex2Str(value and $FF);
-End;
-
-Function DuplicateString(C:Char;Num:Integer):String;
-Var
- I:Byte;
- S:String;
-Begin
- S:='';
- For I:=1 to Num do S:=S+C;
- DuplicateString:=S;
 End;
 
 Procedure Box(X1,Y1,X2,Y2,Couleur:Byte);Begin
@@ -562,9 +611,26 @@ Procedure SubMenuItem(Y:Integer;Disable:Boolean);Begin
    End;
    If SubMenuView[Y]=''Then Write(DuplicateString('-',32+1))
     Else
-   Case Language of
-    _English:Write(' ',PadRight(SubMenuViewEnglish[Y],32));
-    Else Write(' ',PadRight(SubMenuView[Y],32));
+   Begin
+    Case Y of
+     0:If Mode=_Hex Then Write(#254,' ')
+                    Else Write('  ');
+     1:If Mode=_Text Then Write(#254,' ')
+                     Else Write('  ');
+     2:If Mode=_Directory Then Write(#254,' ')
+                          Else Write('  ');
+     3:If Mode=_FAT Then Write(#254,' ')
+                         Else Write('  ');
+     4:If Mode=_PartitionTable Then Write(#254,' ')
+                               Else Write('  ');
+     5:If Mode=_BootRecord Then Write(#254,' ')
+                           Else Write('  ');
+     Else Write('  ');
+    End;
+    Case Language of
+     _English:Write(' ',PadRight(SubMenuViewEnglish[Y],30));
+     Else Write(' ',PadRight(SubMenuView[Y],30));
+    End;
    End;
   End;
   5:Begin
@@ -769,18 +835,117 @@ Begin
  GotoXY(14,16);
  Write('Grand nombre total de secteurs : ',FourByteToLongInt(Buffer[$20],Buffer[$21],Buffer[$22],Buffer[$23]));
  GotoXY(21,17);
- Write('Numero d''unite physique : ',Buffer[$25]);
+ Write('Numero d''unit‚ physique : ',Buffer[$25]);
  GotoXY(18,18);
  Write('Signature d''enregistrement : ',ByteHex2Str(Buffer[$26]),'Hex');
  GotoXY(19,19);
- Write('Numero de serie du volume : ',ByteHex2Str(Buffer[$27]));
+ Write('Numero de s‚rie du volume : ',ByteHex2Str(Buffer[$27]));
  Write(ByteHex2Str(Buffer[$28]),ByteHex2Str(Buffer[$29]),ByteHex2Str(Buffer[$2A]));
  GotoXY(25,20);
  Write('Etiquette du volume : ');
- For I:=0 to 10 do Write(Char(Buffer[$2B+I]));
+ If Buffer[$2B]<32 Then Begin
+  For I:=1 to 11 do Write(Char(Buffer[$2B+I]));
+ End
+  Else
+ Begin
+  For I:=0 to 10 do Write(Char(Buffer[$2B+I]));
+ End;
  GotoXY(8,21);
  Write('Identificateur de systeme de fichier : ');
+ If Buffer[$36]<32 Then Begin
+  For I:=1 to 8 do Write(Char(Buffer[$36+I]));
+ End
+  Else
  For I:=0 to 7 do Write(Char(Buffer[$36+I]));
+End;
+
+Procedure ShowCurrFAT;
+Var
+  I,J:Integer;
+Begin
+ ReadCurrSector;
+ GotoXY(1,2);
+ FatPos:=0;
+ For J:=0 to 20 do Begin
+  For I:=0 to 7 do Begin
+   Write(TwoByteToWord(Buffer[FatPos],Buffer[FatPos+1]):7,' ');
+   Inc(FatPos,2);
+  End;
+  WriteLn;
+ End;
+End;
+
+Procedure ShowFAT;
+Var
+ TotSects:LongInt;
+Begin
+ ReadBootRecord;
+ CurrPos:=TwoByteToWord(Buffer[$0E],Buffer[$0F])*512;
+ TotSects:=TwoByteToWord(Buffer[$13],Buffer[$14]);
+ If TotSects=0Then TotSects:=FourByteToLongInt(Buffer[$20],Buffer[$21],Buffer[$22],Buffer[$23]);
+ ShowCurrFAT;
+End;
+
+Procedure ShowPartition;
+Var
+ I:Byte;
+ Partition:PartSec;
+Begin
+ ReadPartitionRecord;
+ Move(Buffer,Partition,SizeOf(Partition));
+ GotoXY(1,2);
+ If Partition.IdCode=$AA55 Then Begin
+  WriteLn(#218,DuplicateString(#196,75),#191);
+  Write(#179,' ':6,#179,' ':4,#179);
+  Case Language of
+   _English:Write(' Starting Location  ':19);
+   Else Write('Emplacement du d‚but':19);
+  End;
+  Write(#179);
+  Case Language of
+   _English:Write('  Ending Location   ');
+   Else Write(' Emplacement de fin ');
+  End;
+  Case Language of
+   _English:WriteLn(#179,' Relative ',#179,'Number of ',#179);
+   Else WriteLn(#179,' Secteurs ',#179,'Nombre de ',#179);
+  End;
+  Case Language of
+   _English:WriteLn(#179,'System',#179,'Boot',#179,'Side Cylinder Sector',
+            #179,'Side Cylinder Sector',#179,' Sectors  ',#179,
+            ' Sectors  ',#179);
+   Else WriteLn(#179,'SystŠm',#179,'D‚ma',#179,'C“t‚ Cylindre Secteu',
+                #179,'C“t‚ Cylindre Secteu',#179,' relatifs ',#179,
+                ' Secteurs ',#179);
+  End;
+  For I:=0 to 3 do Begin
+   Write(#179,'?':6,#179);
+   If Partition.PartTable[I].Status=$80 Then Begin
+    Case Language of
+     _English:Write('Yes':4);
+     Else Write('Oui':4);
+    End;
+   End
+    Else
+   Begin
+    Case Language of
+     _English:Write('No':4);
+     Else Write('Non':4);
+    End;
+   End;
+   WriteLn(#179,Partition.PartTable[I].StartSec.Head:3,
+           Partition.PartTable[I].StartSec.Sector:8,
+           Partition.PartTable[I].StartSec.Track:7,'  ',
+           #179,Partition.PartTable[I].EndSec.Head:3,
+           Partition.PartTable[I].EndSec.Sector:8,
+           Partition.PartTable[I].EndSec.Track:7,'  ',
+           #179,Partition.PartTable[I].SecOfs:10,
+           #179,Partition.PartTable[I].NumSec:10,#179);
+  End;
+  WriteLn(#192,DuplicateString(#196,75),#217);
+ End
+  Else
+ WriteLn('Table de partition non pr‚sente !');
 End;
 
 Procedure ShowView;Begin
@@ -791,10 +956,8 @@ Procedure ShowView;Begin
   End;
   _Directory:Begin
   End;
-  _FAT:Begin
-  End;
-  _PartitionTable:Begin
-  End;
+  _FAT:ShowFAT;
+  _PartitionTable:ShowPartition;
   _BootRecord:Begin
    ReadBootRecord;
    ShowBootRecord;
@@ -996,15 +1159,27 @@ Begin
       Mode:=_BootRecord;
       ShowView;
      End;
-     #73:If Mode=_Hex Then Begin { PgUp }
-      If CurrPos>0Then  CurrPos:=CurrPos-$140;
-      ReadCurrSector;
-      View16x16;
+     #73:Case Mode of
+      _Hex:Begin { PgUp }
+       If CurrPos>0Then  CurrPos:=CurrPos-$140;
+       ReadCurrSector;
+       View16x16;
+      End;
+      _FAT:Begin
+       CurrPos:=CurrPos-336;
+       ShowCurrFAT;
+      End;
      End;
-     #81:If Mode=_Hex Then Begin { PgDn }
-      CurrPos:=CurrPos+$140;
-      ReadCurrSector;
-      View16x16;
+     #81:Case Mode of
+      _Hex:Begin { PgDn }
+       CurrPos:=CurrPos+$140;
+       ReadCurrSector;
+       View16x16;
+      End;
+      _FAT:Begin
+       CurrPos:=CurrPos+336;
+       ShowCurrFAT;
+      End;
      End;
     End;
    End;
@@ -1049,7 +1224,7 @@ BEGIN
   Else
  Begin
   Lecteur:=0;Face:=0;Piste:=0;Start:=0;
-  CurrPos:=0;
+  CurrPos:=0;StartPos:=0;FatPos:=0;
   Mode:=_Hex;
   ShowASCII128:=False;
   IsDisk:=False;
@@ -1071,6 +1246,7 @@ BEGIN
     WriteLn('Fichier d''image introuvable');
     Halt;
    End;
+   FindStartSector;
    ReadCurrSector;
   End;
   Init;
