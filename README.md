@@ -20,7 +20,7 @@ Aperçu du clone de Lotus 1-2-3 :
 
 Aperçu du clone de CodeView :
 
-![image](https://user-images.githubusercontent.com/11842176/163688889-1e0d5988-d2b3-4e7b-afd1-3eda1f89c385.png)
+![image](https://user-images.githubusercontent.com/11842176/194549450-06570741-a7d0-4431-8444-2746e49ca888.png)
 
 Aperçu du clone de CheckIt :
 
@@ -28,7 +28,7 @@ Aperçu du clone de CheckIt :
 
 Aperçu de la commande NC (North Commander) :
 
-![image](https://user-images.githubusercontent.com/11842176/162598150-5dd1d97c-fb13-4943-a74e-bac731ee2f18.png)
+![image](https://user-images.githubusercontent.com/11842176/194549923-b189e680-fa35-49bf-98f4-43318582d644.png)
 
 Aperçu de la commande VIEWHEX :
 
