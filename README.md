@@ -20,7 +20,7 @@ Aperçu du clone de Lotus 1-2-3 :
 
 Aperçu du clone de CodeView :
 
-![image](https://user-images.githubusercontent.com/11842176/163688889-1e0d5988-d2b3-4e7b-afd1-3eda1f89c385.png)
+![image](https://user-images.githubusercontent.com/11842176/194549450-06570741-a7d0-4431-8444-2746e49ca888.png)
 
 Aperçu du clone de CheckIt :
 
