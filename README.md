@@ -28,7 +28,7 @@ Aperçu du clone de CheckIt :
 
 Aperçu de la commande NC (North Commander) :
 
-![image](https://user-images.githubusercontent.com/11842176/162598150-5dd1d97c-fb13-4943-a74e-bac731ee2f18.png)
+![image](https://user-images.githubusercontent.com/11842176/194549923-b189e680-fa35-49bf-98f4-43318582d644.png)
 
 Aperçu de la commande VIEWHEX :
 
