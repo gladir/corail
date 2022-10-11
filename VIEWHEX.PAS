@@ -85,8 +85,7 @@ Begin
  TextColor(LightGray);
  For J:=0 to 15 do Begin
   GotoXY(1,J+5);
-  Write(HexWord2Str(CurrPos+J*16),' -');
-  GotoXY(8,J+5);
+  Write(HexWord2Str(CurrPos+J*16),' - ');
   For I:=0 to 15 do Begin
    PosInBuffer:=(J shl 4)+I;
    X:=Buffer[PosInBuffer];
@@ -110,10 +109,14 @@ BEGIN
   WriteLn('Syntaxe : VIEWHEX nomdufichier');
  End
   Else
- Begin
+ If ParamCount>0 Then Begin
   FileName:=ParamStr(1);
-  Assign(FileView,FileName);
-  Reset(FileView,1);
+  {$I-}Assign(FileView,FileName);
+  Reset(FileView,1);{$I+}
+  If IoResult<>0 Then Begin
+   WriteLn('Impossible d''ouvrir le fichier : ',FileName);
+   Halt;
+  End;
   CurrPos:=0;
   ClrScr;
   ViewFrame;
@@ -138,5 +141,7 @@ BEGIN
   Until Finish;
   Close(FileView);
   ClrScr;
- End;
+ End
+  Else
+ WriteLn('Nom de fichier requis !');
 END.
