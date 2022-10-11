@@ -1979,12 +1979,12 @@ BEGIN
    _Germany:Begin
     WriteLn('Startet Debug, ein Werkzeug zum Testen und Editieren von Programmen.');
     WriteLn;
-    WriteLn('DEBUG');
+    WriteLn('DEBUG32');
    End;
    Else Begin
-    WriteLn('DEBUG : Cette commande permet de deboguer des programmes.');
+    WriteLn('DEBUG32 : Cette commande permet de deboguer des programmes.');
     WriteLn;
-    WriteLn('Syntaxe : DEBUG');
+    WriteLn('Syntaxe : DEBUG32');
    End;
   End;
  End
