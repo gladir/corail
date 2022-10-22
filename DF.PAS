@@ -8,15 +8,45 @@ Program DF;
 
 Uses DOS;
 
+Function StrToUpper(S:String):String;
 Var
+ I:Byte;
+Begin
+ For I:=1 to Length(S)do Begin
+  If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
+ End;
+ StrToUpper:=S;
+End;
+
+Var
+ Language:(_French,_English,_Germany,_Italian,_Spain);
+ TmpLanguage:String;
  I:Char;
  Dsk:Byte;
 
 BEGIN
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+ End;
  If(ParamStr(1)='--help')or(ParamStr(1)='-h')or(ParamStr(1)='/?')Then Begin
-  WriteLn('df : Cette commande permet d''afficher l''espace libre sur les systemes de fichiers.');
-  WriteLn;
-  WriteLn('Syntaxe : df');
+  Case Language of
+   _English:Begin
+    WriteLn('Checking disk space');
+    WriteLn;
+    WriteLn('Syntax: df');
+   End;
+   Else Begin
+    WriteLn('df : Cette commande permet d''afficher l''espace libre sur les systemes de fichiers.');
+    WriteLn;
+    WriteLn('Syntaxe : df');
+   End;
+  End;
  End
   Else
  Begin

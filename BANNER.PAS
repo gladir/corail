@@ -6,6 +6,8 @@
 
 Program BANNER;
 
+Uses DOS;
+
 Const Matrix8x16:Array[0..4095] of Byte=(
   $00, $00, $00, $00, $00, $00, $00, $00,
   $00, $00, $00, $00, $00, $00, $00, $00,
@@ -523,17 +525,47 @@ Const Matrix8x16:Array[0..4095] of Byte=(
 
 Height=16;
 
+Function StrToUpper(S:String):String;
 Var
+ I:Byte;
+Begin
+ For I:=1 to Length(S)do Begin
+  If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
+ End;
+ StrToUpper:=S;
+End;
+
+Var
+ Language:(_French,_English,_Germany,_Italian,_Spain);
+ TmpLanguage:String;
  P,I,J,K:Integer;
  Masque:Word;
  CurrString:String;
  TB:Array[0..Height-1,0..79]of Char;
 
 BEGIN
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+ End;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('BANNER : Cette commande permet d''afficher une banniere.');
-  WriteLn;
-  WriteLn('Syntaxe : BANNER message');
+  Case Language of
+   _English:Begin
+    WriteLn('Print the ASCII character string in large letter to standard output.');
+    WriteLn;
+    WriteLn('Syntax: BANNER text');
+   End;
+   Else Begin
+    WriteLn('BANNER : Cette commande permet d''afficher une banniere.');
+    WriteLn;
+    WriteLn('Syntaxe : BANNER message');
+   End;
+  End;
  End
   Else
  If ParamCount>0Then
