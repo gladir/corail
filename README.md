@@ -180,6 +180,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer le menu de CheckIt. Cette commande est une clone de la série d'utilitaires <a href="https://www.gladir.com/SOFTWARE/CHECKIT/presentation.htm">CheckIt</a>.</td>
 		</tr>
 		<tr>
+			<td><b>CHKDSK.PAS</b></td>
+			<td>Cette commande permet de vérifier le disque. Cette commande est inspiré du DOS.</td>
+		</tr>		
+		<tr>
 			<td><b>CHMOD.PAS</b></td>
 			<td>Cette commande permet de changer le mode des fichiers. Cette commande est inspiré de UNIX et Linux.</td>
 		</tr>
