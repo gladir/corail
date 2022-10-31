@@ -567,6 +567,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer l'éditeur de texte ASCII du North Commander.</td>
 		</tr>
 		<tr>
+			<td><b>NET.PAS</b></td>
+			<td>Cette commande permet d'effectuer la gestion réseau.</td>
+		</tr>
+		<tr>
 			<td><b>NDOS.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande NDOS. Il s'agit d'un équivalent du NDOS du Norton Utilities.</td>
 		</tr>					
