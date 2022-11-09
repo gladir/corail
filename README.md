@@ -384,6 +384,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de retourner faux. Cette commande est inspiré de UNIX et Linux.</td>
 		</tr>
 		<tr>
+			<td><b>FC.PAS</b></td>
+			<td>Cette commande permet de comparer deux fichiers.</td>
+		</tr>
+		<tr>
 			<td><b>FDISK.PAS</b></td>
 			<td>Cette commande permet d'effectuer la gestion des partitions d'un disque dur.</td>
 		</tr>
