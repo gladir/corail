@@ -606,6 +606,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>PROTECT.PAS</b></td>
 			<td>Cette commande permet de fixer la protection de mode d'accès d'un fichier. Cette commande est inspiré du AmigaDOS.</td>
 		</tr>
+	        <tr>
+			<td><b>PS.PAS</b></td>
+			<td>Cette commande permet de lancer un interpréteur de commande clone du PowerShell.</td>
+		</tr>		
 		<tr>
 			<td><b>PWD.PAS</b></td>
 			<td>Cette commande permet d'afficher le chemin du répertoire courant. Cette commande est un équivalent de UNIX.</td>
