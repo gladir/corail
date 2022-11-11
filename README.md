@@ -119,6 +119,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>BASIC.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de langage de programmation BASIC.</td>
 		</tr>
+		<tr>
+			<td><b>BASICA.PAS</b></td>
+			<td>Cette commande permet de lancer un interpréteur BASIC étant un clone du BASICA du PC-DOS.</td>
+		</tr>
 	        <tr>
 			<td><b>BE.PAS</b></td>
 			<td>Cette commande permet de lancer une commande étendu pour les fichiers de traitements par lots. Cette commande est inspiré de la commande BE de Norton Utilities.</td>
