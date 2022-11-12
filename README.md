@@ -475,7 +475,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher le contenu d'un fichier en format hexadecimal. Cette commande est inspiré de la commande de Linux.</td>
 		</tr>
 		<tr>
-			<td><b>HEDXIT.PAS</b></td>
+			<td><b>HEXIT.PAS</b></td>
 			<td>Cette commande permet de visualiser un fichier hexadécimal. Il s'agit d'un clone du logiciel de Mikael Klasson.</td>
 		</tr>
 		<tr>
