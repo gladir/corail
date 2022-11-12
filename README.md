@@ -328,6 +328,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer l'interpréteur de commande DR-DOS. Il s'agit d'un équivalent du COMMAND.COM du DR-DOS.</td>
 		</tr>
 	        <tr>
+			<td><b>E.PAS</b></td>
+			<td>Cette commande permet d'éditer un fichier texte ASCII. Clone de la commande E du PC DOS d'IBM.</td>
+		</tr>		
+	        <tr>
 			<td><b>ECHO.PAS</b></td>
 			<td>Cette commande permet d'afficher un message.</td>
 		</tr>
