@@ -10,17 +10,17 @@ Var
  SourceASC,TargetC:Text;
  CurrLine:String;
 
-Function StringToPascalString(Source:String):String;
+Function StringToCString(Source:String):String;
 Var
  I:Integer;
  ConvStr:String;
 Begin
  ConvStr:='';
  For I:=1 to Length(Source)do Begin
-  If Source[I]=''''Then ConvStr:=ConvStr+'''';
+  If Source[I]='"'Then ConvStr:=ConvStr+'\"';
   ConvStr:=ConvStr+Source[I];
  End;
- StringToPascalString:=ConvStr;
+ StringToCString:=ConvStr;
 End;
 
 BEGIN
@@ -50,7 +50,7 @@ BEGIN
   While Not EOF(SourceASC)do Begin
    ReadLn(SourceASC,CurrLine);
    If CurrLine=''Then WriteLn(TargetC,' printf("");')
-                 Else WriteLn(TargetC,' printf("',StringToPascalString(CurrLine),'");');
+                 Else WriteLn(TargetC,' printf("',StringToCString(CurrLine),'");');
   End;
   WriteLn(TargetC,'}');
   Close(TargetC);
@@ -64,7 +64,7 @@ BEGIN
   While Not EOF(SourceASC)do Begin
    ReadLn(Input,CurrLine);
    If CurrLine=''Then WriteLn(Output,' printf("");')
-                 Else WriteLn(Output,' printf("',StringToPascalString(CurrLine),'");');
+                 Else WriteLn(Output,' printf("',StringToCString(CurrLine),'");');
   End;
   WriteLn(Output,'}');
  End;
