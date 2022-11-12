@@ -72,6 +72,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'appliquer des commandes à plusieurs reprises. Cette commande est originaire du <a href="https://www.gladir.com/OS/ZENITHDATASYSTEMSMICROSOFTMSDOS2/apply.htm">Zenith Data Systems Microsoft MS-DOS 2</a>.</td>
 		</tr>		
 		<tr>
+			<td><b>ASC2C.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier ASCII en code source C.</td>
+		</tr>		
+		<tr>
 			<td><b>ASC2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source Pascal.</td>
 		</tr>
