@@ -48,6 +48,8 @@ Var
  CurrCommand,ParamList,PipeCommand:String;
  I,J:Byte;
 
+Procedure RunCommand;Forward;
+
 Procedure PCopy(Source,Target:Byte);Begin
  {$IFNDEF FPC}
   Move(Mem[SegB800:Source*(MemW[$0040:$4A]*25*2)],Mem[SegB800:Target*(MemW[$0040:$4A]*25*2)],MemW[$0040:$4A]*25*2)
@@ -101,6 +103,20 @@ Begin
   End;
  End;
  TrimL:=S;
+End;
+
+Function TrimR(s:String):String;
+Var
+ i:Integer;
+Begin
+ i:=Length(s);
+ While (i>0)and(s[i]in[#9,' '])do Dec(i);
+ s[0]:=Chr(i);
+ TrimR:=S;
+End;
+
+Function Trim(s:String):String;Begin
+ Trim:=TrimL(TrimR(s));
 End;
 
 Function StrToLower(S:String):String;
@@ -1607,8 +1623,141 @@ Begin
  ExitCommand:=True;
 End;
 
-Procedure ForCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure ForCommand;
+Var
+ PList,VarName,CurrMask,Mask,ForCmd:String;
+ J,I:Byte;
+Begin
+ If ExtractParam(1)='/?'Then Begin
+  Case Language of
+   _Germany:Begin
+    WriteLn('FÅhrt einen Befehl fÅr jede einzelne Datei eines Satzes von Dateien aus.');
+    WriteLn;
+    WriteLn('FOR %Variable IN (Satz) DO Befehl [Parameter]');
+    WriteLn;
+    WriteLn(' %Variable  Ein ersetzbarer Parameter (bestehend aus einem einzelnen Zeichen).');
+    WriteLn(' (Satz)     Ein Satz von mindestens einer Datei. Platzhalter sind zulÑssig.');
+    WriteLn(' Befehl     Befehl, der fÅr jede Datei ausgefÅhrt werden soll.');
+    WriteLn(' Parameter  Parameter und Optionen fÅr den angebenen Befehl.');
+   End;
+   _English:Begin
+    WriteLn('Run a specified command for each file in a set of files');
+    WriteLn;
+    WriteLn('FOR %variable IN (set) DO [command-parameters]');
+    WriteLn;
+    WriteLn(' %variable  Specifies a replaceable parameter.');
+    WriteLn(' (set)      Specifies a set of one more files. Wildcards may be used.');
+    WriteLn(' command    Specifies the command to carry out for each file.');
+    WriteLn(' command-parameters');
+    WriteLn(' ':12,'Specifies parameters or switches for the specified commad.');
+   End;
+   Else Begin
+    WriteLn('FOR : Cette commande permet d''effectuer le traitement d''un group de fichier');
+    WriteLn;
+    WriteLn('FOR %variable IN (ensemble) DO commande');
+    WriteLn('FOR %%variable IN (ensemble) DO commande');
+   End;
+  End;
+ End
+  Else
+ Begin
+  PList:=Trim(ParamList);
+  VarName:='';
+  I:=1;
+  If Copy(PList,1,2)='%%'Then Begin
+   VarName:='%%';
+   I:=3;
+   While(I<=Length(PList))and(UpCase(PList[I])in['A'..'Z'])do Begin
+    VarName:=VarName+PList[I];
+    Inc(I);
+   End;
+  End
+   Else
+  If Copy(PList,1,1)='%'Then Begin
+   VarName:='%';
+   I:=2;
+   While(I<=Length(PList))and(UpCase(PList[I])in['A'..'Z'])do Begin
+    VarName:=VarName+PList[I];
+    Inc(I);
+   End;
+  End
+   Else
+  Begin
+   WriteLn('Nom de variable attendu !');
+   Exit;
+  End;
+  While (I<=Length(PList))and(PList[I]in[#9,' '])do Inc(I);
+  If StrToUpper(Copy(PList,I,3))='IN 'Then Begin
+   Inc(I,3);
+   While (I<=Length(PList))and(PList[I]in[#9,' '])do Inc(I);
+   If PList[I]<>'('Then Begin
+    WriteLn('''('' attendu !');
+    Exit;
+   End;
+   Inc(I);
+   Mask:='';
+   While(I<=Length(PList))and(PList[I]<>')')do Begin
+    Mask:=Mask+PList[I];
+    Inc(I);
+   End;
+   If PList[I]<>')'Then Begin
+    WriteLn(''')'' attendu !');
+    Exit;
+   End;
+   Inc(I);
+   While (I<=Length(PList))and(PList[I]in[#9,' '])do Inc(I);
+   If StrToUpper(Copy(PList,I,3))='DO 'Then Begin
+    Inc(I,3);
+    ForCmd:=Trim(Copy(PList,I,255));
+    CmdStr:='';
+    CurrMask:='';
+    J:=1;
+    While J<=Length(Mask)do Begin
+     If Mask[J]=' 'Then Begin
+      If Trim(CurrMask)<>''Then Begin
+       I:=1;
+       While I<=Length(ForCmd)do Begin
+        If Copy(ForCmd,I,Length(VarName))=VarName Then Begin
+         CmdStr:=CmdStr+CurrMask;
+         Inc(I,Length(VarName));
+        End
+         Else
+        Begin
+         CmdStr:=CmdStr+ForCmd[I];
+         Inc(I);
+        End;
+       End;
+       RunCommand;
+       CmdStr:='';
+       CurrMask:='';
+      End;
+     End
+      Else
+     CurrMask:=CurrMask+Mask[J];
+     Inc(J);
+    End;
+    If Trim(CurrMask)<>''Then  Begin
+     I:=1;
+     While I<=Length(ForCmd)do Begin
+      If Copy(ForCmd,I,Length(VarName))=VarName Then Begin
+       CmdStr:=CmdStr+CurrMask;
+       Inc(I,Length(VarName));
+      End
+       Else
+      Begin
+       CmdStr:=CmdStr+ForCmd[I];
+       Inc(I);
+      End;
+     End;
+     If CmdStr<>''Then RunCommand;
+    End;
+   End
+    Else
+   WriteLn('Mot rÇservÇ DO attendu');
+  End
+   Else
+  WriteLn('Mot rÇservÇ IN attendu');
+ End;
 End;
 
 Procedure FreeCommand;
