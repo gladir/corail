@@ -672,7 +672,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>	
 		<tr>
 			<td><b>SEARCH.PAS</b></td>
-			<td>Cette commande permet d'afficher les chemins des fichiers spécifiés.</td>
+			<td>Cette commande permet d'afficher les chemins des fichiers spécifiés. ette commande est originaire du <a href="https://www.gladir.com/OS/ZENITHDATASYSTEMSMICROSOFTMSDOS2/search.htm">Zenith Data Systems Microsoft MS-DOS 2</a>.</td>
 		</tr>
 	        <tr>
 			<td><b>SETIME.PAS</b></td>
