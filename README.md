@@ -670,6 +670,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>SD.PAS</b></td>
 			<td>Cette commande permet d'imprimer le contenu de l'écran. Cette commande est inspiré du logiciel <a href="https://www.gladir.com/SOFTWARE/KIX/presentation.htm">KIX</a> de Kyan Software pour Apple II.</td>
 		</tr>	
+		<tr>
+			<td><b>SEARCH.PAS</b></td>
+			<td>Cette commande permet d'afficher les chemins des fichiers spécifiés.</td>
+		</tr>
 	        <tr>
 			<td><b>SETIME.PAS</b></td>
 			<td>Cette commande permet de fixer l'horloge du système d'exploitation. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/OS9/settime.htm">SETTIME</a> de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
