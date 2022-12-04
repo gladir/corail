@@ -44,14 +44,14 @@ End;
 BEGIN
  FirstParam:=ParamStr(1);
  If FirstParam='/?'Then Begin
-  WriteLn('VOL   Cette commande permet d''afficher le nom du volume d''une unite de disque.');
+  WriteLn('VOL   Cette commande permet d''afficher le nom du volume d''une unit‚ de disque.');
   WriteLn;
   WriteLn('Syntaxe:');
   WriteLn;
   WriteLn('VOL [/?] [unite:]');
   WriteLn;
-  WriteLn(' /?      Ce parametre permet d''afficher l''aide sur cette commande');
-  WriteLn(' unite:  Ce paramtre permet d''indiquer la lettre d''unite de disque');
+  WriteLn(' /?      Ce paramŠtre permet d''afficher l''aide sur cette commande');
+  WriteLn(' unite:  Ce paramŠtre permet d''indiquer la lettre d''unit‚ de disque');
  End
   Else
  If(Length(FirstParam)=2) and (FirstParam[2]=':')Then Begin
@@ -70,9 +70,9 @@ BEGIN
  End
   Else
  Begin
-   Write('Le volume de l''unite ',GetCurrentDisk);
+   Write('Le volume de l''unit‚ ',GetCurrentDisk);
    Volume:=GetDiskLabel(0);
-   If Length(Volume)=0Then WriteLn(' n''a pas d''etiquette')
+   If Length(Volume)=0Then WriteLn(' n''a pas d''‚tiquette')
                       Else WriteLn(Volume);
  End;
 END.
