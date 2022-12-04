@@ -56,9 +56,9 @@ BEGIN
   Else
  If(Length(FirstParam)=2) and (FirstParam[2]=':')Then Begin
   If FirstParam[2]=':'Then Begin
-   Write('Le volume de l''unite ',UpCase(FirstParam[1]));
+   Write('Le volume de l''unit‚ ',UpCase(FirstParam[1]));
    Volume:=GetDiskLabel(Byte(UpCase(FirstParam[1]))-64);
-   If Length(Volume)=0Then WriteLn(' n''a pas d''etiquette')
+   If Length(Volume)=0Then WriteLn(' n''a pas d''‚tiquette')
                       Else WriteLn(Volume);
   End
    Else
