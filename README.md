@@ -212,6 +212,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effacer l'écran. Cette commande est inspiré UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>CMD.PAS</b></td>
+			<td>Logiciel clone d'un <i>CMD.EXE</i> du système d'exploitation <a href="https://www.gladir.com/OS/WINDOWS/intro.htm"><i>Windows</i></a>.</td>
+		</tr>		
+		<tr>
 			<td><b>COCO3.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur BASIC du CoCo 3.</td>
 		</tr>
