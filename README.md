@@ -847,7 +847,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effectuer la copie étendue avec sous-répertoire de fichier(s) vers un nouvel emplacement.</td>
 		</tr>
 	</table>
-	
+
+<h3>Remarque</h3>
+<ul>
+	<li>La commande "DIR.PAS" a été bonifié de format de sortie CSV, JSON, HTML et XML.</li>
+</ul>
 
 <h2>Compilation</h2>
 	
