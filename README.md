@@ -850,7 +850,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 
 <h3>Remarque</h3>
 <ul>
-	<li>La commande "DIR.PAS" a été bonifié de format de sortie CSV, JSON, HTML et XML.</li>
+	<li>La commande "DIR.PAS" a été bonifié de format de sortie CSV, JSON, HTML, PASCAL, SQL ou XML.</li>
 </ul>
 
 <h2>Compilation</h2>
