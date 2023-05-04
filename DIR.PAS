@@ -11,6 +11,7 @@ Uses Crt,DOS;
 Var
  Language:(_French,_English,_Germany,_Italian,_Spain);
  TmpLanguage:String;
+ First:Boolean;
  Error:Integer;
  P:Byte;
  Info:SearchRec;
@@ -20,7 +21,7 @@ Var
  TotalNumFiles,TotalSize:LongInt;
  CurrParam,ShowDir,CurrLabel:String;
  CurrDrive:Char;
- OutputFormat:(_Text,_CSV,_HTML,_Json,_XML);
+ OutputFormat:(_Text,_CSV,_HTML,_Json,_Pascal,_SQL,_XML);
 
 Function PadRight(S:String;Space:Byte):String;
 Var
@@ -115,7 +116,7 @@ BEGIN
      WriteLn(' /B             Ce parametre enleve l''entete et les details de la fin');
      WriteLn(' /P             Ce parametre affiche une pause apres l''affichage d''une page pleine');
      WriteLn(' /W             Ce parametre affiche seulement les fichiers sur plein de colonnes');
-     WriteLn(' /FORMAT:format Ce parametre permet d''indiquer CSV, HTML, Json, XML');
+     WriteLn(' /FORMAT:format Ce parametre permet d''indiquer CSV, HTML, Json, PASCAL, SQL ou XML');
     End;
    End;
    Exit;
@@ -130,6 +131,8 @@ BEGIN
    If StrToUpper(Copy(CurrParam,9,255))='CSV'Then OutputFormat:=_CSV Else
    If StrToUpper(Copy(CurrParam,9,255))='HTML'Then OutputFormat:=_HTML Else
    If StrToUpper(Copy(CurrParam,9,255))='JSON'Then OutputFormat:=_Json Else
+   If StrToUpper(Copy(CurrParam,9,255))='PASCAL'Then OutputFormat:=_Pascal Else
+   If StrToUpper(Copy(CurrParam,9,255))='SQL'Then OutputFormat:=_SQL Else
    If StrToUpper(Copy(CurrParam,9,255))='XML'Then OutputFormat:=_XML;
   End
    Else
@@ -255,6 +258,98 @@ BEGIN
     WriteLn;
    End;
    WriteLn('}');
+  End;
+  _Pascal:Begin
+   TotalNumFiles:=0;
+   FindFirst(ShowDir,AnyFile,Info);
+   While DOSError=0 do Begin
+    FindNext(Info);
+    Inc(TotalNumFiles);
+   End;
+   WriteLn('Var files:Array[1..',TotalNumFiles,'] of SearchRec=(');
+   FindFirst(ShowDir,AnyFile,Info);
+   Error:=DOSError;
+   While Error=0 do Begin
+    WriteLn(' ':7,'(Name:''',Info.Name,''';');
+    If Not((Width)in(Column))Then Begin
+     Write(' ':8,'Attr:');
+     First:=True;
+     If Info.Attr and Directory=Directory Then Begin
+      Write('Directory');
+      First:=False;
+     End;
+     If Info.Attr and ReadOnly=ReadOnly Then Begin
+      If Not(First)Then Write('+');
+      Write('ReadOnly');
+      First:=False;
+     End;
+     If Info.Attr and SysFile=SysFile Then Begin
+      If Not(First)Then Write('+');
+      Write('SysFile');
+      First:=False;
+     End;
+     If Info.Attr and Hidden=Hidden Then Begin
+      If Not(First)Then Write('+');
+      Write('Hidden');
+      First:=False;
+     End;
+     If Info.Attr and Archive=Archive Then Begin
+      If Not(First)Then Write('+');
+      Write('Archive');
+     End;
+     WriteLn(';');
+     WriteLn(' ':8,'Size:',Info.Size,';');
+     UnpackTime(Info.Time,T);
+     Write(' ':8,'Time:',Info.Time,'  ');
+     WriteLn('(* ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
+             PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2),' *)');
+    End;
+    Write(' ':4,')');
+    FindNext(Info);
+    Error:=DOSError;
+    If Error=0 Then Write(',');
+    WriteLn;
+   End;
+   WriteLn(');');
+  End;
+  _SQL:Begin
+   WriteLn('CREATE TABLE files (');
+   WriteLn(' ':8,'filename TEXT,');
+   WriteLn(' ':8,'attribut TEXT,');
+   WriteLn(' ':8,'size INT,');
+   WriteLn(' ':8,'time TEXT');
+   WriteLn(');');
+   FindFirst(ShowDir,AnyFile,Info);
+   While DOSError=0 do Begin
+    WriteLn('INSERT INTO files (filename,attribut,size,time) VALUES (');
+    WriteLn(' ':8,'''',Info.Name,''',');
+    If Not((Width)in(Column))Then Begin
+     Write(' ':8,'''');
+     If Info.Attr and Directory=Directory Then Begin
+      Write('[directory]');
+     End;
+     If Info.Attr and ReadOnly=ReadOnly Then Begin
+      Write('[readonly]');
+     End;
+     If Info.Attr and SysFile=SysFile Then Begin
+      Write('[system]');
+     End;
+     If Info.Attr and Hidden=Hidden Then Begin
+      Write('[hidden]');
+     End;
+     If Info.Attr and Archive=Archive Then Begin
+      Write('[archive]');
+     End;
+     WriteLn(''',');
+     WriteLn(' ':8,'',Info.Size,',');
+     UnpackTime(Info.Time,T);
+     WriteLn(' ':8,'''',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
+             PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2),
+             '''');
+    End;
+    WriteLn(' ':4,');');
+    FindNext(Info);
+   End;
   End;
   _XML:Begin
    WriteLn('<?xml version="1.0" encoding="UTF-8"?>');
