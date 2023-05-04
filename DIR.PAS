@@ -96,25 +96,26 @@ BEGIN
     _Germany:Begin
      WriteLn('Listet die Dateien und Unterverzeichnisse eines Verzeichnisses auf.');
      WriteLn;
-     WriteLn('Format:   DIR [/?] [/2|/W] [/B] [/P] [path]');
+     WriteLn('Format:   DIR [/?] [/2|/W] [/B] [/P] [path] [/FORMAT:format]');
     End;
     _English:Begin
      WriteLn('Purpose:  Display information about files and subdirectories.');
      WriteLn;
-     WriteLn('Format:   DIR [/?] [/2|/W] [/B] [/P] [path]');
+     WriteLn('Format:   DIR [/?] [/2|/W] [/B] [/P] [path] [/FORMAT:format]');
     End;
     Else Begin
      WriteLn('DIR   Cette commande permet d''afficher le contenu d''un repertoire dans l''unite de disque.');
      WriteLn;
      WriteLn('Syntaxe:');
      WriteLn;
-     WriteLn('DIR [/?] [/2|/W] [/B] [/P] [chemin]');
+     WriteLn('DIR [/?] [/2|/W] [/B] [/P] [chemin] [/FORMAT:format]');
      WriteLn;
-     WriteLn(' /?   Ce parametre permet d''afficher l''aide sur cette commande');
-     WriteLn(' /2   Ce parametre permet d''afficher sur 2 colonnes');
-     WriteLn(' /B   Ce parametre enleve l''entete et les details de la fin');
-     WriteLn(' /P   Ce parametre affiche une pause apres l''affichage d''une page pleine');
-     WriteLn(' /W   Ce parametre affiche seulement les fichiers sur plein de colonnes');
+     WriteLn(' /?             Ce parametre permet d''afficher l''aide sur cette commande');
+     WriteLn(' /2             Ce parametre permet d''afficher sur 2 colonnes');
+     WriteLn(' /B             Ce parametre enleve l''entete et les details de la fin');
+     WriteLn(' /P             Ce parametre affiche une pause apres l''affichage d''une page pleine');
+     WriteLn(' /W             Ce parametre affiche seulement les fichiers sur plein de colonnes');
+     WriteLn(' /FORMAT:format Ce parametre permet d''indiquer CSV, HTML, Json, XML');
     End;
    End;
    Exit;
