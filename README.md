@@ -852,9 +852,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	</table>
 
-<h3>Remarque</h3>
+<h3>Remarques</h3>
 <ul>
 	<li>La commande "DIR.PAS" a été bonifié de format de sortie CSV, JSON, HTML, PASCAL, SQL ou XML.</li>
+	<li>La commande "HEXDUMP.PAS" a été bonifié de format de sortie C, CSV, JSON, HTML, PASCAL, SQL ou XML.</li>
 </ul>
 
 <h2>Compilation</h2>
