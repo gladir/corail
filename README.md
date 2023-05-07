@@ -251,6 +251,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>CSH.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande C Shell.</td>
 		</tr>
+		<tr>
+			<td><b>CSV2SQL.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier .CSV en format SQL.</td>
+		</tr>		
 	        <tr>
 			<td><b>CUT.PAS</b></td>
 			<td>Cette commande permet de supprimer des sections de chaque ligne des fichiers. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/LINUX/cut.htm">cut</a> de Linux.</td>
