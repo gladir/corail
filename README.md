@@ -264,6 +264,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer un clone de CodeView. Cette utilitaire était fournit avec MASM, Microsoft C,...</td>
 		</tr>
 		<tr>
+			<td><b>DBF2PAS.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier .DBF (DBase III) en format Pascal.</td>
+		</tr>		
+		<tr>
 			<td><b>DBF2SQL.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier .DBF (DBase III) en format SQL.</td>
 		</tr>
