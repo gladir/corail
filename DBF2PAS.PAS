@@ -4,7 +4,7 @@
   @abstract(Target: Turbo Pascal 7, Free Pascal)
 }
 
-Program DBF2SQL;
+Program DBF2PAS;
 
 {$A-}
 
@@ -88,9 +88,9 @@ Var
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('DBF2SQL - Cette commande permet de convertir un fichier DBF en SQL');
+  WriteLn('DBF2PAS - Cette commande permet de convertir un fichier DBF en PAS');
   WriteLn;
-  WriteLn('Syntaxe : DBF2SQL source.DBF');
+  WriteLn('Syntaxe : DBF2PAS source.DBF');
  End
   Else
  Begin
@@ -109,7 +109,8 @@ BEGIN
   If HDBase.HeadType=$3Then Begin { Fichier DBase III+ ? }
    FP:=SizeOf(DBaseIIIFileHeaderRec);
    NumField:=0;
-   WriteLn('CREATE TABLE ',TableName,' (');
+   WriteLn('Type');
+   WriteLn(' ',TableName,'Rec=Record');
    Repeat
     Seek(SourceDBF,FP);
     FillChar(FieldDBase,SizeOf(FieldDBase),0);
@@ -125,33 +126,35 @@ BEGIN
     Halt;
    End;
    For I:=0 To NumField-1 do Begin
-    Write(' ':4,Trim(StrPas(@FieldDBaseList[I].FieldName)),' ');
+    Write(' ':2,Trim(StrPas(@FieldDBaseList[I].FieldName)),':');
     Case(FieldDBaseList[I].FieldType)of
-     'C':Write('VarChar(',FieldDBaseList[I].Width,')');
-     'N':Write('Numeric(',FieldDBaseList[I].Width,',',FieldDBaseList[I].Dec,')');
-     'I':Write('SmallInt');
+     'C':Write('String[',FieldDBaseList[I].Width,']');
+     'N':Write('Real');
+     'I':Write('Integer');
      'L':Write('Byte');
     End;
-    If I<NumField-1 Then Write(',');
+    If I<NumField-1 Then Write(';');
     WriteLn;
    End;
-   WriteLn(');');
+   WriteLn(' End;');
+   WriteLn;
    If HDBase.RecordSize>SizeOf(Buffer)Then Begin
     WriteLn('Enregistrement trop grand !');
     Halt;
    End;
    If HDBase.HeaderLength=0Then Seek(SourceDBF,FP-SizeOf(FieldDBase)+2)
                            Else Seek(SourceDBF,HDBase.HeaderLength+1);
+   If HDBase.RecordCount>0 Then Begin
+    WriteLn('Var');
+    WriteLn(' ',TableName,':Array[1..',HDBase.RecordCount,'] of ',TableName,'Rec=(');
+   End;
    For J:=1 to HDBase.RecordCount do Begin
-    Write('INSERT INTO ',TableName,' (');
-    For I:=0 To NumField-1 do Begin
-     Write(Trim(StrPas(@FieldDBaseList[I].FieldName)));
-     If I<NumField-1 Then Write(',');
-    End;
-    Write(') VALUES (');
+    Write(' ':2,'(');
     BlockRead(SourceDBF,Buffer,HDBase.RecordSize,ByteReaded);
     BufOfs:=0;
     For I:=0 To NumField-1 do Begin
+     If I>0 Then Write(' ':3);
+     Write(Trim(StrPas(@FieldDBaseList[I].FieldName)),':');
      Case FieldDBaseList[I].FieldType of
       'C','N':FieldSize:=FieldDBaseList[I].Width;
       'I':FieldSize:=2;
@@ -175,18 +178,24 @@ BEGIN
         If Buffer[BufOfs+K]=0 Then Break;
         TStr:=TStr+Char(Buffer[BufOfs+K]);
        End;
-       If Trim(TStr)=''Then Write('NULL')
+       If Trim(TStr)=''Then Write('''','''')
                        Else Write(Trim(TStr));
       End;
       'I':Write(Buffer[BufOfs]+Buffer[BufOfs+1]*256);
       'L':Write(Buffer[BufOfs]);
      End;
-     If I<NumField-1 Then Write(',');
+     If I<NumField-1 Then WriteLn(';');
      Inc(BufOfs,FieldSize);
-         End;
-    WriteLn(');');
+    End;
+    Write(')');
+    If J<HDBase.RecordCount Then WriteLn(',');
+   End;
+   If HDBase.RecordCount>0 Then Begin
+    WriteLn;
+    WriteLn(' );');
    End;
   End;
   Close(SourceDBF);
  End;
 END.
+.
