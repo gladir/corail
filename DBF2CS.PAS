@@ -4,7 +4,7 @@
   @abstract(Target: Turbo Pascal 7, Free Pascal)
 }
 
-Program DBF2PHP;
+Program DBF2CS;
 
 {$A-}
 
@@ -88,9 +88,9 @@ Var
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('DBF2PHP - Cette commande permet de convertir un fichier DBF en PHP');
+  WriteLn('DBF2CS - Cette commande permet de convertir un fichier DBF en C#');
   WriteLn;
-  WriteLn('Syntaxe : DBF2PHP source.DBF');
+  WriteLn('Syntaxe : DBF2CS source.DBF');
  End
   Else
  Begin
@@ -109,7 +109,7 @@ BEGIN
   If HDBase.HeadType=$3Then Begin { Fichier DBase III+ ? }
    FP:=SizeOf(DBaseIIIFileHeaderRec);
    NumField:=0;
-   WriteLn('<?php');
+   WriteLn('struct ',TableName,'Rec {');
    Repeat
     Seek(SourceDBF,FP);
     FillChar(FieldDBase,SizeOf(FieldDBase),0);
@@ -124,22 +124,56 @@ BEGIN
     WriteLn('Aucun champ present !');
     Halt;
    End;
+   For I:=0 To NumField-1 do Begin
+    Write(' ':2);
+    Case(FieldDBaseList[I].FieldType)of
+     'C':Write('string');
+     'N':Write('double ');
+     'I':Write('int');
+     'L':Write('char');
+    End;
+    Write(' ',Trim(StrPas(@FieldDBaseList[I].FieldName)));
+    WriteLn(';');
+   End;
+   Write(' ':4,'public ',TableName,'Rec(');
+   For I:=0 To NumField-1 do Begin
+    Write(' ':2);
+    Case(FieldDBaseList[I].FieldType)of
+     'C':Write('string');
+     'N':Write('double ');
+     'I':Write('int');
+     'L':Write('char');
+    End;
+    Write(' ',Trim(StrPas(@FieldDBaseList[I].FieldName)));
+    If I<NumField-1 Then Write(',');
+   End;
+   WriteLn(') {');
+   For I:=0 To NumField-1 do Begin
+    Write(' ':6);
+    Write('this.',Trim(StrPas(@FieldDBaseList[I].FieldName)));
+    WriteLn('=',Trim(StrPas(@FieldDBaseList[I].FieldName)),';');
+   End;
+   WriteLn(' ':4,'}');
+   WriteLn('};');
+   WriteLn;
    If HDBase.RecordSize>SizeOf(Buffer)Then Begin
     WriteLn('Enregistrement trop grand !');
     Halt;
    End;
    If HDBase.HeaderLength=0Then Seek(SourceDBF,FP-SizeOf(FieldDBase)+2)
                            Else Seek(SourceDBF,HDBase.HeaderLength+1);
+   WriteLn('class Program {');
+   WriteLn(' ':4,'static void Main(string[] args) {');
    If HDBase.RecordCount>0 Then Begin
-    WriteLn('$',TableName,' = [');
+    WriteLn(' ':8,TableName,'Rec[] ',TableName,'= new ',TableName,'Rec[]{');
    End;
    For J:=1 to HDBase.RecordCount do Begin
-    WriteLn(' ':2,'/* ',J,' */');
+    Write(' ':11,'new ',TableName,'Rec(');
     BlockRead(SourceDBF,Buffer,HDBase.RecordSize,ByteReaded);
     BufOfs:=0;
-    WriteLn('[');
     For I:=0 To NumField-1 do Begin
-     Write('"',Trim(StrPas(@FieldDBaseList[I].FieldName)),'"=>');
+     If I>0 Then Write(' ':12);
+     Write('/* ',Trim(StrPas(@FieldDBaseList[I].FieldName)),'= */');
      Case FieldDBaseList[I].FieldType of
       'C','N':FieldSize:=FieldDBaseList[I].Width;
       'I':FieldSize:=2;
@@ -172,14 +206,15 @@ BEGIN
      If I<NumField-1 Then WriteLn(',');
      Inc(BufOfs,FieldSize);
     End;
-    Write(']');
-    If J<HDBase.RecordCount Then Write(',');
-    WriteLn;
+    Write(')');
+    If J<HDBase.RecordCount Then WriteLn(',');
    End;
    If HDBase.RecordCount>0 Then Begin
-    WriteLn('];');
+    WriteLn;
+    WriteLn(' ':8,' };');
    End;
-   WriteLn('?>');
+   WriteLn(' ':4,'}');
+   WriteLn('}');
   End;
   Close(SourceDBF);
  End;
