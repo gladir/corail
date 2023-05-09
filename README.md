@@ -279,6 +279,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>DBF2JSON.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier .DBF (DBase III) en format JSON.</td>
 		</tr>		
+		<tr>
+			<td><b>DBF2JS.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier .DBF (DBase III) en format JavaScript.</td>
+		</tr>	
 		<tr>			
 			<td><b>DBF2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier .DBF (DBase III) en format Pascal.</td>
