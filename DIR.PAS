@@ -246,7 +246,7 @@ BEGIN
       Write('[archive]');
      End;
      WriteLn('",');
-     WriteLn(' ':8,'"size":',Info.Size,'",');
+     WriteLn(' ':8,'"size":',Info.Size,',');
      UnpackTime(Info.Time,T);
      WriteLn(' ':8,'"time":"',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',
              PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2),'"');
