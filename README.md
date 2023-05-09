@@ -272,6 +272,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier .DBF (DBase III) en format C#.</td>
 		</tr>	
 		<tr>
+			<td><b>DBF2CSV.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier .DBF (DBase III) en format CSV.</td>
+		</tr>	
+		<tr>
 			<td><b>DBF2HTML.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier .DBF (DBase III) en format HTML.</td>
 		</tr>		
