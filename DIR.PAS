@@ -9,7 +9,7 @@ Program DIR;
 Uses Crt,DOS;
 
 Var
- Language:(_French,_English,_Germany,_Italian,_Spain);
+ Language:(_Albanian,_French,_English,_Germany,_Italian,_Spain);
  TmpLanguage:String;
  First:Boolean;
  Error:Integer;
@@ -74,6 +74,11 @@ Begin
 End;
 
 BEGIN
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
  Language:=_French;
  TmpLanguage:=GetEnv('LANGUAGE');
  If TmpLanguage<>''Then Begin
@@ -81,7 +86,9 @@ BEGIN
   If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
   If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
   If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
-  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain Else
+  If(StrToUpper(Copy(TmpLanguage,1,2))='SQ')or
+    (StrToUpper(Copy(TmpLanguage,1,3))='ALB')Then Language:=_Albanian;
  End;
  Option:=[];
  Column:=[];
@@ -94,6 +101,11 @@ BEGIN
  If Length(CurrParam)=0Then Break;
   If CurrParam='/?'Then Begin
   Case Language of
+    _Albanian:Begin
+     WriteLn('Kjo komand‰ p‰rdoret p‰r t‰ shfaqur p‰rmbajtjen e nj‰ repertori n‰ nj‰sin‰ e diskut');
+     WriteLn;
+     WriteLn('Formati:   DIR [/?] [/2|/W] [/B] [/P] [path] [/FORMAT:formati]');
+    End;
     _Germany:Begin
      WriteLn('Listet die Dateien und Unterverzeichnisse eines Verzeichnisses auf.');
      WriteLn;
@@ -105,7 +117,7 @@ BEGIN
      WriteLn('Format:   DIR [/?] [/2|/W] [/B] [/P] [path] [/FORMAT:format]');
     End;
     Else Begin
-     WriteLn('DIR   Cette commande permet d''afficher le contenu d''un repertoire dans l''unite de disque.');
+     WriteLn('DIR   Cette commande permet d''afficher le contenu d''un r‚pertoire dans l''unit‚ de disque.');
      WriteLn;
      WriteLn('Syntaxe:');
      WriteLn;
@@ -113,8 +125,8 @@ BEGIN
      WriteLn;
      WriteLn(' /?             Ce parametre permet d''afficher l''aide sur cette commande');
      WriteLn(' /2             Ce parametre permet d''afficher sur 2 colonnes');
-     WriteLn(' /B             Ce parametre enleve l''entete et les details de la fin');
-     WriteLn(' /P             Ce parametre affiche une pause apres l''affichage d''une page pleine');
+     WriteLn(' /B             Ce parametre enlŠve l''entˆte et les d‚tails de la fin');
+     WriteLn(' /P             Ce parametre affiche une pause aprŠs l''affichage d''une page pleine');
      WriteLn(' /W             Ce parametre affiche seulement les fichiers sur plein de colonnes');
      WriteLn(' /FORMAT:format Ce parametre permet d''indiquer CSV, HTML, Json, PASCAL, SQL ou XML');
     End;
