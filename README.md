@@ -903,6 +903,20 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effectuer la copie étendue avec sous-répertoire de fichier(s) vers un nouvel emplacement.</td>
 		</tr>
 	</table>
+	
+<h2>Langage humain</h3>
+
+Pour changer la langue des commandes, vous devez fixer la valeur de la variable d'environnement LANGUAGE, par exemple, pour passer à l'allemand :
+
+SET LANGUAGE=GR	
+	
+Sinon par l'albanais :
+
+SET LANGUAGE=SQ
+
+Par l'anglais :
+	
+SET LANGUAGE=EN
 
 <h3>Remarques</h3>
 <ul>
