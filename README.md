@@ -914,7 +914,7 @@ Sinon par l'albanais :
 
 SET LANGUAGE=SQ
 
-Par l'anglais :
+Pour l'anglais :
 	
 SET LANGUAGE=EN
 
