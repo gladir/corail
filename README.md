@@ -168,6 +168,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier binaire en tableau de code source C.</td>
 		</tr>
 		<tr>
+			<td><b>BIN2CSP.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier binaire en tableau de code source CSP (C Server Pages).</td>
+		</tr>	
+		<tr>
 			<td><b>BIN2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier binaire en tableau de code source Pascal.</td>
 		</tr>
