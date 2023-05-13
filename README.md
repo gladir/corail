@@ -325,7 +325,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>			
 			<td><b>DBF2PSP.PAS</b></td>
-			<td>Cette commande permet de convertir un fichier .DBF (DBase III) en format PSP (Pascal Sever Pages).</td>
+			<td>Cette commande permet de convertir un fichier .DBF (DBase III) en format PSP (Pascal Server Pages).</td>
 		</tr>	
 		<tr>
 			<td><b>DBF2SQL.PAS</b></td>
