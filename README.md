@@ -80,6 +80,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier ASCII en code source ADA.</td>
 		</tr>	
 		<tr>
+			<td><b>ASC2AS.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier ASCII en code source ActionScript.</td>
+		</tr>		
+		<tr>
 			<td><b>ASC2BAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source BAS.</td>
 		</tr>		
