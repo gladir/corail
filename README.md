@@ -171,6 +171,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>BIN2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier binaire en tableau de code source Pascal.</td>
 		</tr>
+		<tr>
+			<td><b>BIN2PSP.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier binaire en tableau de code source PSP (Pascal Server Pages).</td>
+		</tr>	
 	        <tr>
 			<td><b>BUILD.PAS</b></td>
 			<td>Cette commande permet de construire un fichier texte. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/OS9/build.htm">BUILD</a> de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
