@@ -103,6 +103,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>ASC2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source Pascal.</td>
 		</tr>
+		<tr>
+			<td><b>ASC2PSP.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier ASCII en code source PSP (Pascal Server Pages).</td>
+		</tr>	
 	        <tr>
 			<td><b>ASCII.PAS</b></td>
 			<td>Cette commande permet d'afficher la table ASCII de la console.</td>
