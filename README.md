@@ -100,6 +100,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier ASCII en code source BASH.</td>
 		</tr>	
 		<tr>
+			<td><b>ASC2BCPL.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier ASCII en code source BCPL.</td>
+		</tr>		
+		<tr>
 			<td><b>ASC2C.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source C.</td>
 		</tr>
