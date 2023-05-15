@@ -124,6 +124,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier ASCII en code source JavaScript.</td>
 		</tr>	
 		<tr>
+			<td><b>ASC2JSP.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier ASCII en code source JSP (Java Server Pages).</td>
+		</tr>		
+		<tr>			
 			<td><b>ASC2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source Pascal.</td>
 		</tr>
