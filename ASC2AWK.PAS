@@ -27,7 +27,7 @@ BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('ASC2AWK : Cette commande permet de transformer du texte en code source AWK.');
   WriteLn;
-  WriteLn('Syntaxe : ASC2C nomdufichier.asc nomdufichier.AWK');
+  WriteLn('Syntaxe : ASC2AWK nomdufichier.asc nomdufichier.AWK');
  End
   Else
  If ParamCount>0Then Begin
