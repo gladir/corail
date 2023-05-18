@@ -1476,12 +1476,12 @@ BEGIN
    _Germany:Begin
     WriteLn('Startet den MS-DOS-Editor, der ASCII-Dateien erzeugt und ver„ndert.');
     WriteLn;
-    WriteLn('EDIT [[Laufwerk:][Pfad[Dateiname]]')
+    WriteLn('E [[Laufwerk:][Pfad[Dateiname]]')
    End;
    Else Begin
-    WriteLn('EDIT : Cette commande permet d''editer un fichier texte ASCII.');
+    WriteLn('E : Cette commande permet d''editer un fichier texte ASCII.');
     WriteLn;
-    WriteLn('Syntaxe : EDIT nomdufichier');
+    WriteLn('Syntaxe : E nomdufichier');
    End;
   End;
  End
