@@ -8,6 +8,8 @@ Program _123;
 
 {$IFNDEF FPC}
  {$A-,B-,F+,I-,R-,S-,X+,V-,W-}
+{$ELSE}
+ {$A-}
 {$ENDIF}
 
 
@@ -981,7 +983,7 @@ End;
 
 Procedure LoadSpreatSheet;
 Var
- F:File{$IFDEF FPC} of Byte{$ENDIF};
+ F:File;
  SpecialChar:Boolean;
  PCel:PCellule;
  LHeader:HeaderLotus123;
@@ -992,7 +994,7 @@ Var
  Str:String;
 Begin
  {$I-}Assign(F,FileName);
- Reset(F);{$I+}
+ Reset(F,1);{$I+}
  If IoResult=0Then Begin
   CEDone(Cellule);
   CEInit(Cellule);
@@ -1037,7 +1039,7 @@ End;
 
 Procedure SaveSpreatSheet;
 Var
- F:File{$IFDEF FPC} of Byte{$ENDIF};
+ F:File;
  H:HashItemPtr;
  LHeader:HeaderLotus123;
  LEnd:EndLotus123;
@@ -1045,7 +1047,7 @@ Var
  LDouble:DoubleLotus123;
 Begin
  {$I-}Assign(F,FileName);
- Rewrite(F);{$I-}
+ Rewrite(F,1);{$I-}
  If IoResult=0 Then Begin
    {Ecriture de l'entete}
   LHeader.TypeCode:=0;
@@ -1138,38 +1140,38 @@ Const
   'Feuille',
   'Champ',
   'Recopie',
-  'Deplace',
+  'D‚place',
   'Transfert',
   'Impression',
   'Graphe',
   'Outils',
-  'Systeme',
+  'SystŠme',
   'Quitte'
  );
  Legend0:Array[0..9]of String[75]=(
-  'Global, Insere, Detruit, Colonne, RAZ, Titres, Fenetre, Statut, Page',
-  'Format,Aligne,Efface,Noms,Justifie,Protege,Deprotege,Saisie,Valeurs,Transpose',
+  'Global, InsŠre, D‚truit, Colonne, RAZ, Titres, Fenˆtre, Statut, Page',
+  'Format,Aligne,Efface,Noms,Justifie,ProtŠge,D‚protŠge,Saisie,Valeurs,Transpose',
   'Copie une cellule ou un champ de cellules',
-  'Deplace une cellule ou un champ de cellules',
-  'Charge, Sauve, Associe, Extrait, Detruit, Liste, Importe, Repertoire',
-  'Envoie un champ a l''imprimante ou a un fichier d''impression',
-  'Cree un graphique',
-  'Ecrit-serie,Hypotheses,Trie,Base,Frequence,Matrice,Regression,Analyse',
-  'Sortir de 123, passer sous DOS puis revenir a 123',
-  'Met fin a la session 1-2-3 (avez-vous sauve votre travail?)'
+  'D‚place une cellule ou un champ de cellules',
+  'Charge, Sauve, Associe, Extrait, D‚truit, Liste, Importe, R‚pertoire',
+  'Envoie un champ … l''imprimante ou … un fichier d''impression',
+  'Cr‚e un graphique',
+  'Ecrit-s‚rie,HypothŠses,Trie,Base,Fr‚quence,Matrice,R‚gression,Analyse',
+  'Sortir de 123, passer sous DOS puis revenir … 123',
+  'Met fin … la session 1-2-3 (avez-vous sauv‚ votre travail?)'
  );
  MenuItem1:Array[0..8]of String[10]=(
-  'Global','Insere','Detruit','Colonne','RAZ','Titres','Fenetre','Statut','Page'
+  'Global','InsŠre','D‚truit','Colonne','RAZ','Titres','Fenˆtre','Statut','Page'
  );
  Legend1:Array[0..8]of String[75]=(
-  'Determine les parametres de la feuille',
-  'Insere une ou plusieurs colonne(s) ou ligne(s) vierge(S)',
-  'Detruit une ou plusieurs colonne(s) ou ligne(s)',
-  'Determine les parametres d''affichage de la colonne actuelle',
-  'Efface l''integralite de la feuille',
-  'Definit des titres horizontaux ou/et verticaux',
-  'Determine la separation de l''ecran et al synchronisation du defilement',
-  'Affiche les parametres de la feuille',
+  'D‚termine les paramŠtres de la feuille',
+  'InsŠre une ou plusieurs colonne(s) ou ligne(s) vierge(S)',
+  'D‚truit une ou plusieurs colonne(s) ou ligne(s)',
+  'D‚termine les paramŠtres d''affichage de la colonne actuelle',
+  'Efface l''int‚gralit‚ de la feuille',
+  'D‚finit des titres horizontaux ou/et verticaux',
+  'D‚termine la s‚paration de l''‚cran et la synchronisation du d‚filement',
+  'Affiche les paramŠtres de la feuille',
   'Introduit un saut de page au-dessus du pointeur'
  );
 
@@ -1179,74 +1181,74 @@ Const
   'Efface',
   'Noms',
   'Justifie',
-  'Protege',
-  'Deprotege',
+  'ProtŠge',
+  'D‚protŠge',
   'Saisie',
   'Valeurs',
   'Transpose'
  );
  Legend2:Array[0..9]of String[75]=(
-  'Determine le format d''une cellule ou d''un champ de cellules',
+  'D‚termine le format d''une cellule ou d''un champ de cellules',
   'Aligne un libelle ou un champ de libelles (Gauche, Droite, Centre)',
   'Efface le contenu d''une cellule ou d''un champ de cellules',
-  'Cree, efface ou modifie des noms de champs',
+  'Cr‚e, efface ou modifie des noms de champs',
   'Ajuste la largeur d''une colonne de libelles',
-  'Empeche de modifier un champ si le verrouillage est active',
+  'Empˆche de modifier un champ si le verrouillage est activ‚',
   'Permet de modifier un champ',
-  'Entre des donneese dans les cellules non protegees d''un champ',
+  'Entre des donn‚es dans les cellules non prot‚g‚es d''un champ',
   'Copie un champ et convertit les formules en valeurs',
   'Copie un champ en inversant les colonnes et les lignes'
  );
  MenuItem5:Array[0..7]of String[12]=(
-  'Charge','Sauve','Associe','Extrait','Supprime','Liste','Importe','Repertoire'
+  'Charge','Sauve','Associe','Extrait','Supprime','Liste','Importe','Rep‚rtoire'
  );
  Legend5:Array[0..7]of String[75]=(
   'Efface la feuille actuelle et affiche la feuille choisie',
-  'Enregistre l''integralite de la feuille dans un fichier feuille',
+  'Enregistre l''int‚gralit‚ de la feuille dans un fichier feuille',
   'Incorpore tout ou partie d''un fichier feuille dans la feuille actuelle',
   'Enregistre un champ de cellules dans un fichier feuille',
   'Supprime un fichier feuille, impression ou graphique',
-  'Affiche les noms des fichiers 1-2-3 dans le repertoire actuel',
+  'Affiche les noms des fichiers 1-2-3 dans le r‚pertoire actuel',
   'Incorpore le texte ou les nombres d''un fichier d''impression dans la feuille',
-  'Affiche et/ou determine le repertoire actuel'
+  'Affiche et/ou d‚termine le r‚pertoire actuel'
  );
  MenuItem6:Array[0..1]of String[10]=(
   'Imprimante','Fichier'
  );
  Legend6:Array[0..1]of String[75]=(
-  'Envoie le document a l''imprimante',
-  'Envoie le document a un fichier'
+  'Envoie le document … l''imprimante',
+  'Envoie le document … un fichier'
  );
  MenuItem7:Array[0..13]of String[15]=(
   'Type','X','A','B','C','D','E','F','RAZ','Visualisation','Sauve','Option','Nom','Quitte'
  );
  Legend7:Array[0..13]of String[75]=(
-  'Determine le type de graphique',
-  'Determine le champ X',
-  'Determine le premier champ de donnees',
-  'Determine le deuxieme champ de donnees',
-  'Determine le troisieme champ de donnees',
-  'Determine le quatrieme champ de donnees',
-  'Determine le cinquieme champ de donnees',
-  'Determine le sixieme champ de donnees',
-  'Annule les parametres du graphique',
+  'D‚termine le type de graphique',
+  'D‚termine le champ X',
+  'D‚termine le premier champ de donnŠes',
+  'D‚termine le deuxiŠme champ de donnŠes',
+  'D‚termine le troisiŠme champ de donnŠes',
+  'D‚termine le quatriŠme champ de donnŠes',
+  'D‚termine le cinquiŠme champ de donnŠes',
+  'D‚termine le sixiŠme champ de donnŠes',
+  'Annule les paramŠtres du graphique',
   'Affiche le graphique actuel',
-  'Sauve le graphique actuel pour impression ulterieure',
-  'Legende, Format, Titres, Grille, Echelle, Couleur, N&B, Inititules',
-  'Utilise, cree, efface, ou annule des champs nommes',
+  'Sauve le graphique actuel pour impression ult‚rieure',
+  'L‚gende, Format, Titres, Grille, Echelle, Couleur, N&B, Inititules',
+  'Utilise, cr‚e, efface, ou annule des champs nomm‚s',
   'Repasse en mode PRET'
  );
  MenuItem8:Array[0..7]of String[15]=(
-  'Ecrit-serie','Hypotheses','Trie','Base','Frequence','Matrice','Regression','Analyse'
+  'Ecrit-s‚rie','HypothŠses','Trie','Base','Fr‚quence','Matrice','Regression','Analyse'
  );
  Legend8:Array[0..7]of String[75]=(
-  'Introduit une serie de nombres dans un champ',
-  'Cree un tableau permettant d''analyser des hypotheses',
-  'Trie les enregistrements de donnees',
-  'Trouve les enregistrements repondant a des criteres donnes',
-  'Calcule la distribution de frequence d''un champ',
+  'Introduit une s‚rie de nombres dans un champ',
+  'Cr‚e un tableau permettant d''analyser des hypothŠses',
+  'Trie les enregistrements de donn‚es',
+  'Trouve les enregistrements r‚pondant … des critŠres donn‚s',
+  'Calcule la distribution de fr‚quence d''un champ',
   'Effectue des calculs de matrice',
-  'Calcule des regressions lineaires',
+  'Calcule des regressions lin‚aires',
   'Analyse une colonne de libelles dans un champ'
  );
 Var
@@ -1314,7 +1316,7 @@ Begin
      Case P of
       0:Begin { Charge }
        GotoXY(1,2);
-       Write('Nom du fichier a charge: ');
+       Write('Nom du fichier a charg‚: ');
        Repeat
         GotoXY(26,2);
         Write(FileName);
@@ -1484,11 +1486,28 @@ Begin
 End;
 
 BEGIN
- FileName:=GetCurrentDir+'\FILE0001.WK1';
- Init;
- ClrScr;
- ShowSpreadSheet;
- Run;
- UnselectColor;
- ClrScr;
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
+ If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
+  WriteLn('123 : Cette commande permet de lancer un clone du tableau Lotus 1-2-3.');
+  WriteLn;
+  WriteLn('Syntaxe : 123 [fichier.WK1]');
+ End
+  Else
+ Begin
+  FileName:=GetCurrentDir+'\FILE0001.WK1';
+  Init;
+  If ParamStr(1)<>''Then Begin
+   FileName:=ParamStr(1);
+   LoadSpreatSheet;
+  End;
+  ClrScr;
+  ShowSpreadSheet;
+  Run;
+  UnselectColor;
+  ClrScr;
+ End;
 END.
