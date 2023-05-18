@@ -257,7 +257,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	        <tr>
 			<td><b>CHD.PAS</b></td>
-			<td>Cette commande permet de fixer ou demander le répertoire courant. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/OS9/build.htm">BUILD</a> de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
+			<td>Cette commande permet de fixer ou demander le répertoire courant. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/OS9/chd.htm">CHD</a> de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
 		</tr>	
 	        <tr>
 			<td><b>CHECKIT.PAS</b></td>
