@@ -46,8 +46,8 @@ BEGIN
   End;
   While Not EOF(SourceASC)do Begin
    ReadLn(SourceASC,CurrLine);
-   If CurrLine=''Then WriteLn(TargetPython,'print("");')
-                 Else WriteLn(TargetPython,'print("',StringToPythonString(CurrLine),'");');
+   If CurrLine=''Then WriteLn(TargetPython,'print("")')
+                 Else WriteLn(TargetPython,'print("',StringToPythonString(CurrLine),'")');
   End;
   Close(TargetPython);
   Close(SourceASC);
@@ -56,8 +56,8 @@ BEGIN
  Begin
   While Not EOF(SourceASC)do Begin
    ReadLn(Input,CurrLine);
-   If CurrLine=''Then WriteLn(Output,'print("");')
-                 Else WriteLn(Output,'print("',StringToPythonString(CurrLine),'");');
+   If CurrLine=''Then WriteLn(Output,'print("")')
+                 Else WriteLn(Output,'print("',StringToPythonString(CurrLine),'")');
   End;
  End;
 END.
