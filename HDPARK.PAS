@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2022
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Turbo Pascal)
+  @abstract(Target: Turbo Pascal 7)
 }
 
 Program HDPARK;
@@ -22,29 +22,29 @@ Begin
   $00 : Chaine := 'Il n''y a pas d''erreur';
   $01 : Chaine := 'Commande invalide';
   $02 : Chaine := 'Marque d''adresse non trouvÃ©e';
-  $03 : Chaine := 'Disque protÃ©gÃ©';
-  $04 : Chaine := 'Secteur non trouvâ€š';
-  $05 : Chaine := 'Âchec de la rÃ©initialisation';
+  $03 : Chaine := 'Disque prot‚g‚';
+  $04 : Chaine := 'Secteur non trouv‚';
+  $05 : Chaine := 'chec de la r‚initialisation';
   $06 : Chaine := 'Disquette absente';
-  $07 : Chaine := 'Mauvaise table de paramÃ¨tres';
-  $08 : Chaine := 'Dâ€špassement du DMA';
-  $09 : Chaine := 'Dâ€špassement d''une frontiÃ¨re de frontiÃ¨re de 64Ko DMA';
-  $0A : Chaine := 'Indicateur de secteur dÃ©fectueux';
-  $0B : Chaine := 'Indicateur de piste dÃ©fecteutueuse';
-  $0C : Chaine := 'Type de mâ€šdium non trouvâ€š';
+  $07 : Chaine := 'Mauvaise table de paramŠtres';
+  $08 : Chaine := 'D‚passement du DMA';
+  $09 : Chaine := 'D‚passement d''une frontiŠre de frontiŠre de 64Ko DMA';
+  $0A : Chaine := 'Indicateur de secteur d‚fectueux';
+  $0B : Chaine := 'Indicateur de piste d‚fecteutueuse';
+  $0C : Chaine := 'Type de m‚dium non trouv‚';
   $0D : Chaine := 'Nombre de secteurs invalides';
-  $0E : Chaine := 'Marque de contrÃ´le dÃ©tectÃ©e';
+  $0E : Chaine := 'Marque de contr“le d‚tect‚e';
   $0F : Chaine := 'Niveau de DMA interdit';
   $10 : Chaine := 'Erreur de CRC ou d''ECC';
-  $11 : Chaine := 'Erreur de CRC corrigÃ©e';
-  $20 : Chaine := 'Erreur de contrÃ´leur';
-  $40 : Chaine := 'Erreur lors d''un dÃ©placement';
-  $80 : Chaine := 'Dâ€špassement de temps (rÃ©ponse non disponible)';
-  $AA : Chaine := 'UnitÃ© non prÃªte';
+  $11 : Chaine := 'Erreur de CRC corrig‚e';
+  $20 : Chaine := 'Erreur de contr“leur';
+  $40 : Chaine := 'Erreur lors d''un d‚placement';
+  $80 : Chaine := 'D‚passement de temps (r‚ponse non disponible)';
+  $AA : Chaine := 'Unit‚ non prˆte';
   $BB : Chaine := 'Erreur indefinie';
-  $CC : Chaine := 'Erreur d''Ã©criture';
-  $E0 : Chaine := 'Erreur dans le registre d''Ã©tat';
-  $FF : Chaine := 'Echec de l''opÃ©ration de demande d''Ã©tat';
+  $CC : Chaine := 'Erreur d''‚criture';
+  $E0 : Chaine := 'Erreur dans le registre d''‚tat';
+  $FF : Chaine := 'Echec de l''op‚ration de demande d''‚tat';
    else
   Chaine := 'Inconnue';
  End;
@@ -110,27 +110,27 @@ End;
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('HDPARK : Cette commande permet de stationner les tÃªtes d''un disque dur sur ',
-	 'les pistes les plus internes en prÃ©paration du dÃ©placement de l''unitÃ© ',
-	 'd''entraÃ®nement.');
+  WriteLn('HDPARK : Cette commande permet de stationner les tˆtes d''un disque dur sur ',
+	 'les pistes les plus internes en pr‚paration du d‚placement de l''unit‚ ',
+	 'd''entraŒnement.');
   WriteLn;
   WriteLn('Syntaxe : HDPARK [/?] [unite:]');
   WriteLn;
   WriteLn('Parametres');
   WriteLn;
-  WriteLn('  /?      Ce parametre permet d''afficher l''aide sur cette commande');
-  WriteLn('  unite:  Ce paramŠtre permet d''unite de disque a stationner');
+  WriteLn('  /?      Ce paramŠtre permet d''afficher l''aide sur cette commande');
+  WriteLn('  unite:  Ce paramŠtre permet d''indiquer l''unite de disque a stationner');
  End
   Else
  If ParamCount>0Then Begin
   For I:=1 to ParamCount do Begin
    CurrParam:=ParamStr(I);
    If CurrParam[2]<>':'Then Begin
-    WriteLn('L''unite de disque doit etre suivi par le caractere ":"');
+    WriteLn('L''unit‚ de disque doit etre suivi par le caractŠre ":"');
     Halt;
    End;
    If Not(CurrParam[1]in['C'..'Z','c'..'z'])Then Begin
-    WriteLn('L''unite de disque doit etre une lettre entre C et Z');
+    WriteLn('L''unit‚ de disque doit etre une lettre entre C et Z');
     Halt;
    End;
    Drive:=Ord(CurrParam[1])-65-2;
