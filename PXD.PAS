@@ -12,7 +12,7 @@ BEGIN
  If(ParamStr(1)='/?')Then Begin
   WriteLn('PXD : Cette commande permet d''afficher le repertoire d''execution.');
   WriteLn;
-  WriteLn('Syntaxe : PWX');
+  WriteLn('Syntaxe : PXD');
  End
   Else
  WriteLn(GetEnv('PATH'));
