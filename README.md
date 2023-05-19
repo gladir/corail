@@ -150,7 +150,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>			
 			<td><b>ASC2PY.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source Python.</td>
-		</tr>	
+		</tr>
+		<tr>
+			<td><b>ASC2REXX.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier ASCII en code source REXX.</td>
+		</tr>
 	        <tr>
 			<td><b>ASCII.PAS</b></td>
 			<td>Cette commande permet d'afficher la table ASCII de la console.</td>
