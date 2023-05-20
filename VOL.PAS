@@ -9,7 +9,21 @@ Program VOL;
 Uses DOS;
 
 Var
+ FileIMG:File;
  FirstParam,Volume:String;
+ I:Byte;
+ ByteReaded:Integer;
+ Buffer:Array[0..511]of Byte;
+
+Function StrToUpper(S:String):String;
+Var
+ I:Byte;
+Begin
+ For I:=1 to Length(S)do Begin
+  If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
+ End;
+ StrToUpper:=S;
+End;
 
 Function GetCurrentDisk:Char;
 Var
@@ -49,9 +63,35 @@ BEGIN
   WriteLn('Syntaxe:');
   WriteLn;
   WriteLn('VOL [/?] [unite:]');
+  WriteLn('VOL [/IMG:fichier]');
   WriteLn;
-  WriteLn(' /?      Ce paramätre permet d''afficher l''aide sur cette commande');
-  WriteLn(' unite:  Ce paramätre permet d''indiquer la lettre d''unitÇ de disque');
+  WriteLn(' /?           Ce paramätre permet d''afficher l''aide sur cette commande');
+  WriteLn(' unite:       Ce paramätre permet d''indiquer la lettre d''unitÇ de disque');
+  WriteLn(' /IMG:fichier Ce paramätre permet de vÇrifier dans une image disque le nom');
+ End
+  Else
+ If StrToUpper(Copy(FirstParam,1,5))='/IMG:'Then Begin
+  {$I-}Assign(FileIMG,Copy(FirstParam,6,255));
+  Reset(FileIMG,1);{$I+}
+  If IoResult=0 Then Begin
+   Seek(FileIMG,0);
+   BlockRead(FileIMG,Buffer,SizeOf(Buffer),ByteReaded);
+   If ByteReaded=SizeOf(Buffer) Then Begin
+    If Buffer[$2B]<32 Then Begin
+     For I:=1 to 11 do Write(Char(Buffer[$2B+I]));
+    End
+     Else
+    Begin
+     For I:=0 to 10 do Write(Char(Buffer[$2B+I]));
+    End;
+   End
+    Else
+   Write('Erreur de lecture du fichier d''image.');
+   WriteLn;
+   Close(FileIMG);
+  End
+   Else
+  WriteLn('Impossible de lire le fichier d''image : ',Copy(FirstParam,6,255),'!');
  End
   Else
  If(Length(FirstParam)=2) and (FirstParam[2]=':')Then Begin
