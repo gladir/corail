@@ -1004,6 +1004,7 @@ SET LANGUAGE=EN
 
 <h3>Remarques</h3>
 <ul>
+	<li>La commande "VOL" a été bonifié du paramètre "/IMG:" permettant la recherche d'un nom de volume à partir d'un fichier d'image disque.</li>
 	<li>La commande "CKCMOS.PAS" a été bonifié de la commande /AMDEK pour rechercher sur les micro-ordinateurs <a href="https://www.gladir.com/LEXIQUE/SYSTEM/amdeksystem88.htm">Admek System/88</a>.</li>
 	<li>La commande "DIR.PAS" a été bonifié de format de sortie CSV, JSON, HTML, PASCAL, SQL ou XML.</li>
 	<li>La commande "HEXDUMP.PAS" a été bonifié de format de sortie C, CSV, JSON, HTML, PASCAL, SQL ou XML.</li>
