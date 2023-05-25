@@ -108,6 +108,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier ASCII en code source C.</td>
 		</tr>
 		<tr>
+			<td><b>ASC2CFM.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier ASCII en code source ColdFusion.</td>
+		</tr>
+		<tr>
 			<td><b>ASC2CPP.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source C++.</td>
 		</tr>	
