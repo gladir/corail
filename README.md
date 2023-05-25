@@ -134,7 +134,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>ASC2JSP.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source JSP (Java Server Pages).</td>
-		</tr>		
+		</tr>
+		<tr>
+			<td><b>ASC2LOGO.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier ASCII en code source Logo.</td>
+		</tr>
 		<tr>
 			<td><b>ASC2LSS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source LotusScript.</td>
