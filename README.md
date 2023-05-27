@@ -825,7 +825,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 	       	<tr>
 		       <td><b>RUNZ80.PAS</b></td>
 		       <td>Cette commande permet d'exécuter du code machine du microprocesseur Z80.</td>
-		</tr>		
+		</tr>
+		<tr>
+			<td><b>SASS.PAS</b></td>
+			<td>Cette commande permet de lancer le compilateur SASS, lequel consertie des fichiers «.scss» en fichier «.css».</td>
+		</tr>
 	        <tr>
 			<td><b>SD.PAS</b></td>
 			<td>Cette commande permet d'imprimer le contenu de l'écran. Cette commande est inspiré du logiciel <a href="https://www.gladir.com/SOFTWARE/KIX/presentation.htm">KIX</a> de Kyan Software pour Apple II.</td>
