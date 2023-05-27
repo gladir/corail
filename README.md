@@ -70,7 +70,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>APPLY.PAS</b></td>
 			<td>Cette commande permet d'appliquer des commandes à plusieurs reprises. Cette commande est originaire du <a href="https://www.gladir.com/OS/ZENITHDATASYSTEMSMICROSOFTMSDOS2/apply.htm">Zenith Data Systems Microsoft MS-DOS 2</a>.</td>
-		</tr>
+		</tr>	        
+	        <tr>
+                        <td><b>ARJ.PAS</b></td>
+                        <td>Cette commande permet d'afficher la liste des fichiers contenu dans un archive ARJ.</td>
+                </tr>
 		<tr>
 			<td><b>ASC2ABAP.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source ABAP/4.</td>
