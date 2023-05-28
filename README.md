@@ -599,6 +599,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>FS.PAS</b></td>
 			<td>Cette commande permet d'afficher la taille d'un ou plusieurs fichiers. Cette commande est inspiré de la commande FS de Norton Utilities.</td>
 		</tr>	
+	        <tr>
+			<td><b>GAT2TXT.PAS</b></td>
+			<td>Cette commande permet de convertir un document de traitement de texte GAT (progiciel MonsterBook) en format TXT.</td>
+		</tr>
  		<tr>
 			<td><b>GEODELTA.PAS</b></td>
 			<td>Cette commande permet de demander la distance entre deux villes, soit par coordonnée géographique, soit par son nom s'il est répertorié.</td>
