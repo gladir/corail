@@ -601,7 +601,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>	
 	        <tr>
 			<td><b>GAT2TXT.PAS</b></td>
-			<td>Cette commande permet de convertir un document de traitement de texte GAT (progiciel MonsterBook) en format TXT.</td>
+			<td>Cette commande permet de convertir un document de traitement de texte GAT (progiciel <a href="https://www.gladir.com/monster.htm">MonsterBook</a>) en format TXT.</td>
 		</tr>
  		<tr>
 			<td><b>GEODELTA.PAS</b></td>
