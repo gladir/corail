@@ -663,6 +663,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de rechercher les mots avec des traits-union. Cette commande est inspiré de la commande UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>IMG2HTML.PAS</b></td>
+			<td>Cette commande permet de convertir une image en code HTML.</td>
+		</tr>
+		<tr>
 			<td><b>INFO.PAS</b></td>
 			<td>Cette commande permet de demander des informations sur l'état du système d'exploitation. Cette commande est inspiré du AmigaDOS.</td>
 		</tr>
