@@ -679,6 +679,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher l'adresse IP de la machine local.</td>
 		</tr>
 		<tr>
+			<td><b>ISEMAIL.PAS</b></td>
+			<td>Cette commande permet de vÃ©rifier si le courriel est un courriel valide.</td>
+		</tr>
+		<tr>
 			<td><b>LABEL.PAS</b></td>
 			<td>Cette commande permet de changer le nom d'un volume.</td>
 		</tr>
