@@ -680,7 +680,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>ISEMAIL.PAS</b></td>
-			<td>Cette commande permet de vÃ©rifier si le courriel est un courriel valide.</td>
+			<td>Cette commande permet de vérifier si le courriel est un courriel valide.</td>
 		</tr>
 		<tr>
 			<td><b>LABEL.PAS</b></td>
