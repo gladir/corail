@@ -233,7 +233,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>BERR.PAS</b></td>
-			<td>Cette commande permet d'afficher un code d'erreur Btrieve.</td>
+			<td>Cette commande permet d'afficher un code d'erreur <a href="https://www.gladir.com/CODER/BTRIEVE/intro.htm">Btrieve</a>.</td>
 		</tr>
 	        <tr>
 			<td><b>BIN2BGI.PAS</b></td>
