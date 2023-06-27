@@ -231,6 +231,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>BE.PAS</b></td>
 			<td>Cette commande permet de lancer une commande étendu pour les fichiers de traitements par lots. Cette commande est inspiré de la commande BE de Norton Utilities.</td>
 		</tr>
+		<tr>
+			<td><b>BERR.PAS</b></td>
+			<td>Cette commande permet d'afficher un code d'erreur Btrieve.</td>
+		</tr>
 	        <tr>
 			<td><b>BIN2BGI.PAS</b></td>
 			<td>Cette programme permet l'écriture d'entête de la portion du pilote BGI.</td>
