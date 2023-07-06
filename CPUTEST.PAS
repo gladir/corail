@@ -1,18 +1,61 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2022
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Turbo Pascal, Free Pascal)
+  @abstract(Target: Turbo Pascal 7, Free Pascal)
 }
 
 
 Program CPUTEST;
 
+Function StrToUpper(S:String):String;
+Var
+ I:Byte;
+Begin
+ For I:=1 to Length(S)do Begin
+  If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
+ End;
+ StrToUpper:=S;
+End;
+
+{$IFNDEF FPC}
+ Function DetectCyrix:Boolean;Assembler;ASM
+  XOR  AX,AX
+  SAHF
+  MOV  AX,$05
+  MOV  BX,$02
+  DIV  BL
+  LAHF
+  CMP  AH,$02
+  JNE  @nocyrix
+  MOV  AL,$01
+  JMP  @tend
+  @nocyrix:
+  XOR  AL,AL
+ @tend:
+ END;
+
+{$ENDIF}
+
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('CPUTEST : Cette commande permet de verifier le type de microprocesseur.');
   WriteLn;
-  WriteLn('Syntaxe : CPUTEST [/?]');
+  {$IFDEF FPC}
+   WriteLn('Syntaxe : CPUTEST [/?]');
+  {$ELSE}
+   WriteLn('Syntaxe : CPUTEST [/?] [/CYRIX]');
+   WriteLn;
+   WriteLn(' /?      Fournit de l''aide sur cette commande');
+   WriteLn(' /CYRIX  D‚tecte les microprocesseur Cyrix 5x86 ou 6x86');
+  {$ENDIF}
  End
+  {$IFNDEF FPC}
+  Else
+ If StrToUpper(ParamStr(1))='/CYRIX'Then Begin
+  If(DetectCyrix)Then WriteLn('Cyrix d‚tect‚')
+                 Else WriteLn('Cyrix absent');
+ End
+  {$ENDIF}
   Else
  Begin
   Case Test8086 of
