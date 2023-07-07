@@ -6,6 +6,8 @@ Les logiciels contenu dans Corail sont une séries de logiciels autonomes écrit
 
 Le logiciel Corail offrent des interpréteurs de commandes avec la syntaxe du AmigaDOS, FLEX, OS-9, DR-DOS, MS-DOS, Unix, Linux, LDOS, TRSDOS, Prompt Pascal,... De plus, de nombreux utilitaires complémentaires sont fournit avec Corail, tel que des compilateurs, des interpréteurs de langage de programmation (BASIC,...),... et des outils de bas niveau.
 
+Le projet Corail se veut un peu comme une solution de remplacement de COREUTILS des distributions Linux en Pascal.
+
 Aperçu de la commande AMIGADOS :
 
 ![image](https://user-images.githubusercontent.com/11842176/160870008-c9f4ee94-e44f-435e-995e-d6e2bb6140d1.png)
