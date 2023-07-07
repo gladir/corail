@@ -329,7 +329,7 @@ BEGIN
    WriteLn;
    WriteLn('Syntaxe:');
    WriteLn;
-   WriteLn('BERR [/?] nombre [...]');
+   WriteLn('D3ERR [/?] nombre [...]');
    WriteLn;
    WriteLn(' /?      Ce parametre permet d''afficher l''aide sur cette commande');
    WriteLn(' nombre  Ce parametre permet d''indiquer le num‚ro de l''erreur');
