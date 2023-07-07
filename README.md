@@ -502,6 +502,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effectuer la conversion des caractères de saut de ligne du système d'exploitation DOS en leur équivalent UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>DOSERR.PAS</b></td>
+			<td>Cette commande permet d'afficher un code d'erreur DOS.</td>
+		</tr>
+		<tr>
 			<td><b>DOSKEY.PAS</b></td>
 			<td>Cette commande permet de charger le programme DOSKEY.</td>
 		</tr>	
