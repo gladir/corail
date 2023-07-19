@@ -721,6 +721,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de demander le nom de connexion.</td>
 		</tr>
 		<tr>
+			<td><b>LOGO.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur de commande du langage de programmation LOGO. Il supporte aussi la tortue.</td>
+		</tr>tr
+		<tr>
 			<td><b>LOOK.PAS</b></td>
 			<td>Cette commande permet de rechercher les lignes commençant par un texte spécifié.</td>
 		</tr>
