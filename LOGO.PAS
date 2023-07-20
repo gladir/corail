@@ -380,6 +380,14 @@ Function ResultStackPop:Real;Begin
  ResultStackPop:=ResultStack[TopOfStackInt];
 End;
 
+
+Function IsStringValue:Boolean;Begin
+ IsStringValue:=False;
+ If CurrLine[CurrPos]='['Then Begin
+  IsStringValue:=True;
+ End;
+End;
+
 Procedure ShowCursor;Begin
  SetFillStyle(SolidFill,Blue);
  Bar(XPos*8,YPos*8,XPos*8+TextWidth(' '),YPos*8+TextHeight(' '));
@@ -521,6 +529,26 @@ Begin
    Exit;
   End;
  End;
+End;
+
+Function GetStringValue:String;
+Var
+ J:Integer;
+ _Result:Real;
+ FunctionFound:Boolean;
+ S,VarName:String;
+Begin
+ GetStringValue:='';
+ S:='';
+ If CurrLine[CurrPos]='['Then Begin
+  Inc(CurrPos);
+  While(CurrLine[CurrPos]<>']')and(CurrPos<=Length(CurrLine))do Begin
+   S:=S+CurrLine[CurrPos];
+   Inc(CurrPos);
+  End;
+  If CurrLine[CurrPos]=']'Then Inc(CurrPos);
+ End;
+ GetStringValue:=S;
 End;
 
 Function GetNumberValue(MinTopOfStack:Integer):Real;
@@ -834,6 +862,13 @@ Begin
  WriteLn('Nom du fichier absent');
 End;
 
+Procedure PrintCommand;Begin
+ SkipSpace;
+ If IsStringValue Then Begin
+  WriteLine(GetStringValue);
+ End;
+End;
+
 Procedure RightCommand;
 Var
  Val:Real;
@@ -988,7 +1023,7 @@ Begin
   91:NoImplementation:=True;{POSY}
   92:NoImplementation:=True;{POTS}
   93:If Not(ForCommand)Then Exit;{POUR}
-  94:NoImplementation:=True;{PRINT}
+  94:PrintCommand;{PRINT}
   95:Begin {QUITTE}
    Terminated:=True;
    Exit;
