@@ -14,22 +14,23 @@ Uses {$IFDEF FPC}
      {$ENDIF};
 
 Const
- CommandList:Array[0..155]of String[15]=(
+ CommandList:Array[0..160]of String[15]=(
   'AFFICHE','AFFICHER','ALLER','ALLERX','ALLERY','ANGLE',
   'ARG','ARGUMENT','ARRIERE','AV','AVANCE','AVANCER','BACK','BACK-COLOR',
   'BACKCOLOR','BACKGROUND','BACKWARD','BAISSER','BAISSER-CRAYON',
   'BAISSERCRAYON','BAS','BC','BEGIN','BEGINNING','BLOAD','BSAVE','CACHE',
   'CACHER','CATALOG','CL','CLEAR','CLEARSCREEN','COLOR','COULEUR','COULEUR-DE-FOND',
   'CS','DEBUT','DOWN','DRAW','DROIT','DROITE','ECRIRE','EDIT','END','ERASE','ERASEPICT',
-  'EXIT','ERASE','ERASEFILE','FIN','FINI','FINIR','FOND','FOR','FORWARD',
+  'EXIT','ERASE','ERASEFILE','FD','FIN','FINI','FINIR','FOND','FOR','FORWARD',
   'FULLSCREEN','GAUCHE','GO','GO-BACK','GOBACK','GOMME','GOMMER','GOODBYE',
   'GOX',  'GOY','HAUT','HIDE','HIDETURTLE','HOME','IF','LC','LEFT','LEVE','LEVER',
   'LEVER-CRAYON','MAKE','MARCHE','MARCHER','MASQUER','MONTRE','MONTRER','NODRAW',
-  'OD','OUTPUT','PC','PENCOLORS','PENUP','PENDOWN','PENERASE','PO','POSX',
-  'POSY','POTS','POUR','PRINT','QUITTE','QUITTER','RE','READ','READPICT',
-  'RECOMMENCE','RECOMMENCER','RECULE','RECULER','REPEAT','REPETE','REPETER',
-  'REQUEST','RESET','RIGHT','ROTATE','ROTATE-LEFT','ROTATE-RIGHT','ROTATELEFT',
-  'SETDISK','ROTATERIGHT','RUOP','SAVE','SAVEPICT','SETX','SETY','SHOW','SHOWTURTLE',
+  'OD','OUTPUT','PC','PENCOLORS','PENUP','PENDOWN','PENERASE','PO','POS',
+  'POSITION','POSX','POSY','POTS','POUR','PRINT','QUITTE','QUITTER','RE',
+  'READ','READPICT','RECOMMENCE','RECOMMENCER','RECULE','RECULER','REPEAT',
+  'REPETE','REPETER','REQUEST','RESET','RIGHT','ROTATE','ROTATE-LEFT',
+  'ROTATE-RIGHT','ROTATELEFT','RT','SETDISK','ROTATERIGHT','RUOP','SAVE',
+  'SAVEPICT','SETPOSITION','SETX','SETY','SHOW','SHOWTURTLE',
   'SPLITSCREEN','STAMPCHAR','STOP','TD','TEXTCOLOR','TEXTBG','TEXTSCREEN',
   'TG','TL','TOURNE','TOURNE-DROITE','TOURNE-GAUCHE','TOURNEDROITE',
   'TOURNEGAUCHE','TOURNER','TOURNER-DROITE','TOURNER-GAUCHE','TOURNERDROITE',
@@ -458,7 +459,7 @@ Begin
  InitGraph(Driver,Mode,'');
  ErrCode:=GraphResult;
  If ErrCode=grOk Then Begin
-  SetColor(Blue);
+  SetColor(White);
   SetLineStyle(0, 0, 1);
  End
   Else
@@ -470,6 +471,15 @@ End;
 
 Procedure SkipSpace;Begin
  While(CurrLine[CurrPos]in[' '])and(CurrPos<Length(CurrLine))do Inc(CurrPos);
+End;
+
+Function GetSeparator:Char;Begin
+ If CurrPos>Length(CurrLine)Then Begin
+  GetSeparator:=#0;
+  Exit;
+ End;
+ SkipSpace;
+ GetSeparator:=CurrLine[CurrPos];
 End;
 
 Function GetVariableName:String;
@@ -564,7 +574,7 @@ Var
  StopChar:Set Of Char;
  Infix:String;
 Begin
- StopChar:=[',',':',';','"','<','=','>'];
+ StopChar:=[',',':',';','"','<','=','>',' '];
  TopOfStack:=1;
  TopOfStackInt:=1;
  PostFix:='';
@@ -694,7 +704,7 @@ Begin
   { Transformation en POSTFIX }
  I:=1;
  Repeat
-  If PostFix[I]in['*','+','-',' ']Then Begin
+  If PostFix[I]in['*','+','-','/']Then Begin
    P:=ResultStackPop;
    P2:=ResultStackPop;
    Case PostFix[I]of
@@ -821,6 +831,22 @@ Begin
  Inc(Y,YMove);
 End;
 
+Procedure GoXCommand;
+Var
+ Val:Real;
+Begin
+ Val:=GetNumberValue(1);
+ X:=Trunc(Val);
+End;
+
+Procedure GoYCommand;
+Var
+ Val:Real;
+Begin
+ Val:=GetNumberValue(1);
+ Y:=Trunc(Val);
+End;
+
 Procedure HomeCommand;Begin
  X:=320 {(GetMaxX+1) shr 1};
  Y:=100 {(GetMaxY+1) shr 1};
@@ -862,22 +888,6 @@ Begin
  WriteLn('Nom du fichier absent');
 End;
 
-Procedure PrintCommand;Begin
- SkipSpace;
- If IsStringValue Then Begin
-  WriteLine(GetStringValue);
- End;
-End;
-
-Procedure RightCommand;
-Var
- Val:Real;
-Begin
- Val:=GetNumberValue(1);
- If Val=-1Then Val:=90;
- Angle:=Angle+Val*0.017453292520;
-End;
-
 Function OdCommand:Boolean;
 Var
  NextCurrPos,NextCurrLinePtr,NextCurrNumberLine:Word;
@@ -907,12 +917,47 @@ Begin
  OdCommand:=True;
 End;
 
+Procedure PosCommand;Begin
+ WriteLine('['+IntToStr(X)+' '+IntToStr(Y)+']');
+End;
+
+Procedure PrintCommand;Begin
+ SkipSpace;
+ If IsStringValue Then Begin
+  WriteLine(GetStringValue);
+ End;
+End;
+
 Procedure PenDownCommand;Begin
  PenDown:=True;
 End;
 
 Procedure PenUpCommand;Begin
  PenDown:=False;
+End;
+
+Procedure RightCommand;
+Var
+ Val:Real;
+Begin
+ Val:=GetNumberValue(1);
+ If Val=-1Then Val:=90;
+ Angle:=Angle+Val*0.017453292520;
+End;
+
+Procedure SetPositionCommand;
+Var
+ XVal,YVal:Real;
+Begin
+ If GetSeparator='['Then Inc(CurrPos);
+ SkipSpace;
+ XVal:=GetNumberValue(1);
+ SkipSpace;
+ YVal:=GetNumberValue(1);
+ If(PenDown)Then Line(X,Y,Trunc(XVal),Trunc(YVal));
+ X:=Trunc(XVal);
+ Y:=Trunc(YVal);
+ If GetSeparator=']'Then Inc(CurrPos);
 End;
 
 Function RunCommand:Boolean;
@@ -926,11 +971,11 @@ Begin
  NoImplementation:=False;
  UnknownCommand:=False;
  Case ExtractCommand of
-  0:NoImplementation:=True;{AFFICHE}
-  1:NoImplementation:=True;{AFFICHER}
+  0:PrintCommand;{AFFICHE}
+  1:PrintCommand;{AFFICHER}
   2:NoImplementation:=True;{ALLER}
-  3:NoImplementation:=True;{ALLERX}
-  4:NoImplementation:=True;{ALLERY}
+  3:GoXCommand;{ALLERX}
+  4:GoYCommand;{ALLERY}
   5:AngleCommand;{ANGLE}
   6:NoImplementation:=True;{ARG}
   7:NoImplementation:=True;{ARGUMENT}
@@ -962,7 +1007,7 @@ Begin
   33:NoImplementation:=True;{COULEUR}
   34:NoImplementation:=True;{COULEUR-DE-FOND}
   35:NoImplementation:=True;{CS}
-  36:NoImplementation:=True;{DEBUT}
+  36:HomeCommand;{DEBUT}
   37:NoImplementation:=True;{DOWN}
   38:NoImplementation:=True;{DRAW}
   39:RightCommand;{DROIT}
@@ -975,122 +1020,127 @@ Begin
   46:NoImplementation:=True;{EXIT}
   47:NoImplementation:=True;{ERASE}
   48:NoImplementation:=True;{ERASEFILE}
-  49:NoImplementation:=True;{FIN}
-  50:NoImplementation:=True;{FINI}
-  51:NoImplementation:=True;{FINIR}
-  52:NoImplementation:=True;{FOND}
-  53:If Not(ForCommand)Then Exit;{FOR}
-  54:ForwardCommand;{FORWARD}
-  55:NoImplementation:=True;{FULLSCREEN}
-  56:LeftCommand;{GAUCHE}
-  57:NoImplementation:=True;{GO}
-  58:NoImplementation:=True;{GO-BACK}
-  59:NoImplementation:=True;{GOBACK}
-  60:NoImplementation:=True;{GOMME}
-  61:NoImplementation:=True;{GOMMER}
-  62:Begin {GOODBYE}
+  49:ForwardCommand;{FD}
+  50:NoImplementation:=True;{FIN}
+  51:NoImplementation:=True;{FINI}
+  52:NoImplementation:=True;{FINIR}
+  53:NoImplementation:=True;{FOND}
+  54:If Not(ForCommand)Then Exit;{FOR}
+  55:ForwardCommand;{FORWARD}
+  56:NoImplementation:=True;{FULLSCREEN}
+  57:LeftCommand;{GAUCHE}
+  58:NoImplementation:=True;{GO}
+  59:NoImplementation:=True;{GO-BACK}
+  60:NoImplementation:=True;{GOBACK}
+  61:NoImplementation:=True;{GOMME}
+  62:NoImplementation:=True;{GOMMER}
+  63:Begin {GOODBYE}
    Terminated:=True;
    Exit;
   End;
-  63:NoImplementation:=True;{GOX}
-  64:NoImplementation:=True;{GOY}
-  65:NoImplementation:=True;{HAUT}
-  66:NoImplementation:=True;{HIDE}
-  67:NoImplementation:=True;{HIDETURTLE}
-  68:HomeCommand;{HOME}
-  69:NoImplementation:=True;{IF}
-  70:NoImplementation:=True;{LC}
-  71:LeftCommand;{LEFT}
-  72:PenUpCommand;{LEVE}
-  73:PenUpCommand;{LEVER}
-  74:PenUpCommand;{LEVER-CRAYON}
-  75:NoImplementation:=True;{MAKE}
-  76:NoImplementation:=True;{MARCHE}
-  77:NoImplementation:=True;{MARCHER}
-  78:NoImplementation:=True;{MASQUER}
-  79:NoImplementation:=True;{MONTRE}
-  80:NoImplementation:=True;{MONTRER}
-  81:NoImplementation:=True;{NODRAW}
-  82:If Not(OdCommand)Then Exit;{OD}
-  83:NoImplementation:=True;{OUTPUT}
-  84:NoImplementation:=True;{PC}
-  85:NoImplementation:=True;{PENCOLORS}
-  86:PenUpCommand;{PENUP}
-  87:PenDownCommand;{PENDOWN}
-  88:NoImplementation:=True;{PENERASE}
-  89:NoImplementation:=True;{PO}
-  90:NoImplementation:=True;{POSX}
-  91:NoImplementation:=True;{POSY}
-  92:NoImplementation:=True;{POTS}
-  93:If Not(ForCommand)Then Exit;{POUR}
-  94:PrintCommand;{PRINT}
-  95:Begin {QUITTE}
+  64:GoXCommand;{GOX}
+  65:GoYCommand;{GOY}
+  66:NoImplementation:=True;{HAUT}
+  67:NoImplementation:=True;{HIDE}
+  68:NoImplementation:=True;{HIDETURTLE}
+  69:HomeCommand;{HOME}
+  70:NoImplementation:=True;{IF}
+  71:NoImplementation:=True;{LC}
+  72:LeftCommand;{LEFT}
+  73:PenUpCommand;{LEVE}
+  74:PenUpCommand;{LEVER}
+  75:PenUpCommand;{LEVER-CRAYON}
+  76:NoImplementation:=True;{MAKE}
+  77:ForwardCommand;{MARCHE}
+  78:ForwardCommand;{MARCHER}
+  79:NoImplementation:=True;{MASQUER}
+  80:NoImplementation:=True;{MONTRE}
+  81:NoImplementation:=True;{MONTRER}
+  82:NoImplementation:=True;{NODRAW}
+  83:If Not(OdCommand)Then Exit;{OD}
+  84:NoImplementation:=True;{OUTPUT}
+  85:NoImplementation:=True;{PC}
+  86:NoImplementation:=True;{PENCOLORS}
+  87:PenUpCommand;{PENUP}
+  88:PenDownCommand;{PENDOWN}
+  89:NoImplementation:=True;{PENERASE}
+  90:NoImplementation:=True;{PO}
+  91:PosCommand;{POS}
+  92:PosCommand;{POSITION}
+  93:NoImplementation:=True;{POSX}
+  94:NoImplementation:=True;{POSY}
+  95:NoImplementation:=True;{POTS}
+  96:If Not(ForCommand)Then Exit;{POUR}
+  97:PrintCommand;{PRINT}
+  98:Begin {QUITTE}
    Terminated:=True;
    Exit;
   End;
-  96:Begin {QUITTER}
+  99:Begin {QUITTER}
    Terminated:=True;
    Exit;
   End;
-  97:NoImplementation:=True;{RE}
-  98:NoImplementation:=True;{READ}
-  99:NoImplementation:=True;{READPICT}
-  100:NoImplementation:=True;{RECOMMENCE}
-  101:NoImplementation:=True;{RECOMMENCER}
-  102:NoImplementation:=True;{RECULE}
-  103:NoImplementation:=True;{RECULER}
-  104:NoImplementation:=True;{REPEAT}
-  105:NoImplementation:=True;{REPETE}
-  106:NoImplementation:=True;{REPETER}
-  107:NoImplementation:=True;{REQUEST}
-  108:NoImplementation:=True;{RESET}
-  109:RightCommand;{RIGHT}
-  110:NoImplementation:=True;{ROTATE}
-  111:NoImplementation:=True;{ROTATE-LEFT}
-  112:NoImplementation:=True;{ROTATE-RIGHT}
-  113:NoImplementation:=True;{ROTATELEFT}
-  114:NoImplementation:=True;{SETDISK}
-  115:NoImplementation:=True;{ROTATERIGHT}
-  116:NoImplementation:=True;{RUOP}
-  117:NoImplementation:=True;{SAVE}
-  118:NoImplementation:=True;{SAVEPICT}
-  119:NoImplementation:=True;{SETX}
-  120:NoImplementation:=True;{SETY}
-  121:NoImplementation:=True;{SHOW}
-  122:NoImplementation:=True;{SHOWTURTLE}
-  123:NoImplementation:=True;{SPLITSCREEN}
-  124:NoImplementation:=True;{STAMPCHAR}
-  125:NoImplementation:=True;{STOP}
-  126:NoImplementation:=True;{TD}
-  127:NoImplementation:=True;{TEXTCOLOR}
-  128:NoImplementation:=True;{TEXTBG}
-  129:NoImplementation:=True;{TEXTSCREEN}
-  130:NoImplementation:=True;{TG}
-  131:NoImplementation:=True;{TL}
-  132:NoImplementation:=True;{TOURNE}
-  133:NoImplementation:=True;{TOURNE-DROITE}
-  134:NoImplementation:=True;{TOURNE-GAUCHE}
-  135:NoImplementation:=True;{TOURNEDROITE}
-  136:NoImplementation:=True;{TOURNEGAUCHE}
-  137:NoImplementation:=True;{TOURNER}
-  138:NoImplementation:=True;{TOURNER-DROITE}
-  139:NoImplementation:=True;{TOURNER-GAUCHE}
-  140:NoImplementation:=True;{TOURNERDROITE}
-  141:NoImplementation:=True;{TOURNERGAUCHE}
-  142:NoImplementation:=True;{TR}
-  143:NoImplementation:=True;{TURN}
-  144:NoImplementation:=True;{TURNLEFT}
-  145:NoImplementation:=True;{TURNRIGHT}
-  146:NoImplementation:=True;{TURN-LEFT}
-  147:NoImplementation:=True;{TURN-RIGHT}
-  148:NoImplementation:=True;{UP}
-  149:NoImplementation:=True;{VA}
-  150:NoImplementation:=True;{VAX}
-  151:NoImplementation:=True;{VAY}
-  152:NoImplementation:=True;{WALK}
-  153:NoImplementation:=True;{WRITE}
-  154:NoImplementation:=True;{X}
-  155:NoImplementation:=True;{Y}
+  100:NoImplementation:=True;{RE}
+  101:NoImplementation:=True;{READ}
+  102:NoImplementation:=True;{READPICT}
+  103:NoImplementation:=True;{RECOMMENCE}
+  104:NoImplementation:=True;{RECOMMENCER}
+  105:NoImplementation:=True;{RECULE}
+  106:NoImplementation:=True;{RECULER}
+  107:NoImplementation:=True;{REPEAT}
+  108:NoImplementation:=True;{REPETE}
+  109:NoImplementation:=True;{REPETER}
+  110:NoImplementation:=True;{REQUEST}
+  111:NoImplementation:=True;{RESET}
+  112:RightCommand;{RIGHT}
+  113:NoImplementation:=True;{ROTATE}
+  114:LeftCommand;{ROTATE-LEFT}
+  115:RightCommand;{ROTATE-RIGHT}
+  116:LeftCommand;{ROTATELEFT}
+  117:RightCommand;{RT}
+  118:NoImplementation:=True;{SETDISK}
+  119:RightCommand;{ROTATERIGHT}
+  120:NoImplementation:=True;{RUOP}
+  121:NoImplementation:=True;{SAVE}
+  122:NoImplementation:=True;{SAVEPICT}
+  123:SetPositionCommand;{SETPOSITION}
+  124:NoImplementation:=True;{SETX}
+  125:NoImplementation:=True;{SETY}
+  126:NoImplementation:=True;{SHOW}
+  127:NoImplementation:=True;{SHOWTURTLE}
+  128:NoImplementation:=True;{SPLITSCREEN}
+  129:NoImplementation:=True;{STAMPCHAR}
+  130:NoImplementation:=True;{STOP}
+  131:NoImplementation:=True;{TD}
+  132:NoImplementation:=True;{TEXTCOLOR}
+  133:NoImplementation:=True;{TEXTBG}
+  134:NoImplementation:=True;{TEXTSCREEN}
+  135:LeftCommand;{TG}
+  136:LeftCommand;{TL}
+  137:NoImplementation:=True;{TOURNE}
+  138:RightCommand;{TOURNE-DROITE}
+  139:RightCommand;{TOURNE-GAUCHE}
+  140:RightCommand;{TOURNEDROITE}
+  141:LeftCommand;{TOURNEGAUCHE}
+  142:NoImplementation:=True;{TOURNER}
+  143:RightCommand;{TOURNER-DROITE}
+  144:LeftCommand;{TOURNER-GAUCHE}
+  145:RightCommand;{TOURNERDROITE}
+  146:LeftCommand;{TOURNERGAUCHE}
+  147:RightCommand;{TR}
+  148:NoImplementation:=True;{TURN}
+  149:LeftCommand;{TURNLEFT}
+  150:RightCommand;{TURNRIGHT}
+  151:LeftCommand;{TURN-LEFT}
+  152:RightCommand;{TURN-RIGHT}
+  153:NoImplementation:=True;{UP}
+  154:NoImplementation:=True;{VA}
+  155:GoXCommand;{VAX}
+  156:GoYCommand;{VAY}
+  157:ForwardCommand;{WALK}
+  158:NoImplementation:=True;{WRITE}
+  159:NoImplementation:=True;{X}
+  160:NoImplementation:=True;{Y}
   Else UnknownCommand:=True;
  End;
  If(UnknownCommand)Then Begin
