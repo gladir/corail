@@ -14,7 +14,7 @@ Uses {$IFDEF FPC}
      {$ENDIF};
 
 Const
- CommandList:Array[0..160]of String[15]=(
+ CommandList:Array[0..161]of String[15]=(
   'AFFICHE','AFFICHER','ALLER','ALLERX','ALLERY','ANGLE',
   'ARG','ARGUMENT','ARRIERE','AV','AVANCE','AVANCER','BACK','BACK-COLOR',
   'BACKCOLOR','BACKGROUND','BACKWARD','BAISSER','BAISSER-CRAYON',
@@ -30,7 +30,7 @@ Const
   'READ','READPICT','RECOMMENCE','RECOMMENCER','RECULE','RECULER','REPEAT',
   'REPETE','REPETER','REQUEST','RESET','RIGHT','ROTATE','ROTATE-LEFT',
   'ROTATE-RIGHT','ROTATELEFT','RT','SETDISK','ROTATERIGHT','RUOP','SAVE',
-  'SAVEPICT','SETPOSITION','SETX','SETY','SHOW','SHOWTURTLE',
+  'SAVEPICT','SETPOS','SETPOSITION','SETX','SETY','SHOW','SHOWTURTLE',
   'SPLITSCREEN','STAMPCHAR','STOP','TD','TEXTCOLOR','TEXTBG','TEXTSCREEN',
   'TG','TL','TOURNE','TOURNE-DROITE','TOURNE-GAUCHE','TOURNEDROITE',
   'TOURNEGAUCHE','TOURNER','TOURNER-DROITE','TOURNER-GAUCHE','TOURNERDROITE',
@@ -1103,44 +1103,45 @@ Begin
   120:NoImplementation:=True;{RUOP}
   121:NoImplementation:=True;{SAVE}
   122:NoImplementation:=True;{SAVEPICT}
-  123:SetPositionCommand;{SETPOSITION}
-  124:NoImplementation:=True;{SETX}
-  125:NoImplementation:=True;{SETY}
-  126:NoImplementation:=True;{SHOW}
-  127:NoImplementation:=True;{SHOWTURTLE}
-  128:NoImplementation:=True;{SPLITSCREEN}
-  129:NoImplementation:=True;{STAMPCHAR}
-  130:NoImplementation:=True;{STOP}
-  131:NoImplementation:=True;{TD}
-  132:NoImplementation:=True;{TEXTCOLOR}
-  133:NoImplementation:=True;{TEXTBG}
-  134:NoImplementation:=True;{TEXTSCREEN}
-  135:LeftCommand;{TG}
-  136:LeftCommand;{TL}
-  137:NoImplementation:=True;{TOURNE}
-  138:RightCommand;{TOURNE-DROITE}
-  139:RightCommand;{TOURNE-GAUCHE}
-  140:RightCommand;{TOURNEDROITE}
-  141:LeftCommand;{TOURNEGAUCHE}
-  142:NoImplementation:=True;{TOURNER}
-  143:RightCommand;{TOURNER-DROITE}
-  144:LeftCommand;{TOURNER-GAUCHE}
-  145:RightCommand;{TOURNERDROITE}
-  146:LeftCommand;{TOURNERGAUCHE}
-  147:RightCommand;{TR}
-  148:NoImplementation:=True;{TURN}
-  149:LeftCommand;{TURNLEFT}
-  150:RightCommand;{TURNRIGHT}
-  151:LeftCommand;{TURN-LEFT}
-  152:RightCommand;{TURN-RIGHT}
-  153:NoImplementation:=True;{UP}
-  154:NoImplementation:=True;{VA}
-  155:GoXCommand;{VAX}
-  156:GoYCommand;{VAY}
-  157:ForwardCommand;{WALK}
-  158:NoImplementation:=True;{WRITE}
-  159:NoImplementation:=True;{X}
-  160:NoImplementation:=True;{Y}
+  123:SetPositionCommand;{SETPOS}
+  124:SetPositionCommand;{SETPOSITION}
+  125:NoImplementation:=True;{SETX}
+  126:NoImplementation:=True;{SETY}
+  127:NoImplementation:=True;{SHOW}
+  128:NoImplementation:=True;{SHOWTURTLE}
+  129:NoImplementation:=True;{SPLITSCREEN}
+  130:NoImplementation:=True;{STAMPCHAR}
+  131:NoImplementation:=True;{STOP}
+  132:NoImplementation:=True;{TD}
+  133:NoImplementation:=True;{TEXTCOLOR}
+  134:NoImplementation:=True;{TEXTBG}
+  135:NoImplementation:=True;{TEXTSCREEN}
+  136:LeftCommand;{TG}
+  137:LeftCommand;{TL}
+  138:NoImplementation:=True;{TOURNE}
+  139:RightCommand;{TOURNE-DROITE}
+  140:RightCommand;{TOURNE-GAUCHE}
+  141:RightCommand;{TOURNEDROITE}
+  142:LeftCommand;{TOURNEGAUCHE}
+  143:NoImplementation:=True;{TOURNER}
+  144:RightCommand;{TOURNER-DROITE}
+  145:LeftCommand;{TOURNER-GAUCHE}
+  146:RightCommand;{TOURNERDROITE}
+  147:LeftCommand;{TOURNERGAUCHE}
+  148:RightCommand;{TR}
+  149:NoImplementation:=True;{TURN}
+  150:LeftCommand;{TURNLEFT}
+  151:RightCommand;{TURNRIGHT}
+  152:LeftCommand;{TURN-LEFT}
+  153:RightCommand;{TURN-RIGHT}
+  154:NoImplementation:=True;{UP}
+  155:NoImplementation:=True;{VA}
+  156:GoXCommand;{VAX}
+  157:GoYCommand;{VAY}
+  158:ForwardCommand;{WALK}
+  159:NoImplementation:=True;{WRITE}
+  160:NoImplementation:=True;{X}
+  161:NoImplementation:=True;{Y}
   Else UnknownCommand:=True;
  End;
  If(UnknownCommand)Then Begin
