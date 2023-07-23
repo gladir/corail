@@ -876,6 +876,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		       <td><b>RUNZ80.PAS</b></td>
 		       <td>Cette commande permet d'exécuter du code machine du microprocesseur Z80.</td>
 		</tr>
+	        <tr>
+			<td><b>SAS.PAS</b></td>
+			<td>Cette commande permet de lancer le langage de programmation SAS.</td>
+		</tr>
 		<tr>
 			<td><b>SASS.PAS</b></td>
 			<td>Cette commande permet de lancer le compilateur SASS, lequel consertie des fichiers «.scss» en fichier «.css».</td>
