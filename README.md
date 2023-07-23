@@ -1009,6 +1009,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de sortir le contenu d'un fichier sans duplication du contenu de ses lignes.</td>
 		</tr>
 		<tr>
+			<td>VDIAG.PAS</td>b
+			<td>Cette commande permet de lancer le test de diagnostique vidéo. Cette commande est inspiré de la commande fournit avec les pilotes de la carte vidéo IT-VGA2 d'InformTech.</td>
+		</tr>
+		<tr>
 			<td><b>VER.PAS</b>
 			<td>Cette commande permet de demander la version du système d'exploitation.</td>
 		</tr>
