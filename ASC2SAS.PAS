@@ -56,8 +56,8 @@ BEGIN
  Begin
   While Not EOF(SourceASC)do Begin
    ReadLn(Input,CurrLine);
-   If CurrLine=''Then WriteLn(Output,'print "";')
-                 Else WriteLn(Output,'print "',StringToSASString(CurrLine),'";');
+   If CurrLine=''Then WriteLn(Output,'put "";')
+                 Else WriteLn(Output,'put "',StringToSASString(CurrLine),'";');
   End;
  End;
 END.
