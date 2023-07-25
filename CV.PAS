@@ -2560,8 +2560,8 @@ BEGIN
  End;
  Init;
  If CurrProgName<>''Then Begin
-  LCommand;
   StartPointer:=$100;
+  LCommand;
   ShowSource;
  End;
  Run;
