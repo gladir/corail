@@ -705,6 +705,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de vérifier si le courriel est un courriel valide.</td>
 		</tr>
 		<tr>
+			<td><b>L43.PAS</b></td>
+			<td>Cette commande permet de faire passer l'affichage texte en 43 lignes pour les cartes EGA et à 50 lignes pour les cartes VGA.</td>
+		</tr>
+		<tr>
 			<td><b>LABEL.PAS</b></td>
 			<td>Cette commande permet de changer le nom d'un volume.</td>
 		</tr>
