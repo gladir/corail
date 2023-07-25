@@ -9,7 +9,7 @@ Program L43;
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('L43 : Cette commande permet de faire passer l''affichage texte en ',
-          '43 lignes pour les ‚crans EGA et … 50 lignes pour les ‚crans VGA.');
+          '43 lignes pour les cartes EGA et … 50 lignes pour les cartes VGA.');
   WriteLn;
   WriteLn('Syntaxe : L43 [/?]');
  End
