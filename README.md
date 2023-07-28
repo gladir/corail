@@ -319,7 +319,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>CKSUM.PAS</b></td>
-			<td>Cette commande permet d'afficher la sommation de vérification CRC et le nombre d'octets de chaque fichiers. Cette commande est inpsiré de Linux.</td>
+			<td>Cette commande permet d'afficher la sommation de vérification CRC et le nombre d'octets de chaque fichiers. Cette commande est inspiré de Linux.</td>
 		</tr>
 		<tr>
 			<td><b>CLEAR.PAS</b></td>
