@@ -829,6 +829,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer un clone du PC Tools original de Central-Point.</td>
 		</tr>
 		<tr>
+			<td><b>PHOTORAM.PAS</b>
+			<td>Cette  commande permet de sauvegarder le contenu de la mémoire conventionnelle de 640 Ko et l'envoi dans un fichier.</td>
+		</tr>
+		<tr>
 			<td><b>PP.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande Prompt Pascal.</td>
 		</tr>
