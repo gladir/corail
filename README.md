@@ -906,7 +906,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>SCREEN.PAS</b></td>
-			<td>Cettte commande permet de sélectionner le mode d'affichage à utiliser avec l'adaptateur graphique GDA (Graphics Display Adapter). Cette commande est inspiré de la commande du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/screen.htm">SCREEN</a> du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/intro.htm">MS-DOS 3.21 Enhanced Amdek</a>.</td>
+			<td>Cette commande permet de sélectionner le mode d'affichage à utiliser avec l'adaptateur graphique GDA (Graphics Display Adapter). Cette commande est inspiré de la commande du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/screen.htm">SCREEN</a> du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/intro.htm">MS-DOS 3.21 Enhanced Amdek</a>.</td>
 		</tr>
 	        <tr>
 			<td><b>SD.PAS</b></td>
