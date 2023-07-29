@@ -24,6 +24,20 @@ Begin
  StrToUpper:=S;
 End;
 
+Procedure SetSpeedAMI(Fast:Boolean);Begin
+ If(Fast)Then Begin
+  Regs.AH:=$F0;
+  Regs.AL:=$02;
+  Intr($16,Regs);
+ End
+  Else
+ Begin
+  Regs.AH:=$F0;
+  Regs.AL:=$01;
+  Intr($16,Regs);
+ End;
+End;
+
 BEGIN
  Language:=_French;
  TmpLanguage:=GetEnv('LANGUAGE');
@@ -39,19 +53,21 @@ BEGIN
    _English:Begin
     WriteLn('SPEED : This command changes the operating speed of the microprocessor.');
     WriteLn;
-    WriteLn('SPEED [/?] [{S | H}] [{E | D}]');
+    WriteLn('SPEED [/?] [{S | H}] [{E | D}] [{+ | -}]');
     WriteLn;
     WriteLn('/?         = Help for this command');
     WriteLn('S          = Standard speed');
     WriteLn('H          = High speed');
     WriteLn('D          = Disable front-panel');
     WriteLn('E          = Enable front-panel');
+    WriteLn('+          = High speed for AMI BIOS');
+    WriteLn('-          = Normal speed for AMI BIOS');
    End;
    Else Begin
     WriteLn('SPEED: Cette commande permet de changer la vitesse de ',
                     'fonctionnement du microprocesseur.');
     WriteLn;
-    WriteLn('SPEED [/?] [{S | H}] [{E | D}]');
+    WriteLn('SPEED [/?] [{S | H}] [{E | D}] [{+ | -}]');
     WriteLn;
     WriteLn(' /?   Ce paramŠtre permet de founir de l''aide sur cette commande.');
     WriteLn('D     Ce paramŠtre permet de d‚sactiver le bouton … double vitesse ',
@@ -62,6 +78,8 @@ BEGIN
                    'du microprocesseur.');
     WriteLn('S     Ce paramŠtre permet de s‚lectionner la vitesse standard ',
                   'du microprocesseur.');
+    WriteLn('+     Ce paramŠtre permet de passer en mode rapide (Turbo) avec les BIOS AMI');
+    WriteLn('-     Ce paramŠtre permet de passer en mode normal avec les BIOS AMI');
    End;
   End;
  End
@@ -69,27 +87,39 @@ BEGIN
  If ParamCount>0 Then Begin
   For I:=1 to ParamCount do Begin
    If StrToUpper(ParamStr(I))='D'Then Begin
+     { Amdek System/88}
     Regs.AL:=0;
     Regs.AH:=4;
     Intr($15,Regs);
    End
     Else
    If StrToUpper(ParamStr(I))='E'Then Begin
+     { Amdek System/88}
     Regs.AL:=1;
     Regs.AH:=4;
     Intr($15,Regs);
    End
     Else
    If StrToUpper(ParamStr(I))='H'Then Begin
+     { Amdek System/88}
     Regs.AL:=8;
     Regs.AH:=4;
     Intr($15,Regs);
    End
     Else
-   If StrToUpper(ParamStr(I))='E'Then Begin
+   If StrToUpper(ParamStr(I))='S'Then Begin
+     { Amdek System/88}
     Regs.AL:=6;
     Regs.AH:=4;
     Intr($15,Regs);
+   End
+    Else
+   If ParamStr(I)='+'Then Begin
+    SetSpeedAMI(True);
+   End
+    Else
+   If ParamStr(I)='-'Then Begin
+    SetSpeedAMI(False);
    End
     Else
    Begin

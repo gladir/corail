@@ -57,7 +57,7 @@ BEGIN
     WriteLn('RAW2WAV [/?] filename');
     WriteLn;
     WriteLn('/?         = Help for this command');
-    WriteLn('RAW2WAV    = Filename to check');
+    WriteLn('filename   = Filename to check');
    End;
    Else Begin
     WriteLn('RAW2WAV: Cette commande permet de convertir un fichier de son ',
