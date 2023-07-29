@@ -857,6 +857,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher le répertoire d'exécution. Cette commande est inspiré du <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
 		</tr>
 		<tr>
+			<td><b>RAW2WAV.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier de son RAW en format WAV (mono en 11025 Hz).</td>
+		</tr>
+		<tr>
 			<td><b>REBOOT.PAS</b></td>
 			<td>Cette commande permet de redémarrer l'ordinateur.</td>
 		</tr>
