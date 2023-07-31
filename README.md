@@ -318,6 +318,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de sauvegarder ou restaurer les données du CMOS du système. Cette commande est un clone de la commande <a href="https://www.gladir.com/SOFTWARE/CHECKIT/ckcmos.htm">CKCMOS</a> de la série d'utilitaires <a href="https://www.gladir.com/SOFTWARE/CHECKIT/presentation.htm">CheckIt</a>.</td>
 		</tr>
 		<tr>
+			<td><b>CKLAN.PAS</b></td>
+			<td>Cette commande permet de vérifier la présence d'un réseau LAN.</td>
+		</tr>
+		<tr>
 			<td><b>CKSUM.PAS</b></td>
 			<td>Cette commande permet d'afficher la sommation de vérification CRC et le nombre d'octets de chaque fichiers. Cette commande est inspiré de Linux.</td>
 		</tr>
