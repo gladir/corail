@@ -709,6 +709,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher l'adresse IP de la machine local.</td>
 		</tr>
 		<tr>
+			<td><b>ISBN.PAS</b></td>
+			<td>Cette commande permet de vérifier si un code ISBN est valide.</td>
+		</tr>
+		<tr>
 			<td><b>ISEMAIL.PAS</b></td>
 			<td>Cette commande permet de vérifier si le courriel est un courriel valide.</td>
 		</tr>
