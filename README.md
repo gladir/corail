@@ -626,6 +626,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de demander les ressources de disponible (style Linux) ou les statistiques d'un unite de disque (style 4DOS).</td>
 		</tr>
 		<tr>
+			<td><b>FROMELF.PAS</b></td>
+			<td>Cette commande permet d'analyser un ELF.</td>
+		</tr>
+		<tr>
 			<td><b>FROMEXE.PAS</b></td>
 			<td>Cette commande permet d''analyser un EXE.</td>
 		</tr>
