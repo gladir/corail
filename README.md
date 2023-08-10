@@ -619,11 +619,15 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>FORMAT.PAS</b></td>
-			<td>Cette commande permet de formater un unite de disquette.</td>
+			<td>Cette commande permet de formater un unité de disquette.</td>
 		</tr>
 		<tr>
 			<td><b>FREE.PAS</b></td>
 			<td>Cette commande permet de demander les ressources de disponible (style Linux) ou les statistiques d'un unite de disque (style 4DOS).</td>
+		</tr>
+		<tr>
+			<td><b>FROMEXE.PAS</b></td>
+			<td>Cette commande permet d''analyser un EXE.</td>
 		</tr>
 	        <tr>
 			<td><b>FS.PAS</b></td>
