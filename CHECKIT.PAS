@@ -51,6 +51,28 @@ Var
  I:Integer;
  YMenu,XMenu:Integer;
 
+{$IFNDEF FPC}
+ Procedure CursorOff;
+ Var
+  Regs:Registers;
+ Begin
+  Regs.AH:=1;
+  Regs.CH:=32;
+  Regs.CL:=0;
+  Intr($10,Regs);
+ End;
+
+ Procedure CursorOn;
+ Var
+  Regs:Registers;
+ Begin
+  Regs.AX:=$0100;
+  Regs.CX:=(7 shl 8)+9;
+  Intr($10,Regs);
+ End;
+{$ENDIF}
+
+
 Function GetConvMemory:Word;
 Var
  Regs:Registers;
@@ -298,6 +320,7 @@ End;
 
 Procedure Init;Begin
  ClrScr;
+ CursorOff;
  Box(1,1,80,25,$16);
  FrameEmpty(1,1,80,24,$16);
  GotoXY(20,1);
@@ -474,9 +497,15 @@ Procedure Done;Begin
  TextColor(7);
  TextBackground(0);
  ClrScr;
+ CursorOn;
 End;
 
 BEGIN
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   WriteLn('CHECKIT : Cette commande permet de lancer le menu CheckIt Control Panel.');
   WriteLn;
