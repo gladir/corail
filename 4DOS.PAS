@@ -2377,8 +2377,8 @@ Begin
     WriteLn('Format:   SCRPUT row column [BRIGHT] [BLINK] fg ON bg message');
    End;
    Else Begin
-    WriteLn('SCRPUT   Cette commande permet de fixer ou demander le contenu des ',
-            'variables d''environnement du systeme d''exploitation');
+    WriteLn('SCRPUT   Cette commande permet de positionner le texte sur ',
+                      'l''‚cran et d''afficher en couleur.');
     WriteLn;
     WriteLn('Syntaxe:');
     WriteLn;
