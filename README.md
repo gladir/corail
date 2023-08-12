@@ -853,6 +853,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette  commande permet de sauvegarder le contenu de la mémoire conventionnelle de 640 Ko et l'envoi dans un fichier.</td>
 		</tr>
 		<tr>
+			<td><b>POWER.PAS</b></td>
+			<td>Cette commande permet de fixer ou de demander les paramètres d'économiseur d'énergie du système d'exploitation.</td>
+		</tr>
+		<tr>
 			<td><b>PP.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande Prompt Pascal.</td>
 		</tr>
