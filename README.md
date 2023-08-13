@@ -510,6 +510,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effectuer la conversion des caractères de saut de ligne du système d'exploitation DOS en leur équivalent UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>DOSDIR.PAS</b></td>
+			<td>Cette commande permet d''afficher la liste des fichiers d''une image disque de FAT. Cette commande est originaire de la commande dosdir de UNIX.</td>
+		</tr>
+		<tr>
 			<td><b>DOSERR.PAS</b></td>
 			<td>Cette commande permet d'afficher un code d'erreur DOS.</td>
 		</tr>
