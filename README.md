@@ -383,7 +383,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>CSVQUOTE.PAS</b></td>
-			<td>Cette commande permet d''enlever les sauts de lignes dans les champs entre guillemets.</td>
+			<td>Cette commande permet d''enlever les sauts de lignes dans les champs entre guillemets d'un CSV.</td>
 		</tr>
 	        <tr>
 			<td><b>CUT.PAS</b></td>
