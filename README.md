@@ -482,6 +482,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher l'espace libre sur le système de fichiers. C'est commande est inspiré de Linux et de cygwin.</td>
 		</tr>
 		<tr>
+			<td><b>DI.PAS</b></td>
+			<td>Cette commande permet d'afficher le contenu d'un répertoire plus rapidement.</td>
+		</tr>
+		<tr>
 			<td><b>DIR.PAS</b></td>
 			<td>Cette commande permet d'afficher les fichiers contenu dans un répertoire. Cette commande est un équivalent du DOS.</td>
 		</tr>
