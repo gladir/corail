@@ -696,6 +696,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>HEAD.PAS</b>
 			<td>Cette commande permet d'afficher le début d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
+		<tr>
+			<td><b>HEX2DEC.PAS</b></td>
+			<td>Cette commande permet de convertir un nombre hexadécimal en décimal en vice versa.</td>
+		</tr>
 	        <tr>
 			<td><b>HEXDUMP.PAS</b></td>
 			<td>Cette commande permet d'afficher le contenu d'un fichier en format hexadecimal. Cette commande est inspiré de la commande de Linux.</td>
