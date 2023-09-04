@@ -357,6 +357,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>CP.PAS</b></td>
 			<td>Cette commande permet de copier un fichier. Cette commande est inspiré de la commande UNIX.</td>
 		</tr>
+		<tr>
+			<td><b>CP2GAT.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier texte Central-Point ou Norton en format GAT du MonsterBook.</td>
+		</tr>
 	         <tr>
 			<td><b>CPM86.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande du système d'exploitation CP/M-86.</td>
