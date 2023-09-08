@@ -338,6 +338,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de contrôler le son du clic clavier lors de frappe de touche. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/click.htm">CLICK</a> du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/intro.htm">MS-DOS 3.21 Enhanced Amdek</a>.</td>
 		</tr>
 		<tr>
+			<td><b>CLOCK.PAS</b></td>
+			<td>Cette commande permet de manipuler l'heure du CMOS. Inspiré de la commande CLOCK du <i>pmac-utils</i> ou <i>powerpc-utils</i>.</td>
+		</tr>
+		<tr>
 			<td><b>CMD.PAS</b></td>
 			<td>Logiciel clone d'un <i>CMD.EXE</i> du système d'exploitation <a href="https://www.gladir.com/OS/WINDOWS/intro.htm"><i>Windows</i></a>.</td>
 		</tr>
