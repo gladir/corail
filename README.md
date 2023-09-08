@@ -892,6 +892,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>PP.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande Prompt Pascal.</td>
 		</tr>
+		<tr>
+			<td><b>PRINT.PAS</b></td>
+			<td>Cette commande permet d'effectuer la gestion des traitements d'impressions du système d'exploitation.</td>
+		</tr>
 	        <tr>
 			<td><b>PROTECT.PAS</b></td>
 			<td>Cette commande permet de fixer la protection de mode d'accès d'un fichier. Cette commande est inspiré du AmigaDOS.</td>
