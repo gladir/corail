@@ -4,7 +4,7 @@
   @abstract(Target: Turbo Pascal 7)
 }
 
-Program CKCMOS;
+Program CLOCK;
 
 Uses DOS;
 
