@@ -1008,6 +1008,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>SUBMIT.PAS</b></td>
 			<td>Cette commande permet d'exécuter un fichier .SUB du système d'exploitation CP/M-86.</td>
 		</tr>
+		<tr>
+			<td><b>SUBST.PAS</b></td>
+			<td>Cette commande permet de créer un disque virtuel à partir d'un répertoire.</td>
+		</tr>
 	        <tr>
 			<td><b>SYMDEB.PAS</b></td>
 			<td>Cette commande permet de lancer le débogueur DOS. Cette commande est inspiré du SYMDEB du MASM.</td>
