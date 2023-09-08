@@ -200,7 +200,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>ASMZ80.PAS</b></td>
 			<td>Cette commande permet de lancer le compilateur de langage de programmation assembleur pour les microprocesseur Z80.</td>
-		</tr>				
+		</tr>
+		<tr>
+			<td><b>ASSIGN.PAS</b></td>
+			<td>Cette commande permet de créer un disque virtuel à partir d'un autre disque.</td>
+		</tr>
 		<tr>
 			<td><b>ATTRIB.PAS</b></td>
 			<td>Cette commande permet de demander ou de changer les attributs d'un fichier.</td>
