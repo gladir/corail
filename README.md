@@ -686,6 +686,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de capturer les messages GREP et de les retourner a Turbo Pascal.</td>
 		</tr>
 		<tr>
+			<td><b>GUID.PAS</b></td>
+			<td>Cette commande permet de générer un nombre GUID.</td>
+		</tr>	
+		<tr>
 			<td><b>GWBASIC.PAS</b></td>
 			<td>Cette commande permet de lancer un interpréteur BASIC étant un clone du GWBASIC.</td>
 		</tr>
