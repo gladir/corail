@@ -293,6 +293,11 @@ Begin
    '3':If Partition.PartTable[2].PartType<>0Then CurrActive:=3;
    '4':If Partition.PartTable[3].PartType<>0Then CurrActive:=4;
    #13:Begin
+    Partition.PartTable[0].Status:=0;
+    Partition.PartTable[1].Status:=0;
+    Partition.PartTable[2].Status:=0;
+    Partition.PartTable[3].Status:=0;
+    Partition.PartTable[CurrActive-1].Status:=$80;
     WritePartitionRecord;
     Exit;
    End;
@@ -487,7 +492,7 @@ BEGIN
   Else
  Begin
   If SizeOf(PartSec)<>512 Then Begin
-   WriteLn('Mauvaise directe de compilation. Les enregistrements ne doivent pas ˆtre align‚s');
+   WriteLn('Mauvaise directive de compilation. Les enregistrements ne doivent pas ˆtre align‚s');
    Halt;
   End;
   FileName:='';
