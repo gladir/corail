@@ -521,6 +521,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 		    	<td><b>DISKINFO.PAS</b></td>
 		    	<td>Cette commande permet d''afficher les informations sur une disquette ou un fichier d'image disque.</td>
 		</tr>
+		<tr>
+			<td><b>DISKPART.PAS</b></td>
+			<td>Cette commande permet d'effectuer la gestion des disque durs.</td>
+		</tr>
 	        <tr>
 			<td><b>DISPLAY.PAS</b></td>
 			<td>Cette commande permet d'afficher un message encodée en hexadécimal. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/OS9/display.htm">DISPLAY</a> de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
