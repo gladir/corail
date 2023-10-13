@@ -43,7 +43,7 @@ BEGIN
   WriteLn;
   WriteLn('Syntaxe : CP2GAT nomdufichier.txt');
   WriteLn;
-  WriteLn(' nomdufichier.txt  Nom du fichier recevant le contenu.');
+  WriteLn(' nomdufichier.txt  Nom du fichier … convertir.');
   WriteLn;
  End
   Else
