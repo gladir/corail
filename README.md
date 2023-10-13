@@ -824,6 +824,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>MORE.PAS</b></td>
 			<td>Cette commande permet de recevoir l'entrée puis l'affichage sur un périphérique un écran à la fois.</td>
 		</tr>
+		<tr>
+			<td><b>MORSE.PAS</b></td>
+			<td>Cette commande permet d'écrire en code Morse la chaîne de caractères spécifié.</td>
+		</tr>
 	        <tr>
 			<td><b>MOVE.PAS</b></td>
 			<td>Cette commande permet de déplacer un fichier.</td>
