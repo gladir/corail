@@ -241,6 +241,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>BERR.PAS</b></td>
 			<td>Cette commande permet d'afficher un code d'erreur <a href="https://www.gladir.com/CODER/BTRIEVE/intro.htm">Btrieve</a>.</td>
 		</tr>
+		<tr>
+			<td><b>BIN2BAS.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier binaire en DATA du BASIC.</td>
+		</tr>
 	        <tr>
 			<td><b>BIN2BGI.PAS</b></td>
 			<td>Cette programme permet l'écriture d'entête de la portion du pilote BGI.</td>
