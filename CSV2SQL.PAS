@@ -110,7 +110,7 @@ BEGIN
         Else
        CurrWord:=CurrWord+CurrLine[I];
       End;
-      Write(StringToSQLString(CurrWord),'''');
+      Write('''',StringToSQLString(CurrWord),'''');
       WriteLn(');');
      End;
     End;
@@ -166,7 +166,7 @@ BEGIN
         Else
        CurrWord:=CurrWord+CurrLine[I];
       End;
-      Write(TargetSQL,StringToSQLString(CurrWord),'''');
+      Write(TargetSQL,'''',StringToSQLString(CurrWord),'''');
       WriteLn(TargetSQL,');');
      End;
     End;
@@ -192,7 +192,7 @@ BEGIN
       Else
      CurrWord:=CurrWord+CurrLine[I];
     End;
-    Write(StringToSQLString(CurrWord),'''');
+    Write('''',StringToSQLString(CurrWord),'''');
     WriteLn(');');
    End;
   End;
