@@ -394,7 +394,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier CSV en code source Pascal.</td>
 		</tr>
 		<tr>
-			<td><b>CSV2PSP.PAS</b></tr>
+			<td><b>CSV2PSP.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier CSV en code source PSP (Pascal Server Pages).</td>
 		</tr>
 		<tr>
