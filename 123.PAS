@@ -74,7 +74,7 @@ Type
   Format:Byte;               { Format }
   Column:Integer;            { Colonne }
   Row:Integer;               { Ligne }
-  Text:Array[0..239]of Char; { Texte }
+  Text:Array[1..239]of Char; { Texte }
  End;
 
   {Entier d'un fichier Lotus 1-2-3 }
@@ -1041,6 +1041,7 @@ Procedure SaveSpreatSheet;
 Var
  F:File;
  H:HashItemPtr;
+ I:Integer;
  LHeader:HeaderLotus123;
  LEnd:EndLotus123;
  LLabel:LabelLotus123;
@@ -1068,11 +1069,11 @@ Begin
      LLabel.Length:=Length(Cellule.Curr.Data.t.Text)+7{6};
      LLabel.Format:=$FF;
      Case(Cellule.Curr.Header.Justify)of
-      cCenter:LLabel.Text[0]:='^';
-      cRight:LLabel.Text[0]:='"';
-      Else LLabel.Text[0]:='''';
+      cCenter:LLabel.Text[{0}1]:='^';
+      cRight:LLabel.Text[{0}1]:='"';
+      Else LLabel.Text[{0}1]:='''';
      End;
-     StrPascalCopy(LLabel.Text[1],239,Cellule.Curr.Data.t.Text);
+     For I:=1 to Length(Cellule.Curr.Data.t.Text) do LLabel.Text[i+1]:=Cellule.Curr.Data.t.Text[I];
     End;
     cfValue:Begin
      LDouble.TypeCode:=$E;
@@ -1128,7 +1129,7 @@ Begin
  Write(Col2Str(PX),PY+1,': ');
  CurrCellule:=CESearch(Cellule,PX,PY);
  If CurrCellule<>NIL Then Begin
-  If CurrCellule^.Header.Format=cfText Then Write('''',CurrCellule^.Data.t.Text);
+  If CurrCellule^.Header.Format=cfText Then Write('''',Copy(CurrCellule^.Data.t.Text,2,255));
  End;
  ClrEol;
 End;
