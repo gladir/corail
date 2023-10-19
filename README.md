@@ -406,6 +406,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier CSV en code source C++.</td>
 		</tr>
 		<tr>
+			<td><b>CSV2CS.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier CSV en code source C# (C Sharp).</td>
+		</tr>
+		<tr>
 			<td><b>CSV2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier CSV en code source Pascal.</td>
 		</tr>
