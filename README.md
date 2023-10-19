@@ -411,7 +411,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>CSV2CSP.PAS</b></td>
-			<td>Cette commande permet de convertir un fichier CSV en code source CSP (C Serer Pages).</td>
+			<td>Cette commande permet de convertir un fichier CSV en code source CSP (C Server Pages).</td>
 		</tr>
 		<tr>
 			<td><b>CSV2PAS.PAS</b></td>
