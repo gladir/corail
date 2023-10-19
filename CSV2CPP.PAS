@@ -15,7 +15,7 @@ Var
  First:Boolean;
  Fields:Array[0..100]of String[75];
  PosField,NumField:Integer;
- NumRecord:LongInt;
+ CurrRecord,NumRecord:LongInt;
 
 Function Path2Name(S:String):String;
 Var
@@ -65,6 +65,7 @@ BEGIN
   Else
  Begin
   NumRecord:=0;
+  CurrRecord:=0;
   NumField:=0;
   FillChar(Fields,SizeOf(Fields),0);
   If ParamCount>0Then Begin
@@ -100,13 +101,13 @@ BEGIN
       For I:=1 to Length(CurrLine)do Begin
        If CurrLine[I]=','Then Begin
         If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
-         WriteLn('  char ',Copy(CurrWord,2,Length(CurrWord)-2),'[];');
+         WriteLn('  char ',Copy(CurrWord,2,Length(CurrWord)-2),'[255];');
          Fields[NumField]:=Copy(CurrWord,2,Length(CurrWord)-2);
          Inc(NumField);
         End
          Else
         Begin
-         WriteLn('  char ',CurrWord,'[];');
+         WriteLn('  char ',CurrWord,'[255];');
          Fields[NumField]:=CurrWord;
          Inc(NumField);
         End;
@@ -115,7 +116,7 @@ BEGIN
         Else
        CurrWord:=CurrWord+CurrLine[I];
       End;
-      WriteLn('  char ',CurrWord,'[];');
+      WriteLn('  char ',CurrWord,'[255];');
       CurrField:=CurrWord;
       Fields[NumField]:=CurrWord;
       Inc(NumField);
@@ -131,25 +132,28 @@ BEGIN
      Begin
       PosField:=0;
       CurrWord:='';
-      Write('  (');
+      Write('  {');
       For I:=1 to Length(CurrLine)do Begin
        If CurrLine[I]=','Then Begin
         If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
-         Write(Fields[PosField],':','"',StringToCString(Copy(CurrWord,2,Length(CurrWord)-2)),'";');
+         Write('.',Fields[PosField],'=','"',StringToCString(Copy(CurrWord,2,Length(CurrWord)-2)),'",');
         End
          Else
-        Write(Fields[PosField],':','"',StringToCString(CurrWord),'";');
+        Write('.',Fields[PosField],'=','"',StringToCString(CurrWord),'",');
         CurrWord:='';
         Inc(PosField);
        End
         Else
        CurrWord:=CurrWord+CurrLine[I];
       End;
-      Write(Fields[PosField],':','"',StringToCString(CurrWord),'"');
-      WriteLn(');');
+      Write('.',Fields[PosField],'=','"',StringToCString(CurrWord),'"');
+      Write('}');
+      Inc(CurrRecord);
+      If CurrRecord<NumRecord Then WriteLn(',')
+                              Else WriteLn;
      End;
     End;
-    WriteLn(' );');
+    WriteLn(' };');
     Close(SourceCSV);
    End
     Else
@@ -159,7 +163,7 @@ BEGIN
     Assign(TargetC,TFileName);
     {$I-}Rewrite(TargetC); {$I+}
     If IoResult<>0Then Begin
-     WriteLn('Impossible de cr‚er le fichier C ',TFileName,' !');
+     WriteLn('Impossible de cr‚er le fichier C++ ',TFileName,' !');
      Close(SourceCSV);
      Halt;
     End;
@@ -173,13 +177,13 @@ BEGIN
       For I:=1 to Length(CurrLine)do Begin
        If CurrLine[I]=','Then Begin
         If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
-         WriteLn(TargetC,'  char ',Copy(CurrWord,2,Length(CurrWord)-2),'[];');
+         WriteLn(TargetC,'  char ',Copy(CurrWord,2,Length(CurrWord)-2),'[255];');
          Fields[NumField]:=Copy(CurrWord,2,Length(CurrWord)-2);
          Inc(NumField);
         End
          Else
         Begin
-         WriteLn(TargetC,'  char ',CurrWord,'[];');
+         WriteLn(TargetC,'  char ',CurrWord,'[255];');
          Fields[NumField]:=CurrWord;
          Inc(NumField);
         End;
@@ -188,7 +192,7 @@ BEGIN
         Else
        CurrWord:=CurrWord+CurrLine[I];
       End;
-      Write(TargetC,'  char ',CurrWord,'[]');
+      WriteLn(TargetC,'  char ',CurrWord,'[255];');
       CurrField:=CurrWord;
       Fields[NumField]:=CurrWord;
       Inc(NumField);
@@ -204,25 +208,28 @@ BEGIN
      Begin
       CurrWord:='';
       PosField:=0;
-      Write(TargetC,'  (');
+      Write(TargetC,'  {');
       For I:=1 to Length(CurrLine)do Begin
        If CurrLine[I]=','Then Begin
         If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
-         Write(TargetC,Fields[PosField],':','"',StringToCString(Copy(CurrWord,2,Length(CurrWord)-2)),'";');
+         Write(TargetC,'.',Fields[PosField],'=','"',StringToCString(Copy(CurrWord,2,Length(CurrWord)-2)),'",');
         End
          Else
-        Write(TargetC,Fields[PosField],':','"',StringToCString(CurrWord),'";');
+        Write(TargetC,'.',Fields[PosField],'=','"',StringToCString(CurrWord),'",');
         CurrWord:='';
         Inc(PosField);
        End
         Else
        CurrWord:=CurrWord+CurrLine[I];
       End;
-      Write(TargetC,Fields[PosField],':','"',StringToCString(CurrWord),'"');
-      WriteLn(TargetC,');');
+      Write(TargetC,'.',Fields[PosField],'=','"',StringToCString(CurrWord),'"');
+      Write(TargetC,'}');
+      Inc(CurrRecord);
+      If CurrRecord<NumRecord Then WriteLn(TargetC,',')
+                              Else WriteLn(TargetC);
      End;
     End;
-    WriteLn(TargetC,' );');
+    WriteLn(TargetC,' };');
     Close(TargetC);
     Close(SourceCSV);
    End;
@@ -232,22 +239,22 @@ BEGIN
    WriteLn('const struct ',TableName,'Rec ',TableName,'[]={');
    While Not EOF do Begin
     ReadLn(Input,CurrLine);
-    Write('(');
+    Write('{');
     CurrWord:='';
     For I:=1 to Length(CurrLine)do Begin
      If CurrLine[I]=','Then Begin
       If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
-       Write('"',StringToCString(Copy(CurrWord,2,Length(CurrWord)-2)),'";');
+       Write('"',StringToCString(Copy(CurrWord,2,Length(CurrWord)-2)),'",');
       End
        Else
-      Write('"',StringToCString(CurrWord),'";');
+      Write('"',StringToCString(CurrWord),'",');
       CurrWord:='';
      End
       Else
      CurrWord:=CurrWord+CurrLine[I];
     End;
     Write('"',StringToCString(CurrWord),'"');
-    WriteLn(');');
+    WriteLn('};');
    End;
   End;
  End;
