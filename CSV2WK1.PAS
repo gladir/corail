@@ -122,7 +122,7 @@ BEGIN
    (ParamStr(1)='/h')or(ParamStr(1)='/H')Then Begin
   WriteLn('CSV2WK1 : Cette commande permet de convertir un fichier CSV en WK1 de Lotus.');
   WriteLn;
-  WriteLn('Syntaxe : CSV2SQL source.CSV target.WK1');
+  WriteLn('Syntaxe : CSV2WK1 source.CSV target.WK1');
   WriteLn;
   WriteLn(' fichier.CSV  Nom du fichier a convertir');
   WriteLn(' fichier.WK1  Nom du fichier du resultat');
