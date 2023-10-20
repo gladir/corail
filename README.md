@@ -1189,6 +1189,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de compter le nombre de mots, de lignes ou de caractères.</td>
 		</tr>
 		<tr>
+			<td><b>WEBGRAPH.PAS</b></td>
+			<td>Cette commande permet d'afficher un graphique en toile d'araignée à partir de données.</td>
+		</tr>
+		<tr>
 			<td><b>WHICH.PAS</b></td>
 			<td>Cette commande permet de localiser l'emplacement d'une commande.</td>
 		</tr>
