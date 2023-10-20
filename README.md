@@ -32,6 +32,10 @@ Aperçu de la commande NC (North Commander) :
 
 ![image](https://user-images.githubusercontent.com/11842176/194549923-b189e680-fa35-49bf-98f4-43318582d644.png)
 
+Aperçu de données générer avec la commande WEBGRAPH :
+
+![image](https://github.com/gladir/corail/assets/11842176/e92cf68f-cee3-420f-be6e-0f8d0699ab81)
+
 Aperçu de la commande VIEWHEX :
 
 ![image](https://user-images.githubusercontent.com/11842176/164950448-9166138f-38e0-4c68-a5c3-a4465650db37.png)
