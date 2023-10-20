@@ -56,7 +56,7 @@ BEGIN
   WriteLn('CSV2CSP : Cette commande permet de convertir un fichier CSV ',
                      'en code source CSP (C Server Pages).');
   WriteLn;
-  WriteLn('Syntaxe : CSV2C source.CSV target.CSP');
+  WriteLn('Syntaxe : CSV2CSP source.CSV target.CSP');
   WriteLn;
   WriteLn(' fichier.CSV  Nom du fichier a convertir');
   WriteLn(' fichier.CSP  Nom du fichier du resultat');
