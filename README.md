@@ -430,16 +430,16 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier .CSV en format SQL.</td>
 		</tr>
 		<tr>
-			<td><b>CSVQUOTE.PAS</b></td>
-			<td>Cette commande permet d''enlever les sauts de lignes dans les champs entre guillemets d'un CSV.</td>
-		</tr>
-		<tr>
 			<td><b>CSV2WK1.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier .CSV en format WK1 de Lotus 1-2-3.</td>
 		</tr>
 		<tr>
-			<td><b>CSV2XMS.PAS</b></td>
-			<td>Cette commande permet de convertir un fichier .CSV en format XMS.</td>
+			<td><b>CSV2XML.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier .CSV en format XML.</td>
+		</tr>	
+		<tr>
+			<td><b>CSVQUOTE.PAS</b></td>
+			<td>Cette commande permet d''enlever les sauts de lignes dans les champs entre guillemets d'un CSV.</td>
 		</tr>	
 	        <tr>
 			<td><b>CUT.PAS</b></td>
