@@ -1248,7 +1248,7 @@ SET LANGUAGE=EN
 
 <h3>Manifeste</h3>
 
-Le projet vise le marché de l'informatique amateur et non l'informatique commerciale. La raison pour lequel il vise l'informatique amateur, c'est que le projet vise à ce que les commandes soit compilable il y a plus de 30 ans et qu'il soit toujours compilable dans l'avenir. Pour la même raison, aucun dépendances n'existe dans les chacunes des commandes pour ne pas être dépendances de projets tiers n'étant pas entretenue pour avec les mêmes intervalles ou périodes de temps qu'un projet. Il ne peut donc pas devenir inutilsable à cause que les autres projets sont abandonnés. Le projet peut sacrifié l'utilisation d'une algorithme plus efficace afin que le code soit plus portable.
+Le projet vise le marché de l'informatique amateur et non l'informatique commerciale. La raison pour lequel il vise l'informatique amateur, c'est que le projet vise à ce que les commandes soit compilable il y a plus de 30 ans et qu'il soit toujours compilable dans l'avenir. Pour la même raison, aucun dépendances n'existe dans chacunes des commandes pour ne pas être dépendants de projets tiers n'étant pas entretenue pour avec les mêmes intervalles ou périodes de temps qu'un projet. Il ne peut donc pas devenir inutilsable à cause que les autres projets sont abandonnés. Le projet peut sacrifié l'utilisation d'une algorithme plus efficace afin que le code soit plus portable.
 
 <h2>Compilation</h2>
 	
