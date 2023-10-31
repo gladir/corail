@@ -1061,6 +1061,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de changer la vitesse de fonctionnement du microprocesseur. Cette commande est inspiré de la commande du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/speed.htm">SPEED</a> du <a href="https://www.gladir.com/OS/MSDOS321ENHANCEDAMDEK/intro.htm">MS-DOS 3.21 Enhanced Amdek</a>.</td>
 		</tr>
 		<tr>
+			<td><b>SQL2DBF.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier SQL en DBF.</td>
+		</tr>
+		<tr>
 			<td><b>STAT.PAS</b></td>
 			<td>Cette commande permet d'afficher des informations sur des fichiers. Cettte commande est un équivalent de UNIX et LINUX.</td>
 		</tr>
