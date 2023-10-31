@@ -36,7 +36,7 @@ Var
  CommandFound:Boolean;
  FieldCount:Integer;
  TargetName,CurrLine,CurrCommand,ParamList,TableName:String;
- J:Integer;
+ J,ByteWrited:Integer;
  HDBase:DBaseIIIFileHeaderRec; { Structure de l'entete d'un fichier DBase }
  FieldDBase:DBaseIIIFieldRec;  { Structure d'un champ de DBase }
  FieldDBaseList:Array[0..127]of DBaseIIIFieldRec;
@@ -66,6 +66,14 @@ End;
 
 Function Trim(s:String):String;Begin
  Trim:=TrimL(TrimR(s));
+End;
+
+Function PadRight(S:String;Space:Byte):String;
+Var
+ I:Byte;
+Begin
+ If Length(S)<Space Then For I:=Length(S)+1 to Space do S:=S+' ';
+ PadRight:=S;
 End;
 
 Function StrToUpper(S:String):String;
@@ -238,12 +246,18 @@ Begin
     End;
    End;
   Until(I>=Length(ParamList))or(Finished);
-  If EOF(SourceSQL)Then Finished:=True;
-  ReadLn(SourceSQL,ParamList);
-  I:=1;
+  If Not(Finished)Then Begin
+   If EOF(SourceSQL)Then Finished:=True
+    Else
+   Begin
+    ReadLn(SourceSQL,ParamList);
+    I:=1;
+  End;
+ End;
  Until Finished;
  FieldDBaseList[FieldCount].FieldName[1]:=#13;
  HDBase.HeadType:=$3;
+ HDBase.HeaderLength:=SizeOf(HDBase)+SizeOf(DBaseIIIFieldRec)*Succ(FieldCount)-1;
  Seek(TargetDBF,0);
  BlockWrite(TargetDBF,HDBase,SizeOf(HDBase),ByteWrited);
  BlockWrite(TargetDBF,FieldDBaseList,
@@ -254,8 +268,113 @@ Procedure DeleteCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure InsertCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure InsertCommand;
+Var
+ Finished:Boolean;
+ CurrWord,CurrWord2:String;
+ I:Byte;
+ Step:(_None,_Open,_Sep,_Close);
+ CurrField,ByteWrited:Integer;
+Begin
+ Finished:=False;
+ CurrField:=0;
+ If ParamList=''Then ReadLn(SourceSQL,ParamList);
+ CurrWord:='';
+ I:=1;
+ While(I<=Length(ParamList))and(ParamList[I]in['A'..'Z','a'..'z'])do Begin
+  CurrWord:=CurrWord+ParamList[I];
+  Inc(I);
+ End;
+ If StrToUpper(CurrWord)<>'INTO'Then Begin
+  WriteLn('Mot clef INTO attendu !');
+  Halt;
+ End;
+ Step:=_None;
+ While(I<=Length(ParamList))and(ParamList[I]in[' ',#9])do Inc(I);
+ CurrWord2:='';
+ While(I<=Length(ParamList))and(ParamList[I]in['A'..'Z','a'..'z'])do Begin
+  CurrWord2:=CurrWord2+ParamList[I];
+  Inc(I);
+ End;
+ If CurrWord2<>''Then Begin
+  TableName:=CurrWord2;
+ End;
+ Repeat
+  Repeat
+   While(I<=Length(ParamList))and(ParamList[I]in[' ',#9])do Inc(I);
+   If(Step=_None)Then Begin
+    If(I<=Length(ParamList))and(ParamList[I]='(')Then Begin
+     Step:=_Open;
+     Inc(I);
+    End;
+   End
+    Else
+   If(Step=_Sep)Then Begin
+    If(I<=Length(ParamList))and(ParamList[I]=')')Then Begin
+     Inc(I);
+     Step:=_Close;
+     Finished:=True;
+    End
+     Else
+    If(I<=Length(ParamList))and(ParamList[I]=',')Then Begin
+     Inc(I);
+     Step:=_Open;
+    End
+     Else
+    Begin
+     WriteLn('Position ',I,', caractŠre rencontr‚ : ',ParamList[I]);
+     WriteLn('S‚parateur attendue !');
+     Halt;
+    End;
+   End
+    Else
+   Begin
+    FillChar(CurrWord,SizeOf(CurrWord),#0);
+    CurrWord:='';
+    If(I<=Length(ParamList))and(ParamList[I]='''')Then Begin
+     Inc(I);
+     While(I<=Length(ParamList))and(ParamList[I]<>'''')do Begin
+      CurrWord:=CurrWord+ParamList[I];
+      Inc(I);
+     End;
+     If(I<=Length(ParamList))and(ParamList[I]='''')Then Begin
+      Inc(I);
+     End
+      Else
+     Begin
+      WriteLn('Chaine de caractŠres sans terminaison.');
+      Halt;
+     End;
+     Step:=_Sep;
+    End
+     Else
+    If(I<=Length(ParamList))and(ParamList[I]in['0'..'9'])Then Begin
+     While(I<=Length(ParamList))and(ParamList[I]in['0'..'9'])do Begin
+      CurrWord:=CurrWord+ParamList[I];
+      Inc(I);
+     End;
+     Step:=_Sep;
+    End
+     Else
+    Begin
+     WriteLn('Donn‚es attendue !');
+     Halt;
+    End;
+    CurrWord:=PadRight(CurrWord,FieldDBaseList[CurrField].Width);
+    BlockWrite(TargetDBF,CurrWord[1],FieldDBaseList[CurrField].Width,ByteWrited);
+    Inc(CurrField);
+   End;
+  Until(I>=Length(ParamList))or(Finished);
+  If Not(Finished)Then Begin
+   If EOF(SourceSQL)Then Finished:=True
+    Else
+   Begin
+    ReadLn(SourceSQL,ParamList);
+    I:=1;
+   End;
+  End;
+ Until Finished;
+ Inc(HDBase.RecordCount);
 End;
 
 Procedure SelectCommand;Begin
@@ -322,6 +441,8 @@ BEGIN
     Halt;
    End;
   End;
+  Seek(TargetDBF,0);
+  BlockWrite(TargetDBF,HDBase,SizeOf(HDBase),ByteWrited);
   Close(TargetDBF);
   Close(SourceSQL);
  End;
