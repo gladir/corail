@@ -34,6 +34,7 @@ Var
  SourceSQL:Text;
  TargetDBF:File;
  CommandFound:Boolean;
+ FieldCount:Integer;
  TargetName,CurrLine,CurrCommand,ParamList,TableName:String;
  J:Integer;
  HDBase:DBaseIIIFileHeaderRec; { Structure de l'entete d'un fichier DBase }
@@ -194,31 +195,31 @@ Begin
       Inc(I);
      End;
      If CurrWord2<>''Then Begin
-      Move(CurrWord[1],FieldDBaseList[HDBase.RecordCount].FieldName,11);
+      Move(CurrWord[1],FieldDBaseList[FieldCount].FieldName,11);
       If StrToUpper(CurrWord2)='BYTE'Then  Begin
-       FieldDBaseList[HDBase.RecordCount].FieldType:='L';
+       FieldDBaseList[FieldCount].FieldType:='L';
        Inc(HDBase.RecordSize);
       End
        Else
       If StrToUpper(CurrWord2)='TEXT'Then Begin
-       FieldDBaseList[HDBase.RecordCount].FieldType:='C';
-       FieldDBaseList[HDBase.RecordCount].Width:=255;
+       FieldDBaseList[FieldCount].FieldType:='C';
+       FieldDBaseList[FieldCount].Width:=255;
        Inc(HDBase.RecordSize,255);
       End
        Else
       If StrToUpper(CurrWord2)='INTEGER'Then Begin
-       FieldDBaseList[HDBase.RecordCount].FieldType:='I';
+       FieldDBaseList[FieldCount].FieldType:='I';
        Inc(HDBase.RecordSize,2);
       End
        Else
       If StrToUpper(CurrWord2)='SMALLINT'Then Begin
-       FieldDBaseList[HDBase.RecordCount].FieldType:='I';
+       FieldDBaseList[FieldCount].FieldType:='I';
        Inc(HDBase.RecordSize,2);
       End
        Else
       If StrToUpper(CurrWord2)='VARCHAR'Then Begin
-       FieldDBaseList[HDBase.RecordCount].FieldType:='C';
-       FieldDBaseList[HDBase.RecordCount].Width:=255;
+       FieldDBaseList[FieldCount].FieldType:='C';
+       FieldDBaseList[FieldCount].Width:=255;
        Inc(HDBase.RecordSize,255);
       End
        Else
@@ -226,7 +227,7 @@ Begin
        WriteLn('Type de donn‚es non reconnu : ',CurrWord2);
        Halt;
       End;
-      Inc(HDBase.RecordCount);
+      Inc(FieldCount);
       Step:=_Sep;
      End
       Else
@@ -241,12 +242,12 @@ Begin
   ReadLn(SourceSQL,ParamList);
   I:=1;
  Until Finished;
- FieldDBaseList[HDBase.RecordCount].FieldName[1]:=#13;
+ FieldDBaseList[FieldCount].FieldName[1]:=#13;
  HDBase.HeadType:=$3;
  Seek(TargetDBF,0);
  BlockWrite(TargetDBF,HDBase,SizeOf(HDBase),ByteWrited);
  BlockWrite(TargetDBF,FieldDBaseList,
-            SizeOf(DBaseIIIFieldRec)*Succ(HDBase.RecordCount),ByteWrited);
+            SizeOf(DBaseIIIFieldRec)*Succ(FieldCount),ByteWrited);
 End;
 
 Procedure DeleteCommand;Begin
@@ -278,6 +279,7 @@ BEGIN
   Else
  Begin
   TableName:='';
+  FieldCount:=0;
   FillChar(HDBase,SizeOf(HDBase),0);
   FillChar(FieldDBaseList,SizeOf(FieldDBaseList),0);
   {$I-}Assign(SourceSQL,ParamStr(1));
