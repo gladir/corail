@@ -139,7 +139,7 @@ Begin
   { Transformation en POSTFIX }
  I:=1;
  Repeat
-  If PostFix[I]in['*','+','-',' ']Then Begin
+  If PostFix[I]in['*','+','-','/']Then Begin
    P:=ResultStackPop;
    P2:=ResultStackPop;
    Case PostFix[I]of
