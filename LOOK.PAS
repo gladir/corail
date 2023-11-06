@@ -44,7 +44,9 @@ BEGIN
   WriteLn;
   WriteLn('Syntaxe : LOOK texte fichier');
   WriteLn;
-  WriteLn(' fichier        Ce paramŠtre permet d''indiquer le fichier a analyser');
+  WriteLn(' fichier  Ce paramŠtre permet d''indiquer le fichier a analyser');
+  WriteLn(' texte    Ce paramŠtre optionnel permet d''indiquer le texte … ',
+                     'rechercher.');
  End
   Else
  If ParamCount>1Then Begin
