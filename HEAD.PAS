@@ -27,12 +27,18 @@ BEGIN
  MaxBuffer:=32767;
  FileName:='';
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('HEAD : Cette commande permet d''afficher le debut du fichier.');
+  WriteLn('HEAD : Cette commande permet d''afficher le d‚but du fichier.');
   WriteLn;
-  WriteLn('Syntaxe : head nomdufichier');
+  WriteLn('Syntaxe : head nomdufichier [--bytes N] [--lines N]');
+  WriteLn;
+  WriteLn(' nomdufichier Ce paramŠtre permet d''indiquer le fichier … afficher.');
+  WriteLn(' --bytes N    Ce paramŠtre permet d''afficher les nombres ',
+                         'd''octets sp‚cifi‚ … partir du d‚but.');
+  WriteLn(' --lines N    Ce paramŠtre permet d''afficher le nombre de ',
+                         'ligne sp‚cifi‚ … partir du d‚but.');
  End
   Else
- If ParamCount > 0 Then Begin
+ If ParamCount>0 Then Begin
   For I:=1 to ParamCount do Begin
    If OptionFlag<>_None Then Begin
     Case OptionFlag of
