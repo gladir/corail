@@ -17,11 +17,18 @@ Const
  );
 
 Var
+ Language:(_French,_English,_Germany,_Italian,_Spain);
+ TmpLanguage:String;
+ InCmd:Byte;
+ Option:(optNone,optCommand);
  Echo:Boolean;
  CommandFound,Terminated:Boolean;
  CmdStr:String;
  CurrCommand,ParamList:String;
  I,J:Byte;
+ Clock:Boolean;
+ AttrAdd,AttrRemove:Word;
+ SubDirectory,ReadOnlyFlag:Boolean;
 
 Function PadRight(S:String;Space:Byte):String;
 Var
@@ -82,6 +89,14 @@ Begin
  StrToUpper:=S;
 End;
 
+Function FileExist(Name:String):Boolean;
+Var
+ Rec:SearchRec;
+Begin
+ FindFirst(Name,AnyFile,Rec);
+ FileExist:=DosError=0;
+End;
+
 Function GetCurrentDisk:Char;
 Var
  CurrentDir:String;
@@ -95,6 +110,24 @@ Function Path2Drive(Path:String):Char;Begin
  Path2Drive:=Path[1];
 End;
 
+Function Path2Dir(Const Path:String):String;
+Var
+ D:DirStr;
+ N:NameStr;
+ E:ExtStr;
+Begin
+ Path2Dir:='';
+ If Path=''Then Exit;
+ FSplit(Path,D,N,E);
+ If E=''Then Begin
+  If D[Length(D)]<>'\'Then D:=D+'\';
+  D:=D+E;
+ End;
+ If D=''Then Path2Dir:='' Else
+ If D[Length(D)]<>'\'Then D:=D+'\';
+ Path2Dir:=D;
+End;
+
 Function Path2Ext(Const Path:String):String;
 Var
  D:DirStr;
@@ -103,6 +136,12 @@ Var
 Begin
  FSplit(Path,D,N,E);
  Path2Ext:=E;
+End;
+
+Function SetPath4AddFile(Path:String):String;Begin
+ If Path=''Then GetDir(0,Path);
+ If Path[Length(Path)]<>'\'Then Path:=Path+'\';
+ SetPath4AddFile:=Path;
 End;
 
 Function GetDiskLabel(Dsk:Byte):String;
@@ -232,6 +271,67 @@ Begin
  ExtractParam:=Temp;
 End;
 
+Procedure SetAttribut(Var F:File);
+Var
+ CurrAttr:Word;
+Begin
+ GetFAttr(F,CurrAttr);
+ If AttrRemove and ReadOnly=ReadOnly Then CurrAttr:=CurrAttr and Not ReadOnly;
+ If AttrRemove and Archive=Archive Then CurrAttr:=CurrAttr and Not Archive;
+ If AttrRemove and Hidden=Hidden Then CurrAttr:=CurrAttr and Not Hidden;
+ If AttrRemove and SysFile=SysFile Then CurrAttr:=CurrAttr and Not SysFile;
+
+ If AttrAdd and ReadOnly=ReadOnly Then CurrAttr:=CurrAttr or ReadOnly;
+ If AttrAdd and Archive=Archive Then CurrAttr:=CurrAttr or Archive;
+ If AttrAdd and Hidden=Hidden Then CurrAttr:=CurrAttr or Hidden;
+ If AttrAdd and SysFile=SysFile THen CurrAttr:=CurrAttr or SysFile;
+ SetFAttr(F,CurrAttr);
+End;
+
+Procedure SetAttributFiles(FileSpec:String);
+Var
+ Info:SearchRec;
+ CurrFile:File;
+ Found:Boolean;
+Begin
+ FileSpec:=FExpand(FileSpec);
+ FindFirst(FileSpec,AnyFile,Info);
+ Found:=False;
+ While DOSError=0 do Begin
+  Found:=True;
+  If Info.Attr and Directory=Directory Then Begin
+   If(SubDirectory)Then Begin
+    If Not((Info.Name='.')or(Info.Name='..')or(Info.Name=''))Then Begin
+     SetAttributFiles(SetPath4AddFile(Path2Dir(FileSpec)+Info.Name)+'*.*');
+    End;
+   End;
+  End
+   Else
+  Begin
+   Assign(CurrFile,Path2Dir(FileSpec)+Info.Name);
+   SetAttribut(CurrFile);
+  End;
+  FindNext(Info);
+ End;
+ If Not Found Then WriteLn('Aucun resultat trouve');
+End;
+
+Procedure ShowAttribut;
+Var
+ Info:SearchRec;
+ CurrName:String;
+Begin
+ FindFirst('*.*',AnyFile and Not Directory,Info);
+ While DOSError=0 do Begin
+  CurrName:=Info.Name;
+  ChangeChar(CurrName,'.','/');
+  Write(PadRight(CurrName,18));
+  If Info.Attr and ReadOnly=ReadOnly Then Write('P') Else Write(' ');
+  Write(' ');
+  FindNext(Info);
+ End;
+End;
+
 Procedure HomeMessage;Begin
  WriteLn;
  WriteLn('Clone de l''interpreteur de commande TRSDOS');
@@ -239,15 +339,53 @@ Procedure HomeMessage;Begin
 End;
 
 Procedure ShowPrompt;Begin
- WriteLn('TRSDOS Ready');
+ WriteLn('DOS Ready');
 End;
 
 Procedure InvalidParam(P:Byte);Begin
  WriteLn('Le parametre suivant est invalide : ',ExtractParam(P));
 End;
 
-Procedure ATTRIBCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure ATTRIBCommand;
+Var
+ P,I:Integer;
+ CurrParam:String;
+Begin
+ If ExtractParam(1)='/?'Then Begin
+  WriteLn('ATTRIB : Cette commande permet de fixer les attributs de ',
+                    'protection');
+  WriteLn;
+  WriteLn('Syntaxe: ATTRIB [/?]');
+  WriteLn('         ATTRIB filespec (PROT=READ)');
+  WriteLn;
+  WriteLn(' (PROT=READ)  Fixe en lecture seulement');
+ End
+  Else
+ If ExtractParam(1)<>''Then Begin
+  SubDirectory:=False;
+  P:=0;
+  Repeat
+   Inc(P);
+   CurrParam:=ExtractParam(P);
+   If CurrParam=''Then Break;
+   If StrToUpper(CurrParam)='(PROT=READ)'Then Begin
+    ReadOnlyFlag:=True;
+   End;
+  Until CurrParam='';
+  If(ReadOnlyFlag)Then AttrAdd:=ReadOnly
+                  Else AttrRemove:=ReadOnly;
+  P:=0;
+  Repeat
+   Inc(P);
+   CurrParam:=ExtractParam(P);
+   If CurrParam=''Then Break;
+   If StrToUpper(CurrParam)<>'(PROT=READ)'Then Begin
+    SetAttributFiles(CurrParam);
+   End;
+  Until CurrParam='';
+ End
+  Else
+ ShowAttribut;
 End;
 
 Procedure AUTOCommand;Begin
@@ -266,8 +404,32 @@ Procedure BASIC2Command;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure CLOCKCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure CLOCKCommand;
+Var
+ FirstParam:String;
+ X:Boolean;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='/?'Then Begin
+  WriteLn('CLOCK   Cette commande permet d''afficher l''horloge … l''‚cran.');
+  WriteLn;
+  WriteLn('Syntaxe:');
+  WriteLn;
+  WriteLn('CLOCK [/?] [(OFF)|(ON)]');
+  WriteLn;
+  WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLn(' (OFF)  Ce parametre permet d''activer l''horloge');
+  WriteLn(' (ON)   Ce parametre permet de desactiver l''horloge');
+ End
+  Else
+ If StrToUpper(ParamList)='(OFF)'Then Clock:=False Else
+ If StrToUpper(ParamList)='(ON)'Then Clock:=True
+  Else
+ If ParamList=''Then Begin
+  Clock:=True;
+ End
+  Else
+ WriteLn('ParamŠtre invalide !');
 End;
 
 Procedure CopyCommand;
@@ -431,8 +593,50 @@ Procedure DISKDUMPCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure DUMPCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure DUMPCommand;
+Var
+ I:Word;
+ OutFile:File;
+ CurrParam:String;
+Begin
+ {$IFDEF FPC}
+  WriteLn('Cette commande n''est pas mise en oeuvre en Free Pascal');
+ {$ELSE}
+ CurrParam:=ExtractParam(1);
+ If(CurrParam='/?')or(CurrParam='--help')or(CurrParam='-h')Then Begin
+  Case Language of
+   _English:Begin
+    WriteLn('DUMP : This command takes a snapshot of RAM 640K and sends ',
+                   'it to the filename specified.');
+    WriteLn;
+    WriteLn('DUMP [/?] filename');
+    WriteLn;
+    WriteLn('/?          = Help for this command');
+    WriteLn('filename    = Output filename');
+   End;
+   Else Begin
+    WriteLn('DUMP : Cette commande permet de sauvegarder le contenu de la ',
+                   'la m‚moire conventionnelle de 640 Ko et l''envoi dans ',
+                   'un fichier.');
+    WriteLn;
+    WriteLn('Syntaxe : DUMP [/?] filename');
+    WriteLn;
+    WriteLn(' /?          Ce paramŠtre permet de founir de l''aide sur cette commande.');
+    WriteLn('filename     Ce paramŠtre permet d''indiquer le fichier de sortie');
+   End;
+  End;
+ End
+  Else
+ Begin
+  Assign(OutFile,CurrParam);
+  Rewrite(OutFile,1);
+  For I:=0 to ((640 div $40) - $1)do Begin
+   BlockWrite(OutFile,Mem[I:$0000],$8000);
+   BlockWrite(OutFile,Mem[I:$8000],$8000)
+  End;
+  Close(OutFile)
+ End;
+ {$ENDIF}
 End;
 
 Function ExitCommand:Boolean;
@@ -499,16 +703,105 @@ Begin
  End;
 End;
 
-Procedure KILLCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure KILLCommand;
+Var
+ P:Byte;
+ Err:Word;
+ F:File;
+ CurrParam:String;
+Begin
+ P:=0;
+ Repeat
+  Inc(P);
+  CurrParam:=ExtractParam(P);
+  If CurrParam=''Then Begin
+   If P=1Then Begin
+    WriteLn('ParamŠtre requis');
+   End;
+   Break;
+  End
+   Else
+  If CurrParam='/?'Then Begin
+   Case Language of
+    _Germany:Begin
+     WriteLn('L”scht eine oder mehrere Dateien.');
+     WriteLn;
+     WriteLn('KILL [/?] Datainame');
+    End;
+    _English:Begin
+     WriteLn('Purpose:  Erase one file');
+     WriteLn;
+     WriteLn('Format:   KILL [/?] file');
+     Exit;
+    End;
+    Else Begin
+     WriteLn('KILL   Cette commande permet d''effectuer la suppression de fichier sur un unit‚ de disque.');
+     WriteLn;
+     WriteLn('Syntaxe:');
+     WriteLn;
+     WriteLn('KILL [/?] fichier');
+     WriteLn;
+     WriteLn('    /?    Ce paramŠtre permet d''afficher l''aide sur cette commande');
+     WriteLn(' fichier  Ce paramŠtre permet d''indiquer le nom du fichier a supprimer.');
+     Exit;
+    End;
+   End;
+  End;
+  {$I-}Assign(F,CurrParam);
+  Erase(F);
+  {$I+}
+  Err:=IoResult;
+  If Err=0Then WriteLn('1 fichier de supprime')
+          Else WriteLn(GetErrorMessage(Err));
+  If P>9Then Break;
+ Until CurrParam='';
 End;
 
 Procedure LIBCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure LISTCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure LISTCommand;
+Var
+ I,P:Integer;
+ Handle:Text;
+ CurrLine,CurrParam:String;
+Begin
+ CurrParam:=ExtractParam(1);
+ If(CurrParam='/?')or(CurrParam='--help')or(CurrParam='-h')Then Begin
+  WriteLn('LIST : Cette commande permet d''afficher le contenu du fichier.');
+  WriteLn;
+  WriteLn('Syntaxe : LIST [fichier]');
+ End
+  Else
+ If CurrParam<>''Then Begin
+  P:=0;
+  Repeat
+   Inc(P);
+   CurrParam:=ExtractParam(P);
+   If CurrParam<>''Then Begin
+    Assign(Handle,CurrParam);
+    {$I-}Reset(Handle);{$I+}
+    If IOResult=0Then Begin
+     While NOT EOF(Handle)do Begin
+      ReadLn(Handle,CurrLine);
+      WriteLn(CurrLine);
+     End;
+     Close(Handle);
+    End
+     Else
+    WriteLn('Impossible de lire ',ParamStr(I));
+   End;
+   If P>9Then Break;
+  Until CurrParam='';
+ End
+  Else
+ Begin
+  Repeat
+   ReadLn(Input,CurrLine);
+   WriteLn(CurrLine);
+  Until EOF;
+ End;
 End;
 
 Procedure LOADCommand;Begin
@@ -644,60 +937,210 @@ Procedure UnknownCommand;Begin
  WriteLn;
 End;
 
-BEGIN
- Echo:=True;Terminated:=False;
- HomeMessage;
- Repeat
-  ShowPrompt;
-  ReadLn(CmdStr);
-  ExtractCommand;
-  CommandFound:=False;
-  For J:=Low(CommandList) to High(CommandList) do Begin
-   If CurrCommand=CommandList[J]Then Begin
-    Case(J)of
-     0:ATTRIBCommand;
-     1:AUTOCommand;
-     2:BACKUPCommand;
-     3:BASICCommand;
-     4:BASIC2Command;
-     5:CLOCKCommand;
-     6:COPYCommand;
-     7:DATECommand;
-     8:DEBUGCommand;
-     9:DEVICECommand;
-     10:DIRCommand;
-     11:DISKDUMPCommand;
-     12:DUMPCommand;
-     13:EXITCommand;
-     14:FORMATCommand;
-     15:FREECommand;
-     16:KILLCommand;
-     17:LIBCommand;
-     18:LISTCommand;
-     19:LOADCommand;
-     20:PRINTCommand;
-     21:PROTCommand;
-     22:RENAMECommand;
-     23:TAPEDISKCommand;
-     24:TIMECommand;
-     25:TRACECommand;
-     26:VERIFYCommand;
-    End;
-    If J<=High(CommandList)Then Begin
-     CommandFound:=True;
-     WriteLn;
-     Break;
-    End;
+Procedure RunCommand;
+Var
+ LastEcho:Boolean;
+ FileJcl:Text;
+ Error:Word;
+ PipeS:String;
+Begin
+  { Change d'unit‚ de disque :A, :B, :C, :D,... }
+ If(Length(CmdStr)=2)and(CmdStr[1]=':')and(CmdStr[2]in['A'..'Z','a'..'z'])Then Begin
+  {$I-}GetDir(Ord(UpCase(CmdStr[2]))-64,PipeS);
+  If PipeS<>''Then ChDir(PipeS)
+              Else ChDir(CmdStr+'\');{$I+}
+  Error:=IoResult;
+  If Error<>0Then WriteLn(GetErrorMessage(Error));
+  Exit;
+ End;
+ ExtractCommand;
+ CommandFound:=False;
+ For J:=Low(CommandList) to High(CommandList) do Begin
+  If CurrCommand=CommandList[J]Then Begin
+   Case(J)of
+    0:ATTRIBCommand;
+    1:AUTOCommand;
+    2:BACKUPCommand;
+    3:BASICCommand;
+    4:BASIC2Command;
+    5:CLOCKCommand;
+    6:COPYCommand;
+    7:DATECommand;
+    8:DEBUGCommand;
+    9:DEVICECommand;
+    10:DIRCommand;
+    11:DISKDUMPCommand;
+    12:DUMPCommand;
+    13:EXITCommand;
+    14:FORMATCommand;
+    15:FREECommand;
+    16:KILLCommand;
+    17:LIBCommand;
+    18:LISTCommand;
+    19:LOADCommand;
+    20:PRINTCommand;
+    21:PROTCommand;
+    22:RENAMECommand;
+    23:TAPEDISKCommand;
+    24:TIMECommand;
+    25:TRACECommand;
+    26:VERIFYCommand;
+   End;
+   If J<=High(CommandList)Then Begin
+    CommandFound:=True;
+    WriteLn;
+    Break;
    End;
   End;
-  If Not(CommandFound)Then Begin
-   If CmdStr='?'Then Begin
-    For I:=Low(CommandList) to High(CommandList) do Write(PadRight(CommandList[I],10));
-    WriteLn;
-    WriteLn;
+ End;
+ If Not(CommandFound)Then Begin
+  If CmdStr='?'Then Begin
+   For I:=Low(CommandList) to High(CommandList) do Write(PadRight(CommandList[I],10));
+   WriteLn;
+   WriteLn;
+  End
+   Else
+  If FileExist(CmdStr+'.JCL')Then Begin
+   Inc(InCmd);
+   If InCmd>20Then Begin
+    WriteLn('Limite de 20 fichiers de traitements par lots maximum.');
+    Exit;
+   End;
+   LastEcho:=Echo;
+   Assign(FileJcl,CmdStr+'.JCL');
+   {$I-}Reset(FileJcl);{$I+}
+   If IOResult=0Then Begin
+    While Not EOF(FileJcl)do Begin
+     ReadLn(FileJcl,CmdStr);
+     If(Echo)Then WriteLn(CmdStr);
+     RunCommand;
+    End;
    End
     Else
-   UnknownCommand;
+   WriteLn('Probleme de lecture du fichier de traitement par lot');
+   Close(FileJcl);
+   Echo:=LastEcho;
+   Dec(InCmd);
+  End
+   Else
+  UnknownCommand;
+ End;
+End;
+
+Procedure ReadLine(Var S:String);
+Var
+ Rec:SearchRec;
+ K:Char;
+ X,Y,I:Byte;
+ CurrHistory:Integer;
+ Hour,Minute,Second,CentSec:Word;
+Begin
+ X:=WhereX;
+ Y:=WhereY;
+ S:='';
+ Repeat
+  GotoXY(X,Y);
+  Write(S);
+  ClrEol;
+  If(Clock)Then Begin
+   Repeat
+    If Not(Keypressed)Then Begin
+     Delay(100);
+     GotoXY(53,1);
+     GetTime(Hour,Minute,Second,CentSec);
+     Write(Hour:2,':',PadZeroLeft(Minute,2),':',PadZeroLeft(Second,2));
+     GotoXY(X,Y);
+     Write(S);
+     For I:=1 to 9 do Begin
+      If Not(KeyPressed)Then Delay(100);
+     End;
+    End;
+   Until Keypressed;
   End;
- Until Terminated;
+  K:=ReadKey;
+  Case K of
+   #0:Case ReadKey of
+    #72:;
+   End;
+   #8:Begin
+    If S<>''Then S:=Copy(S,1,Length(S)-1);
+   End;
+   #9:Begin
+   End;
+   Else S:=S+K;
+  End;
+  If S[Length(S)]=#13Then Begin
+   S:=Copy(S,1,Length(S)-1);
+   K:=#13;
+  End;
+ Until K=#13;
+ GotoXY(X,Y);
+ WriteLn(S);
+End;
+
+BEGIN
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+ End;
+ Echo:=True;Clock:=False;
+ InCmd:=0;
+ If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
+  Case Language of
+   _Germany:Begin
+    WriteLn('TRSDOS : Startet eine neue Kopie des TRSDOS-Befehlsinterpreters.');
+    WriteLn;
+    WriteLn('TRSDOS [/C Befehl]');
+   End;
+   _English:Begin
+    WriteLn('TRSDOS : Start a new copy of the TRSDOS Command Interpreter.');
+    WriteLn;
+    WriteLn('Syntax : TRSDOS [/C command]');
+   End;
+   Else Begin
+    WriteLn('TRSDOS : Cette commande permet de lancer l''interpreteur de commande TRSDOS.');
+    WriteLn;
+    WriteLn('Syntaxe : TRSDOS [/C command]');
+    WriteLn;
+    WriteLn(' /C command   Ce paramŠtre d''indiquer une des commandes TRSDOS');
+   End;
+  End;
+ End
+  Else
+ If ParamCount>1Then Begin
+  Option:=optNone;
+  For I:=1 to ParamCount do Begin
+   If(Option=optCommand)Then Begin
+    CmdStr:=ParamStr(I);
+    RunCommand;
+    Option:=optNone;
+   End
+    Else
+   If StrToUpper(ParamStr(I))='/C'Then Option:=optCommand
+    Else
+   Begin
+    WriteLn('Parametre non reconnu : ',ParamStr(I));
+   End;
+  End;
+ End
+  Else
+ Begin
+ Terminated:=False;
+  HomeMessage;
+  Repeat
+   ShowPrompt;
+   ReadLine(CmdStr);
+   RunCommand;
+  Until Terminated;
+ End;
 END.
