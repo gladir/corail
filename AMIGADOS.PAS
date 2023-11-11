@@ -215,7 +215,8 @@ Procedure WriteLine(S:String);Begin
    WriteLineXY(XPos,YPos,Copy(S,1,MaxColumn-XPos+1));
    S:=Copy(S,MaxColumn-XPos+1,255);
    XPos:=MinColumn;
-   Inc(YPos);
+   If(YPos<MaxLine)Then Inc(YPos)
+                   Else ScrollWindow;
    WriteLineXY(XPos,YPos,S);
   End
    Else
@@ -1146,8 +1147,7 @@ Begin
   End;
  Until K=#13;
  WriteLineXY(X,Y,S);
- XPos:=MinColumn;
- Inc(YPos);
+ WriteLine('');
 End;
 
 BEGIN
