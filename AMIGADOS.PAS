@@ -6,7 +6,11 @@
 
 Program AMIGADOS;
 
-Uses Crt,DOS;
+Uses {$IFDEF FPC}
+      Crt,DOS,PtcGraph,PtcCrt,PtcMouse
+     {$ELSE}
+      Crt,DOS,Graph
+     {$ENDIF};
 
 Const
  CommandList:Array[0..51]of String[20]=(
@@ -21,11 +25,16 @@ Const
  );
 
 Var
+ Language:(_French,_English,_Germany,_Italian,_Spain);
+ TmpLanguage:String;
+ InGraph:Boolean;
+ MaxX:Word;
  Echo:Boolean;
  CommandFound,Terminated:Boolean;
  CmdStr:String;
  CurrCommand,ParamList:String;
  I,J:Byte;
+ XPos,YPos,MinLine,MaxLine,MinColumn,MaxColumn:Byte;
 
 Function PadRight(S:String;Space:Byte):String;
 Var
@@ -67,6 +76,22 @@ Begin
  StrToUpper:=S;
 End;
 
+Function IntToStr(I:Integer):String;
+Var
+ S:String;
+Begin
+ Str(I,S);
+ IntToStr:=S;
+End;
+
+Function IntToStrPad(I,Pad:Integer):String;
+Var
+ S:String;
+Begin
+ Str(I:Pad,S);
+ IntToStrPad:=S;
+End;
+
 Procedure ChangeChar(Var Str:String;OldChar,NewChar:Char);
 Var
  I:Byte;
@@ -74,6 +99,177 @@ Begin
  For I:=1 to Length(Str)do Begin
   If Str[I]=OldChar Then Str[I]:=NewChar;
  End;
+End;
+
+Procedure ShowCursor;Begin
+ SetFillStyle(SolidFill,Brown);
+ Bar(XPos*8,YPos*8,XPos*8+TextWidth(' '),YPos*8+TextHeight(' '));
+End;
+
+Procedure HideCursor;Begin
+ SetFillStyle(SolidFill,1);
+ Bar(XPos*8,YPos*8,XPos*8+TextWidth(' '),YPos*8+TextHeight(' '));
+End;
+
+Procedure ScrollWindow;
+Var
+ Size:Word;
+ P:Pointer;
+ J:Integer;
+Begin
+ Size:=ImageSize(MinColumn*8,MinLine*8,(MaxColumn+1)*8-1,(MinLine+1)*8-1);
+ GetMem(P,Size);
+ For J:=MinLine+1 to MaxLine do Begin
+  GetImage(MinColumn*8,J*8,(MaxColumn+1)*8-1,(J+1)*8-1,P^);
+  PutImage(MinColumn*8,(J-1)*8,P^,NormalPut);
+ End;
+ FreeMem(P,Size);
+ SetFillStyle(SolidFill,1);
+ Bar(MinColumn*8,MaxLine*8,(MaxColumn+1)*8+1,(MaxLine+1)*8+1);
+End;
+
+Procedure WriteChar(C:Char);Begin
+ If(InGraph)Then Begin
+  OutTextXY(XPos*8,YPos*8,C);
+  Inc(XPos);
+ End
+  Else
+ Write(C);
+End;
+
+Procedure ClearEOL;Begin
+ If(InGraph)Then Begin
+  SetFillStyle(SolidFill,1);
+  Bar(XPos*8,YPos*8,(MaxColumn+1)*8+1,YPos*8+TextHeight('COMMAND'));
+ End
+  Else
+ ClrEOL;
+End;
+
+Procedure WriteXY(X,Y:Byte;S:String);Begin
+ If(InGraph)Then Begin
+  XPos:=X;YPos:=Y;
+  SetFillStyle(SolidFill,1);
+  Bar(XPos*8,YPos*8,XPos*8+TextWidth(S),YPos*8+TextHeight(S));
+  OutTextXY(XPos*8,YPos*8,S);
+  Inc(XPos,Length(S));
+  If XPos>MaxColumn Then Begin
+   XPos:=MinColumn;
+   If(YPos<MaxLine)Then Inc(YPos)
+                   Else ScrollWindow;
+  End;
+ End
+  Else
+ Begin
+  GotoXY(X,Y);
+  Write(S);
+ End;
+End;
+
+Procedure WriteLineXY(X,Y:Byte;S:String);Begin
+ If(InGraph)Then Begin
+  XPos:=X;YPos:=Y;
+  SetFillStyle(SolidFill,1);
+  Bar(XPos*8,YPos*8,XPos*8+TextWidth(S),YPos*8+TextHeight(S));
+  OutTextXY(XPos*8,YPos*8,S);
+  XPos:=MinColumn;
+  If(YPos<MaxLine)Then Inc(YPos)
+                  Else ScrollWindow;
+ End
+  Else
+ Begin
+  GotoXY(X,Y);
+  WriteLn(S);
+ End;
+End;
+
+Procedure WriteStr(S:String);Begin
+ If(InGraph)Then Begin
+  SetFillStyle(SolidFill,1);
+  If(XPos+Length(S)>MaxColumn)Then Begin
+   Bar(XPos*8,YPos*8,XPos*8+TextWidth(Copy(S,1,MaxColumn-XPos+1)),YPos*8+TextHeight(S));
+   OutTextXY(XPos*8,YPos*8,Copy(S,1,MaxColumn-XPos+1));
+   S:=Copy(S,MaxColumn-XPos+1,255);
+  End
+   Else
+  Begin
+   Bar(XPos*8,YPos*8,XPos*8+TextWidth(S),YPos*8+TextHeight(S));
+   OutTextXY(XPos*8,YPos*8,S);
+  End;
+  Inc(XPos,Length(S));
+  If XPos>MaxColumn Then Begin
+   XPos:=MinColumn;
+   If(YPos<MaxLine)Then Inc(YPos)
+                   Else ScrollWindow;
+  End;
+ End
+  Else
+ Begin
+  Write(S);
+ End;
+End;
+
+Procedure WriteLine(S:String);Begin
+ If(InGraph)Then Begin
+  If(XPos+Length(S)>MaxColumn)Then Begin
+   WriteLineXY(XPos,YPos,Copy(S,1,MaxColumn-XPos+1));
+   S:=Copy(S,MaxColumn-XPos+1,255);
+   XPos:=MinColumn;
+   Inc(YPos);
+   WriteLineXY(XPos,YPos,S);
+  End
+   Else
+  WriteLineXY(XPos,YPos,S);
+  XPos:=MinColumn;
+  If(YPos<MaxLine)Then Inc(YPos)
+                  Else ScrollWindow;
+ End
+  Else
+ WriteLn(S);
+End;
+
+Procedure InitScr;
+Var
+ Driver,Mode:Integer;
+ ErrCode:Integer;
+Begin
+ {$IFDEF FPC}
+  Driver:=VGA;
+  Mode:=VGAHi;
+ {$ELSE}
+  Driver:=Detect;
+  Mode:=VGAHi;
+ {$ENDIF}
+ InitGraph(Driver,Mode,'');
+ ErrCode:=GraphResult;
+ If ErrCode=grOk Then Begin
+  SetColor(White);
+  SetLineStyle(0, 0, 1);
+ End
+  Else
+ Begin
+  WriteLn('Erreur graphique : ',GraphErrorMsg(ErrCode));
+  Halt;
+ End;
+ SetBkColor(1);
+ ClearDevice;
+ SetRGBPalette(1,$46,$82,$B4);
+End;
+
+Procedure ShowAmigaWindow(X1,Y1,X2,Y2:Byte;Title:String);Begin
+ Dec(X1);
+ Dec(Y1);
+ Inc(X2);
+ Inc(Y2);
+ SetFillStyle(SolidFill,White);
+ Bar(X1*8,Y1*8,(X2+1)*8-1,(Y1+1)*8-1);
+ Rectangle(X1*8,Y1*8,(X2+1)*8-1,(Y2+1)*8-1);
+ SetFillStyle(SolidFill,1);
+ Bar((X1+Length(Title)+1)*8,Y1*8+1,(X2+1)*8-2,Y1*8+2);
+ Bar((X1+Length(Title)+1)*8,Y1*8+5,(X2+1)*8-2,Y1*8+6);
+ SetColor(1);
+ OutTextXY((X1+1)*8,Y1*8,Title);
+ SetColor(White);
 End;
 
 Function GetCurrentDisk:Char;
@@ -241,11 +437,11 @@ Begin
 End;
 
 Procedure HomeMessage;Begin
- TextColor(0);
+ TextColor(Blue);
  TextBackground(7);
- WriteLn;
- WriteLn('AmigaShell/AmigaDOS');
- WriteLn;
+ WriteLine('');
+ WriteLine('AmigaShell/AmigaDOS');
+ WriteLine('');
 End;
 
 Procedure ShowPrompt;
@@ -268,16 +464,17 @@ Begin
    Case SP[I] of
        'D': Begin
 	     GetDate(Year,Month,Day,DayOfWeek);
-	     Write(Week[DayOfWeek],'  ',Mon[Month],Day,',',Year);
+	     WriteStr(Week[DayOfWeek]+'  '+Mon[Month]+
+                      IntToStr(Day)+','+IntToStr(Year));
 	    End;
        'T': Begin
 	     GetTime(Hour,Min,Sec,Sec100);
-	     Write(Hour,':',Min,':',Sec);
+	     WriteStr(IntToStr(Hour)+':'+IntToStr(Min)+':'+IntToStr(Sec));
 	    End;
-       'B' : Write('|');
-   'e','E' : Write(#27);
-   'g','G' : Write('>');
-       'N' : Write(GetCurrentDiskAmiga);
+       'B' : WriteStr('|');
+   'e','E' : WriteStr(#27);
+   'g','G' : WriteStr('>');
+       'N' : WriteStr(GetCurrentDiskAmiga);
    'p','P' : Begin
      GetDir(0,CurrentDir);
      If CurrentDir[2]=':'Then Begin
@@ -285,12 +482,12 @@ Begin
      End;
      CurrentDir:=GetCurrentDiskAmiga+CurrentDir;
      ChangeChar(CurrentDir,'\','/');
-     Write(CurrentDir);
+     WriteStr(CurrentDir);
    End;
-   '-','S' : Write(' ');
-       'V' : Write(Lo(DosVersion),'.',Hi(DosVersion));
-   '_','Z' : Write(#13#10);
-       'z' : Write('?');
+   '-','S' : WriteStr(' ');
+       'V' : WriteStr(IntToStr(Lo(DosVersion))+'.'+IntToStr(Hi(DosVersion)));
+   '_','Z' : WriteStr(#13#10);
+       'z' : WriteStr('?');
    End;
   End
    Else
@@ -300,31 +497,31 @@ Begin
 End;
 
 Procedure InvalidParam(P:Byte);Begin
- WriteLn('Le parametre suivant est invalide : ',ExtractParam(P));
+ WriteLine('Le parametre suivant est invalide : '+ExtractParam(P));
 End;
 
 Procedure ADDBUFFERSCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure ALINKCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure ASSEMCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure ASSIGNCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure BINDDRIVERSCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure BREAKCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure CDCommand;
@@ -334,34 +531,34 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('CD   Cette commande permet de fixer ou de demander le repertoire courant.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('CD [/?] chemin');
-  WriteLn;
-  WriteLn('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
-  WriteLn(' chemin  Ce parametre permet d''indiquer le chemin du repertoire.');
+  WriteLine('CD   Cette commande permet de fixer ou de demander le repertoire courant.');
+  WriteLine('');
+  WriteLine('Syntaxe:');
+  WriteLine('');
+  WriteLine('CD [/?] chemin');
+  WriteLine('');
+  WriteLine('  /?     Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLine(' chemin  Ce parametre permet d''indiquer le chemin du repertoire.');
  End
   Else
  If Length(FirstParam)>0Then Begin
   {$I-} ChDir(FirstParam);{$I+}
   Error:=IoResult;
-  If Error<>0Then WriteLn(GetErrorMessage(Error));
+  If Error<>0Then WriteLine(GetErrorMessage(Error));
  End
   Else
  Begin
   GetDir(0,Dir);
-  WriteLn(Dir);
+  WriteLine(Dir);
  End;
 End;
 
 Procedure CHANGETASKPRICommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure COPYCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure DATECommand;
@@ -378,21 +575,21 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('DATE   Cette commande permet de fixer ou de demander la date du systeme d''exploitation');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('DATE [/?]');
-  WriteLn;
-  WriteLn('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLine('DATE   Cette commande permet de fixer ou de demander la date du systeme d''exploitation');
+  WriteLine('');
+  WriteLine('Syntaxe:');
+  WriteLine('');
+  WriteLine('DATE [/?]');
+  WriteLine('');
+  WriteLine('  /?    Ce parametre permet d''afficher l''aide sur cette commande');
  End
   Else
  Begin
   GetDate(Year,Month,Day,DayOfWeek);
-  Write(DOW[DayOfWeek],' ');
-  Write(Day:2,'-',Mon[Month],'-',Copy(PadZeroLeft(Year,4),3,2),' ');
+  WriteStr(DOW[DayOfWeek]+' ');
+  WriteStr(IntToStrPad(Day,2)+'-'+Mon[Month]+'-'+Copy(PadZeroLeft(Year,4),3,2)+' ');
   GetTime(Hour,Minute,Second,CentSec);
-  WriteLn(Hour:2,':',PadZeroLeft(Minute,2),':',PadZeroLeft(Second,2));
+  WriteLine(IntToStrPad(Hour,2)+':'+PadZeroLeft(Minute,2)+':'+PadZeroLeft(Second,2));
  End;
 End;
 
@@ -409,28 +606,28 @@ Begin
   CurrParam:=ExtractParam(P);
   If CurrParam=''Then Begin
    If P=1Then Begin
-    WriteLn('ParamŠtre requis');
+    WriteLine('ParamŠtre requis');
    End;
    Break;
   End
    Else
   If CurrParam='/?'Then Begin
-   WriteLn('DELETE   Cette commande permet d''effectuer la suppression de fichier sur un unite de disque.');
-   WriteLn;
-   WriteLn('Syntaxe:');
-   WriteLn;
-   WriteLn('DELETE [/?] fichier');
-   WriteLn;
-   WriteLn('    /?    Ce parametre permet d''afficher l''aide sur cette commande');
-   WriteLn(' fichier  Ce parametre permet d''indiquer le nom du fichier a supprimer.');
+   WriteLine('DELETE   Cette commande permet d''effectuer la suppression de fichier sur un unite de disque.');
+   WriteLine('');
+   WriteLine('Syntaxe:');
+   WriteLine('');
+   WriteLine('DELETE [/?] fichier');
+   WriteLine('');
+   WriteLine('    /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   WriteLine(' fichier  Ce parametre permet d''indiquer le nom du fichier a supprimer.');
    Exit;
   End;
   {$I-}Assign(F,CurrParam);
   Erase(F);
   {$I+}
   Err:=IoResult;
-  If Err=0Then WriteLn('1 fichier de supprime')
-          Else WriteLn(GetErrorMessage(Err));
+  If Err=0Then WriteLine('1 fichier de supprime')
+          Else WriteLine(GetErrorMessage(Err));
   If P>9Then Break;
  Until CurrParam='';
 End;
@@ -449,13 +646,13 @@ Begin
   CurrParam:=ExtractParam(P);
   If Length(CurrParam)=0Then Break;
   If CurrParam='/?'Then Begin
-   WriteLn('DIR   Cette commande permet d''afficher le contenu d''un repertoire dans l''unite de disque.');
-   WriteLn;
-   WriteLn('Syntaxe:');
-   WriteLn;
-   WriteLn('DIR [/?] [nom]');
-   WriteLn;
-   WriteLn(' /?   Ce parametre permet d''afficher l''aide sur cette commande');
+   WriteLine('DIR   Cette commande permet d''afficher le contenu d''un repertoire dans l''unite de disque.');
+   WriteLine('');
+   WriteLine('Syntaxe:');
+   WriteLine('');
+   WriteLine('DIR [/?] [nom]');
+   WriteLine('');
+   WriteLine(' /?   Ce parametre permet d''afficher l''aide sur cette commande');
    Exit;
   End
    Else
@@ -466,28 +663,31 @@ Begin
  FindFirst(ShowDir,AnyFile,Info);
  While DOSError=0 do Begin
   If(Info.Attr and Directory=Directory)Then Begin
-   If(Info.Name<>'..')and(Info.Name<>'.')Then Write(' ':5,PadRight(Info.Name+' (dir)',35));
+   If(Info.Name<>'..')and(Info.Name<>'.')Then Begin
+    WriteStr(' '+' '+' '+' '+' '+PadRight(Info.Name+' (dir)',35));
+   End;
   End
    Else
-  Write('  ',PadRight(Info.Name,38));
+  WriteStr('  '+PadRight(Info.Name,38));
   FindNext(Info);
  End;
+ WriteLine('');
 End;
 
 Procedure DISKCHANGECommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure DISKCOPYCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure DISKDOCTORCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure DOWNLOADCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure EchoCommand;
@@ -496,55 +696,55 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('ECHO   Cette commande permet d''activer ou desactiver le prompt de commande ',
-          'ou d''afficher un message sur le console du systeme d''exploitation.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('ECHO [/?] message');
-  WriteLn;
-  WriteLn('       /?  Ce parametre permet d''afficher l''aide sur cette commande');
-  WriteLn('  message  Ce parametre permet d''afficher un message');
+  WriteLine('ECHO   Cette commande permet d''activer ou desactiver le prompt de commande '+
+            'ou d''afficher un message sur le console du systeme d''exploitation.');
+  WriteLine('');
+  WriteLine('Syntaxe:');
+  WriteLine('');
+  WriteLine('ECHO [/?] message');
+  WriteLine('');
+  WriteLine('       /?  Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLine('  message  Ce parametre permet d''afficher un message');
  End
   Else
- If ParamList='.'Then WriteLn
-                 Else WriteLn(ParamList);
+ If ParamList='.'Then WriteLine('')
+                 Else WriteLine(ParamList);
 End;
 
 Procedure EDCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure EDITCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure ENDCLICommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure EXECUTECommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure FAILATCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure FAULTCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure FILENOTECommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure FORMATCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure IFCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure INFOCommand;
@@ -555,28 +755,28 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('INFO   Cette commande permet de demander des informations sur ',
+  WriteLine('INFO   Cette commande permet de demander des informations sur '+
                   'l''etat du systeme d''exploitation.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('INFO [/?]');
-  WriteLn;
-  WriteLn('       /?  Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLine('');
+  WriteLine('Syntaxe:');
+  WriteLine('');
+  WriteLine('INFO [/?]');
+  WriteLine('');
+  WriteLine('       /?  Ce parametre permet d''afficher l''aide sur cette commande');
  End
   Else
  Begin
-  WriteLn;
-  WriteLn('Unite    Taille   Utilise     Libre Plein  Erreurs Etat             Nom');
+  WriteLine('');
+  WriteLine('Unite    Taille   Utilise     Libre Plein  Erreurs Etat             Nom');
   For I:='A' to 'Z' do Begin
    Dsk:=Ord(I)-Ord('A');
    If DiskSize(Dsk+1)<>-1Then Begin
     Case I of
-     'A':Write('DF0:');
-     'B':Write('DF1:');
+     'A':WriteStr('DF0:');
+     'B':WriteStr('DF1:');
      Else Begin
-      Write('DH',Dsk-2,':');
-      If Dsk<12Then Write(' ');
+      WriteStr('DH'+IntToStr(Dsk-2)+':');
+      If Dsk<12Then WriteStr(' ');
      End;
     End;
     If DiskSize(Dsk+1)>1073741824Then Write(DiskSize(Dsk+1) shr 30:9,'G')Else
@@ -590,26 +790,26 @@ Begin
     If DiskFree(Dsk+1)>1048576Then Write(DiskFree(Dsk+1) shr 20:10) Else
     If DiskFree(Dsk+1)>1024Then Write(DiskFree(Dsk+1) shr 10:10)
                 Else Write(DiskFree(Dsk+1):10);
-    Write(Trunc(((DiskSize(Dsk+1)-DiskFree(Dsk+1))/DiskSize(Dsk+1))*100):6,'%');
-    Write('  ',0,' ':6);
-    Write('Lecture/Ecriture ');
-    Write(GetDiskLabel(Dsk+1));
-    WriteLn;
+    WriteStr(IntToStrPad(Trunc(((DiskSize(Dsk+1)-DiskFree(Dsk+1))/DiskSize(Dsk+1))*100),6)+'%');
+    WriteStr('  '+IntToStr(0)+'      ');
+    WriteStr('Lecture/Ecriture ');
+    WriteStr(GetDiskLabel(Dsk+1));
+    WriteLine('');
    End;
   End;
  End;
 End;
 
 Procedure INSTALLCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure JOINCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure LABCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure LISTCommand;
@@ -625,9 +825,9 @@ Var
  NumFiles,NumDirectories:LongInt;
 Begin
  If(ExtractParam(1)='--help')or(ExtractParam(1)='-h')Then Begin
-  WriteLn('LIST : Cette commande permet d''afficher les fichiers d''un repertoire.');
-  WriteLn;
-  WriteLn('Syntaxe : LIST [-l] [-s] [-t] [<repertoire>]');
+  WriteLine('LIST : Cette commande permet d''afficher les fichiers d''un r‚pertoire.');
+  WriteLine('');
+  WriteLine('Syntaxe : LIST [-l] [-s] [-t] [<repertoire>]');
  End
   Else
  Begin
@@ -647,14 +847,14 @@ Begin
    If Not((Info.Name='.')or(Info.Name='..'))Then Begin
     If(Info.Attr and Directory=Directory)Then Inc(NumDirectories)
                                          Else Inc(NumFiles);
-    Write(PadRight(Info.Name,40));
+    WriteStr(PadRight(Info.Name,40));
     If Not((Quick)in(Option))Then Begin
      If(Info.Attr and Directory=Directory)Then Begin
-      Write('Dir':10,' ');
+      WriteStr('Dir'+'       '+' ');
      End
       Else
-     Write((Info.Size shr 9)+Byte((Info.Size and$1FF)>0):10,' ');
-     Write('----r');
+     WriteStr(IntToStrPad((Info.Size shr 9)+Byte((Info.Size and$1FF)>0),10)+' ');
+     WriteStr('----r');
      If(Info.Attr and ReadOnly=ReadOnly)Then Write('-')
                                         Else Write('w');
      If Path2Ext(Info.Name)='.EXE'Then Write('e')
@@ -663,14 +863,16 @@ Begin
                                           Else Write('-');
      Write(' ');
      UnpackTime(Info.Time,T);
-     Write(' ',T.Day:2,'-',Mon[T.Month],'-',Copy(PadZeroLeft(T.Year,2),3,2));
-     Write(' ',T.Hour:2,':',PadZeroLeft(T.Min,2),' ');
+     WriteStr(' '+IntToStrPad(T.Day,2)+'-'+Mon[T.Month]+'-'+
+              Copy(PadZeroLeft(T.Year,2),3,2));
+     WriteStr(' '+IntToStrPad(T.Hour,2)+':'+PadZeroLeft(T.Min,2)+' ');
     End;
-    WriteLn;
+    WriteLine('');
    End;
    FindNext(Info);
   End;
-  WriteLn(NumFiles,' fichiers - ',NumDirectories,' repertoires');
+  WriteLine(IntToStr(NumFiles)+' fichiers - '+
+            IntToStr(NumDirectories)+' r‚pertoires');
  End;
 End;
 
@@ -686,35 +888,35 @@ Begin
   CurrParam:=ExtractParam(P);
   If CurrParam=''Then Begin
    If P=1Then Begin
-    WriteLn('ParamŠtre requis');
+    WriteLine('ParamŠtre requis');
    End;
    Break;
   End
    Else
   If CurrParam='/?'Then Begin
-   WriteLn('MAKEDIR   Cette commande permet de creer un repertoire.');
-   WriteLn;
-   WriteLn('Syntaxe:');
-   WriteLn;
-   WriteLn('MAKEDIR [/?] nomrepertoire');
-   WriteLn;
-   WriteLn('  nomrepertoire   Ce parametre permet d''indiquer le nom du repertoire');
-   WriteLn('            /?    Ce parametre permet d''afficher l''aide sur cette commande');
+   WriteLine('MAKEDIR   Cette commande permet de creer un repertoire.');
+   WriteLine('');
+   WriteLine('Syntaxe:');
+   WriteLine('');
+   WriteLine('MAKEDIR [/?] nomrepertoire');
+   WriteLine('');
+   WriteLine('  nomrepertoire   Ce parametre permet d''indiquer le nom du repertoire');
+   WriteLine('            /?    Ce parametre permet d''afficher l''aide sur cette commande');
    Exit;
   End;
   {$I-}MkDir(CurrParam);{$I+}
   Err:=IoResult;
-  If Err<>0Then WriteLn(GetErrorMessage(Err));
+  If Err<>0Then WriteLine(GetErrorMessage(Err));
   If P>9Then Break;
  Until CurrParam='';
 End;
 
 Procedure MOUNTCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure NEWCLICommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure PATHCommand;
@@ -728,15 +930,15 @@ Begin
   CurrParam:=ExtractParam(P);
   If Length(CurrParam)=0Then Break;
   If CurrParam='/?'Then Begin
-   WriteLn('PATH  Cette commande permet de ger les chemins d''acces par defaut.');
-   WriteLn;
-   WriteLn('Syntaxe:');
-   WriteLn;
-   WriteLn('PATH [/?] [SHOW]');
-   WriteLn;
-   WriteLn('Parametres');
-   WriteLn;
-   WriteLn(' SHOW    Affiche la liste des repertoires a rechercher');
+   WriteLine('PATH  Cette commande permet de ger les chemins d''acces par defaut.');
+   WriteLine('');
+   WriteLine('Syntaxe:');
+   WriteLine('');
+   WriteLine('PATH [/?] [SHOW]');
+   WriteLine('');
+   WriteLine('Parametres');
+   WriteLine('');
+   WriteLine(' SHOW    Affiche la liste des repertoires a rechercher');
   End
    Else
   If StrToUpper(CurrParam)='SHOW'Then Begin
@@ -744,20 +946,20 @@ Begin
    TPath:='';
    For I:=1 to Length(PATH)do Begin
     If PATH[I]=';'Then Begin
-     WriteLn(TPath);
+     WriteLine(TPath);
      TPath:='';
     End
      Else
     TPath:=TPath+Path[I];
    End;
-   WriteLn(TPath);
+   WriteLine(TPath);
   End;
   If P>99Then Break;
  Until CurrParam='';
 End;
 
 Procedure PROMPTCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure PROTECTCommand;
@@ -778,11 +980,11 @@ Begin
   CurrParam:=ExtractParam(P);
   If Length(CurrParam)=0Then Break;
   If CurrParam='/?'Then Begin
-   WriteLn('PROTECT  Cette commande permet de fixer les protection de mode d''acces d''un fichier.');
-   WriteLn;
-   WriteLn('Syntaxe:');
-   WriteLn;
-   WriteLn('PROTECT [/?] nomdefichier [FLAGS etat]');
+   WriteLine('PROTECT  Cette commande permet de fixer les protection de mode d''acces d''un fichier.');
+   WriteLine('');
+   WriteLine('Syntaxe:');
+   WriteLine('');
+   WriteLine('PROTECT [/?] nomdefichier [FLAGS etat]');
   End
    Else
   If(InFlags)Then Begin
@@ -809,7 +1011,7 @@ Begin
   SetFAttr(F,CurrAttr);
  End
   Else
- WriteLn('Nom de fichier requis !');
+ WriteLine('Nom de fichier requis !');
 End;
 
 Procedure QUITCommand;
@@ -819,15 +1021,15 @@ Var
 Begin
  FirstParam:=ExtractParam(1);
  If FirstParam='/?'Then Begin
-  WriteLn('QUIT  Cette commande permet de quitter l''interpreteur de commande.');
-  WriteLn;
-  WriteLn('Syntaxe:');
-  WriteLn;
-  WriteLn('QUIT [/?] [CodeSortie]');
-  WriteLn;
-  WriteLn(' CodeSortie   Ce parametre permet d''indiquer le code de sortie a ',
+  WriteLine('QUIT  Cette commande permet de quitter l''interpreteur de commande.');
+  WriteLine('');
+  WriteLine('Syntaxe:');
+  WriteLine('');
+  WriteLine('QUIT [/?] [CodeSortie]');
+  WriteLine('');
+  WriteLine(' CodeSortie   Ce parametre permet d''indiquer le code de sortie a '+
                          'retourner a l''application parent');
-  WriteLn('        /?    Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLine('        /?    Ce parametre permet d''afficher l''aide sur cette commande');
 
  End
   Else
@@ -841,148 +1043,230 @@ Begin
 End;
 
 Procedure READCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure RELABELCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure RENAMECommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure RUNCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure SEARCHCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure SETDATECommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure SETMAPCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure SKIPCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure SORTCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure STACKCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure STATUSCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure TYPECommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure WAITCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure WHYCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ WriteLine('Cette commande n''est pas mise en oeuvre');
 End;
 
 Procedure UnknownCommand;Begin
  Exec(CurrCommand,ParamList);
  If DosError<>0Then Begin
-  WriteLn('Commande ou nom de fichier non reconnu');
+  WriteLine('Commande ou nom de fichier non reconnu');
  End;
- WriteLn;
+ WriteLine('');
+End;
+
+Procedure ReadLine(Var S:String);
+Var
+ K:Char;
+ X,Y,I:Byte;
+ CurrHistory:Integer;
+ CursorState:Boolean;
+Begin
+ X:=XPos;
+ Y:=Ypos;
+ S:='';
+ Repeat
+  WriteXY(X,Y,S);
+  ClearEol;
+  CursorState:=True;
+  Repeat
+   If(CursorState)Then ShowCursor
+                  Else HideCursor;
+   If Not(Keypressed)Then Delay(250);
+   CursorState:=Not CursorState;
+  Until Keypressed;
+  HideCursor;
+  K:=ReadKey;
+  Case K of
+   #0:Case ReadKey of
+    #72:;
+   End;
+   #8:Begin
+    If S<>''Then S:=Copy(S,1,Length(S)-1);
+   End;
+   #9:If S<>''Then Begin
+    S:=S+'        ';
+   End;
+   Else S:=S+K;
+  End;
+  If S[Length(S)]=#13Then Begin
+   S:=Copy(S,1,Length(S)-1);
+   K:=#13;
+  End;
+ Until K=#13;
+ WriteLineXY(X,Y,S);
+ XPos:=MinColumn;
+ Inc(YPos);
 End;
 
 BEGIN
- Echo:=True;Terminated:=False;
- HomeMessage;
- Repeat
-  ShowPrompt;
-  ReadLn(CmdStr);
-  ExtractCommand;
-  CommandFound:=False;
-  For J:=Low(CommandList) to High(CommandList) do Begin
-   If CurrCommand=CommandList[J]Then Begin
-    Case(J)of
-      0:ADDBUFFERSCommand;
-      1:ALINKCommand;
-      2:ASSEMCommand;
-      3:ASSIGNCommand;
-      4:BINDDRIVERSCommand;
-      5:BREAKCommand;
-      6:CDCommand;
-      7:CHANGETASKPRICommand;
-      8:COPYCommand;
-      9:DATECommand;
-      10:DELETECommand;
-      11:DIRCommand;
-      12:DISKCHANGECommand;
-      13:DISKCOPYCommand;
-      14:DISKDOCTORCommand;
-      15:DOWNLOADCommand;
-      16:ECHOCommand;
-      17:EDCommand;
-      18:EDITCommand;
-      19:ENDCLICommand;
-      20:EXECUTECommand;
-      21:FAILATCommand;
-      22:FAULTCommand;
-      23:FILENOTECommand;
-      24:FORMATCommand;
-      25:IFCommand;
-      26:INFOCommand;
-      27:INSTALLCommand;
-      28:JOINCommand;
-      29:LABCommand;
-      30:LISTCommand;
-      31:MAKEDIRCommand;
-      32:MOUNTCommand;
-      33:NEWCLICommand;
-      34:PATHCommand;
-      35:PROMPTCommand;
-      36:PROTECTCommand;
-      37:QUITCommand;
-      38:READCommand;
-      39:RELABELCommand;
-      40:RENAMECommand;
-      41:RUNCommand;
-      42:SEARCHCommand;
-      43:SETDATECommand;
-      44:SETMAPCommand;
-      45:SKIPCommand;
-      46:SORTCommand;
-      47:STACKCommand;
-      48:STATUSCommand;
-      49:TYPECommand;
-      50:WAITCommand;
-      51:WHYCommand;
-    End;
-    If J<=High(CommandList)Then Begin
-     CommandFound:=True;
-     WriteLn;
-     Break;
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+ End;
+ If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
+  WriteLn('AMIGADOS : Cette commande permet de lancer l''interpr‚teur de commande AmigaDOS');
+  WriteLn;
+  WriteLn('Syntaxe : AMIGADOS [/GUI]');
+  WriteLn;
+  WriteLn(' /GUI  Ce paramŠtre permet de lancer AmigaDOS en graphique');
+ End
+  Else
+ Begin
+  InGraph:=False;
+  If StrToUpper(ParamStr(1))='/GUI'Then InGraph:=True;
+  MaxX:=639;
+  MinLine:={1}4;
+  MaxLine:={25}40;
+  MinColumn:={1}15;
+  MaxColumn:={80}75;
+  Echo:=True;Terminated:=False;
+  If(InGraph)Then Begin
+   InitScr;
+   ShowAmigaWindow(MinColumn,MinLine,MaxColumn,MaxLine,'AmigaDOS');
+   XPos:=MinColumn;
+   YPos:=MinLine;
+  End;
+  HomeMessage;
+  Repeat
+   ShowPrompt;
+   If(InGraph)Then ReadLine(CmdStr)
+              Else ReadLn(CmdStr);
+   ExtractCommand;
+   CommandFound:=False;
+   For J:=Low(CommandList) to High(CommandList) do Begin
+    If CurrCommand=CommandList[J]Then Begin
+     Case(J)of
+       0:ADDBUFFERSCommand;
+       1:ALINKCommand;
+       2:ASSEMCommand;
+       3:ASSIGNCommand;
+       4:BINDDRIVERSCommand;
+       5:BREAKCommand;
+       6:CDCommand;
+       7:CHANGETASKPRICommand;
+       8:COPYCommand;
+       9:DATECommand;
+       10:DELETECommand;
+       11:DIRCommand;
+       12:DISKCHANGECommand;
+       13:DISKCOPYCommand;
+       14:DISKDOCTORCommand;
+       15:DOWNLOADCommand;
+       16:ECHOCommand;
+       17:EDCommand;
+       18:EDITCommand;
+       19:ENDCLICommand;
+       20:EXECUTECommand;
+       21:FAILATCommand;
+       22:FAULTCommand;
+       23:FILENOTECommand;
+       24:FORMATCommand;
+       25:IFCommand;
+       26:INFOCommand;
+       27:INSTALLCommand;
+       28:JOINCommand;
+       29:LABCommand;
+       30:LISTCommand;
+       31:MAKEDIRCommand;
+       32:MOUNTCommand;
+       33:NEWCLICommand;
+       34:PATHCommand;
+       35:PROMPTCommand;
+       36:PROTECTCommand;
+       37:QUITCommand;
+       38:READCommand;
+       39:RELABELCommand;
+       40:RENAMECommand;
+       41:RUNCommand;
+       42:SEARCHCommand;
+       43:SETDATECommand;
+       44:SETMAPCommand;
+       45:SKIPCommand;
+       46:SORTCommand;
+       47:STACKCommand;
+       48:STATUSCommand;
+       49:TYPECommand;
+       50:WAITCommand;
+       51:WHYCommand;
+     End;
+     If J<=High(CommandList)Then Begin
+      CommandFound:=True;
+      WriteLn;
+      Break;
+     End;
     End;
    End;
-  End;
-  If Not(CommandFound)Then Begin
-   If CmdStr='?'Then Begin
-    For I:=Low(CommandList) to High(CommandList) do Write(PadRight(CommandList[I],10));
-    WriteLn;
-    WriteLn;
-   End
-    Else
-   UnknownCommand;
-  End;
- Until Terminated;
+   If Not(CommandFound)Then Begin
+    If CmdStr='?'Then Begin
+     For I:=Low(CommandList) to High(CommandList) do WriteStr(PadRight(CommandList[I],10));
+     WriteLine('');
+     WriteLine('');
+    End
+     Else
+    UnknownCommand;
+   End;
+  Until Terminated;
+ End;
 END.
