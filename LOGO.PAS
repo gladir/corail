@@ -42,7 +42,7 @@ Const
   'ALLOPEN','ATAN','BITAND','BITNOT','BITOR','BITXOR','COS'
  );
 
- MaxLine=1024;
+ MaxLineSource=1024;
  MaxVariable=100;
 
 Type
@@ -70,12 +70,13 @@ Var
  Terminated:Boolean;
  CurrCommand:String;
  FileName,CurrLine:String;
- PA:Array[1..MaxLine] of StrPointer;
+ PA:Array[1..MaxLineSource] of StrPointer;
  CurrLinePtr,NumberLine:Integer;
  CurrNumberLine:Integer;
  VarList:Array[1..MaxVariable]of VarPointer;
  I,NumberVariable:Integer;
  XPos,YPos,CurrPos:Byte;
+ MinLine,MaxLine,MinColumn,MaxColumn:Byte;
  Angle:Real;
  X,Y,XC,YC:Integer;
  PenDown:Boolean;
@@ -293,7 +294,7 @@ Function AddLine(S:String):Boolean;
 Var
  P:StrPointer;
 Begin
- If NumberLine>=MaxLine Then Begin
+ If NumberLine>=MaxLineSource Then Begin
   AddLine:=False;
   Exit;
  End;
@@ -389,6 +390,23 @@ Function IsStringValue:Boolean;Begin
  End;
 End;
 
+Procedure ScrollWindow;
+Var
+ Size:Word;
+ P:Pointer;
+ J:Integer;
+Begin
+ Size:=ImageSize(MinColumn*8,MinLine*8,(MaxColumn+1)*8-1,(MinLine+1)*8-1);
+ GetMem(P,Size);
+ For J:=MinLine+1 to MaxLine do Begin
+  GetImage(MinColumn*8,J*8,(MaxColumn+1)*8-1,(J+1)*8-1,P^);
+  PutImage(MinColumn*8,(J-1)*8,P^,NormalPut);
+ End;
+ FreeMem(P,Size);
+ SetFillStyle(SolidFill,Black);
+ Bar(MinColumn*8,MaxLine*8,(MaxColumn+1)*8+1,(MaxLine+1)*8+1);
+End;
+
 Procedure ShowCursor;Begin
  SetFillStyle(SolidFill,Blue);
  Bar(XPos*8,YPos*8,XPos*8+TextWidth(' '),YPos*8+TextHeight(' '));
@@ -415,9 +433,10 @@ Procedure WriteXY(X,Y:Byte;S:String);Begin
  Bar(XPos*8,YPos*8,XPos*8+TextWidth(S),YPos*8+TextHeight(S));
  OutTextXY(XPos*8,YPos*8,S);
  Inc(XPos,Length(S));
- If XPos>80 Then Begin
-  XPos:=1;
-  Inc(YPos);
+ If XPos>MaxColumn Then Begin
+  XPos:=MinColumn;
+  If(YPos<MaxLine)Then Inc(YPos)
+                  Else ScrollWindow;
  End;
 End;
 
@@ -426,14 +445,25 @@ Procedure WriteLineXY(X,Y:Byte;S:String);Begin
  SetFillStyle(SolidFill,Black);
  Bar(XPos*8,YPos*8,XPos*8+TextWidth(S),YPos*8+TextHeight(S));
  OutTextXY(XPos*8,YPos*8,S);
- XPos:=1;
- Inc(YPos);
+  XPos:=MinColumn;
+  If(YPos<MaxLine)Then Inc(YPos)
+                  Else ScrollWindow;
 End;
 
 Procedure WriteLine(S:String);Begin
+ If(XPos+Length(S)>MaxColumn)Then Begin
+  WriteLineXY(XPos,YPos,Copy(S,1,MaxColumn-XPos+1));
+  S:=Copy(S,MaxColumn-XPos+1,255);
+  XPos:=MinColumn;
+  If(YPos<MaxLine)Then Inc(YPos)
+                  Else ScrollWindow;
+  WriteLineXY(XPos,YPos,S);
+ End
+  Else
  WriteLineXY(XPos,YPos,S);
- XPos:=1;
- Inc(YPos);
+ XPos:=MinColumn;
+ If(YPos<MaxLine)Then Inc(YPos)
+                 Else ScrollWindow;
 End;
 
 Procedure Init;Begin
@@ -1235,8 +1265,7 @@ Begin
   End;
  Until K=#13;
  WriteLineXY(X,Y,S);
- XPos:=1;
- Inc(YPos);
+ WriteLine('');
 End;
 
 BEGIN
@@ -1256,6 +1285,10 @@ BEGIN
   NumberLine:=0;CurrNumberLine:=0;
   NumberVariable:=0;ForPos:=0;
   XPos:=1;YPos:=1;Terminated:=False;
+  MinLine:=1;
+  MaxLine:=40;
+  MinColumn:=1;
+  MaxColumn:=80;
   Init;
   InitScr;
   If ParamCount>0 Then Begin
