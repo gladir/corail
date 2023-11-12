@@ -246,6 +246,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher un code d'erreur <a href="https://www.gladir.com/CODER/BTRIEVE/intro.htm">Btrieve</a>.</td>
 		</tr>
 		<tr>
+			<td><b>BIN2ASM.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier binaire en instructions DB ou autre de l'assembleur.</td>
+		</tr>
+		<tr>
 			<td><b>BIN2BAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier binaire en DATA du BASIC.</td>
 		</tr>
