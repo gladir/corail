@@ -247,7 +247,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>BIN2ASM.PAS</b></td>
-			<td>Cettte commande permet de convertir un fichier binaire en instructions DB ou autre de l'assembleur.</td>
+			<td>Cette commande permet de convertir un fichier binaire en instructions DB ou autre de l'assembleur.</td>
 		</tr>
 		<tr>
 			<td><b>BIN2BAS.PAS</b></td>
