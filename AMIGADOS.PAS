@@ -675,8 +675,45 @@ Begin
  WriteLine('');
 End;
 
-Procedure DISKCHANGECommand;Begin
- WriteLine('Cette commande n''est pas mise en oeuvre');
+Procedure DISKCHANGECommand;
+Var
+ Letter:Char;
+ CurrParam:String;
+Begin
+ CurrParam:=ExtractParam(1);
+ If CurrParam='/?'Then Begin
+  WriteLine('DISKCHANGE   Cette commande permet de changer l''unit‚ de disque courant.');
+  WriteLine('');
+  WriteLine('Syntaxe:');
+  WriteLine('');
+  WriteLine('DISKCHANGE [/?] [dr]');
+  WriteLine('');
+  WriteLine(' /?   Ce parametre permet d''afficher l''aide sur cette commande');
+  WriteLine('dr    Ce paramŠtre permet d''indiquerle nouvel unit‚ de disque');
+ End
+  Else
+ If(Length(CurrParam)=4)and(CurrParam[4]=':')Then Begin
+  Letter:='@';
+  If StrToUpper(CurrParam)='DF0:'Then Letter:='A' Else
+  If StrToUpper(CurrParam)='DF1:'Then Letter:='B' Else
+  If StrToUpper(Copy(CurrParam,1,2))='HD'Then Begin
+   Letter:=Chr(Ord('C')+(Ord(UpCase(CurrParam[3]))-Ord('0')));
+  End
+   Else
+  Begin
+   WriteLine('Disque invalide !');
+   Exit;
+  End;
+  If Letter='@'Then Begin
+   WriteLine('Disque non reconnu !');
+   Exit;
+  End;
+  {$I-}ChDir(Letter+':\');{$I+}
+  If IoResult<>0 Then Begin
+   WriteLine('Impossible de changer d''unit‚ de disque.');
+   Exit;
+  End;
+ End;
 End;
 
 Procedure DISKCOPYCommand;Begin
