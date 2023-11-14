@@ -51,7 +51,7 @@ Type
 Var
  SourceICO:File;
  Header:IconHeader;
- Size,I,J,K,Min,Max,BytesPerLine,ByteReaded:Word;
+ B,Size,I,J,K,Min,Max,BytesPerLine,ByteReaded:Word;
  Buffer:Array[0..4095]of Byte;
  BitMap:BitMapInfoHeader Absolute Buffer;
 
@@ -98,9 +98,13 @@ If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
     Halt;
    End;
    WriteLn(' BitsPerPixel=',BitMap.biBitCount,';');
+   B:=SizeOf(BitmapInfoHeader);
    Case BitMap.biBitCount of
     1:BytesPerLine:=Header.idEntries[I-1].bWidth shr 4;
-    4:BytesPerLine:=Header.idEntries[I-1].bWidth shr 1;
+    4:Begin
+     BytesPerLine:=Header.idEntries[I-1].bWidth shr 1;
+     Inc(B,4*16);
+    End;
     8:BytesPerLine:=Header.idEntries[I-1].bWidth;
     15,16:BytesPerLine:=Header.idEntries[I-1].bWidth shl 1;
     24:BytesPerLine:=Header.idEntries[I-1].bWidth*3;
@@ -113,7 +117,7 @@ If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
    For J:=Header.idEntries[I-1].bHeight-1 downto 0 do Begin
     Write('  ');
     For K:=0 to BytesPerLine-1 do Begin
-     Write('$',ByteHex2Str(Buffer[SizeOf(BitmapInfoHeader)+J*(Header.idEntries[I-1].bWidth shr 1)+K]));
+     Write('$',ByteHex2Str(Buffer[B+J*(Header.idEntries[I-1].bWidth shr 1)+K]));
      If((K=BytesPerLine-1)and(J=0))Then Begin
      End
       Else
