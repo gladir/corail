@@ -825,6 +825,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de transformer un icône (.ICO) en code source Python.</td>
 		</tr>
 		<tr>
+			<td><b>ICO2XBM.PAS</b></td>
+			<td>Cette commande permet de transformer un icône (.ICO) en format XBM (X BitMap).</td>
+		</tr>
+		<tr>
 			<td><b>IMG2HTML.PAS</b></td>
 			<td>Cette commande permet de convertir une image en code HTML.</td>
 		</tr>
