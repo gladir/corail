@@ -1197,6 +1197,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de visualiser un fichier binaire en mode hexadécimal.</td>
 		</tr>
 		<tr>
+			<td><b>VIEWICO.PAS</b></td>
+			<td>Cette commande permet de visualiser un icône (.ICO).</td>
+		</tr>
+		<tr>
 			<td><b>VOL.PAS</b></td>
 			<td>Cette commande permet d'afficher le nom du volume d'une unité de disque.</td>
 		</tr>
