@@ -801,6 +801,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de transformer un icône (.ICO) en code source C.</td>
 		</tr>
 		<tr>
+			<td><b>ICO2CSP.PAS</b></td>
+			<td>Cette commande permet de transformer un icône (.ICO) en code source CSP (C Server Pages).</td>
+		</tr>
+		<tr>
 			<td><b>ICO2PAS.PAS</b></td>
 			<td>Cette commande permet de transformer un icône (.ICO) en code source Pascal.</td>
 		</tr>
