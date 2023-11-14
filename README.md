@@ -798,7 +798,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>ICO2C.PAS</b></td>
-			<td><td>Cette commande permet de transformer un icône (.ICO) en code source C.</td>
+			<td>Cette commande permet de transformer un icône (.ICO) en code source C.</td>
 		</tr>
 		<tr>
 			<td><b>ICO2PAS.PAS</b></td>
