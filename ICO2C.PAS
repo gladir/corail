@@ -111,7 +111,7 @@ If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
    End;
    WriteLn('#define BytesPerLine ',BytesPerLine);
    WriteLn('const unsigned char BitmapData[',
-           (Header.idEntries[I-1].bHeight*BytesPerLine)-1,
+           (Header.idEntries[I-1].bHeight*BytesPerLine),
            '] = {');
    For J:=Header.idEntries[I-1].bHeight-1 downto 0 do Begin
     Write(' ');
