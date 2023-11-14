@@ -801,6 +801,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de transformer un icône (.ICO) en code source assembleur.</td>
 		</tr>
 		<tr>
+			<td><b>ICO2BAS.PAS</b></td>
+			<td>Cette commande permet de transformer un icône (.ICO) en code source BASIC.</td>
+		</tr>
+		<tr>
 			<td><b>ICO2C.PAS</b></td>
 			<td>Cette commande permet de transformer un icône (.ICO) en code source C.</td>
 		</tr>
