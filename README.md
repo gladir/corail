@@ -998,8 +998,12 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>PPM2C.PAS</b></td>
-			<<td>Cette commadne permet de convertir une image de format PPM (Portable PixMap) en code source C.</td>
+			<td>Cette commande permet de convertir une image de format PPM (Portable PixMap) en code source C.</td>
 		</tr>
+		<tr>
+			<td><b>PPM2CSP.PAS</b></td>
+			<td>Cette commande permet de convertir une image de format PPM (Portable PixMap) en code source CSP (C Server Pages).</td>
+		</tr>			
 		<tr>
 			<td><b>PPM2PAS.PAS</b></td>
 			<td>Cette commadne permet de convertir une image de format PPM (Portable PixMap) en code source Pascal.</td>
