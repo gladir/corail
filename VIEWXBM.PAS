@@ -16,8 +16,9 @@ Var
  SourceXBM:Text;
  ImageWidth,ImageHeight:Word;
  SourceFileName,CurrLine,CurrWord,CurrValue:String;
+ R,G,B:Byte;
  Buffer:Array[0..4095]of Byte;
- I,Value,BytesPerLine,BitsPerPixel:Integer;
+ I,Value,BytesPerLine,BitsPerPixel,CountValue:Integer;
  Err:Word;
  CountData:LongInt;
  PixelX,PixelY:Word;
@@ -70,6 +71,20 @@ Begin
  Hex2Integer:=hexVal;
 End;
 
+Function RGBTo16Color(R,G,B:Byte):Integer;
+Var
+ Kr:Byte;
+Begin
+ Kr:=0;
+ If(R)and$80=$80Then Kr:=Kr or$04;
+ If(R)and$40=$40Then Kr:=Kr or$20;
+ If(G)and$80=$80Then Kr:=Kr or$02;
+ If(G)and$40=$40Then Kr:=Kr or$10;
+ If(B)and$80=$80Then Kr:=Kr or$01;
+ If(B)and$40=$40Then Kr:=Kr or$08;
+ RGBTo16Color:=Kr and$F;
+End;
+
 Procedure InitScr;
 Var
  Driver,Mode:Integer;
@@ -115,6 +130,24 @@ Procedure AddPixel;Begin
     PixelX:=0;
     Inc(PixelY);
    End;
+  End;
+  24:Begin
+   Case CountValue of
+    0:R:=Value;
+    1:G:=Value;
+    2:Begin
+     B:=Value;
+     Value:=RGBTo16Color(R,G,B);
+     PutPixel(PixelX,PixelY,Value);
+     If(PixelX+1<ImageWidth)Then Inc(PixelX)
+      Else
+     Begin
+      PixelX:=0;
+      Inc(PixelY);
+     End;
+    End;
+   End;
+   CountValue:=(CountValue+1)mod 3;
   End;
  End;
 End;
@@ -202,6 +235,7 @@ BEGIN
     End
      Else
     Begin
+     CountValue:=0;
      CurrWord:='';
      For I:=1 to Length(CurrLine)do Begin
       If CurrLine[I]in[',','}',';']Then Begin
