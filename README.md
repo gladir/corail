@@ -993,6 +993,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer l'interpréteur de commande Prompt Pascal.</td>
 		</tr>
 		<tr>
+			<td><b>PPM2PAS.PAS</b></td>
+			<td>Cette commadne permet de convertir une image de format PPM (Portable PixMap) en code source Pascal.</td>
+		</tr>
+		<tr>
 			<td><b>PPM2XBM.PAS</b></td>
 			<td>Cette commande permet de convertir une image de format PPM (Portable PixMap) en XBM (X BitMap).</td>
 		</tr>
