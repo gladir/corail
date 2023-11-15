@@ -242,6 +242,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer une commande étendu pour les fichiers de traitements par lots. Cette commande est inspiré de la commande BE de Norton Utilities.</td>
 		</tr>
 		<tr>
+			<td><b>BEAUTIFY.PAS</b></td>
+			<td>Cette commande permet de rendre lisible le formatage d'un fichier de format JSON.</td>
+		</tr>
+		<tr>
 			<td><b>BERR.PAS</b></td>
 			<td>Cette commande permet d'afficher un code d'erreur <a href="https://www.gladir.com/CODER/BTRIEVE/intro.htm">Btrieve</a>.</td>
 		</tr>
