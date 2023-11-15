@@ -1006,11 +1006,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>			
 		<tr>
 			<td><b>PPM2PAS.PAS</b></td>
-			<td>Cette commadne permet de convertir une image de format PPM (Portable PixMap) en code source Pascal.</td>
+			<td>Cette commande permet de convertir une image de format PPM (Portable PixMap) en code source Pascal.</td>
 		</tr>
 		<tr>
 			<td><b>PPM2PSP.PAS</b></td>
-			<td>Cette commadne permet de convertir une image de format PPM (Portable PixMap) en code source PSP (Pascal Server Pages).</td>
+			<td>Cette commande permet de convertir une image de format PPM (Portable PixMap) en code source PSP (Pascal Server Pages).</td>
 		</tr>			
 		<tr>
 			<td><b>PPM2XBM.PAS</b></td>
