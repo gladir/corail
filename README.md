@@ -817,6 +817,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de transformer un icône (.ICO) en code source Pascal.</td>
 		</tr>
 		<tr>
+			<td><b>ICO2PPM.PAS</b></td>
+			<td>Cette commande permet de transformer un icône en format d'image PPM (Portable PixMap).</td>
+		</tr>
+		<tr>
 			<td><b>ICO2PSP.PAS</b></td>
 			<td>Cette commande permet de transformer un icône (.ICO) en code source PSP (Pascal Server Pages).</td>
 		</tr>
