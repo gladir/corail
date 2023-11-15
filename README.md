@@ -994,7 +994,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>PPM2XBM.PAS</b></td>
-			<td>Cette commande peremt de convertir une image de format PPM (Portable PixMap) en XBM (X BitMap).</td>
+			<td>Cette commande permet de convertir une image de format PPM (Portable PixMap) en XBM (X BitMap).</td>
 		</tr>
 		<tr>
 			<td><b>PRINT.PAS</b></td>
