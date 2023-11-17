@@ -13,7 +13,8 @@ Uses {$IFDEF FPC}
      {$ENDIF};
 
 Var
- SourceCSV:Text;
+ SourceCSV,TargetSVG:Text;
+ MakeSVG:Boolean;
  NombreSommet,PosField:Integer;
  Err:Word;
  TailleAngle:Real;
@@ -21,7 +22,17 @@ Var
  Web,WebNotes:Array[1..100]of PointType;
  Value:Array[1..100]of Integer;
  ValueMessage:Array[1..100]of String[50];
- FileName,CurrLine,CurrWord:String;
+ FileName,FileNameSVG,CurrLine,CurrWord:String;
+
+Function StrToUpper(S:String):String;
+Var
+ I:Byte;
+Begin
+ For I:=1 to Length(S)do Begin
+  If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
+ End;
+ StrToUpper:=S;
+End;
 
 Procedure InitScr;
 Var
@@ -59,21 +70,27 @@ BEGIN
   WriteLn('WEBGRAPH : Cette commande permet d''afficher un graphique ',
                      'en toile d''araignÇe Ö partir de donnÇes.');
   WriteLn;
-  WriteLn('Syntaxe : WEBGRAPH source.csv');
+  WriteLn('Syntaxe : WEBGRAPH [/FORMAT:SVG] source.csv [target.svg]');
   WriteLn;
-  WriteLn(' fichier.CSV  Nom du fichier a analyser');
-  WriteLn;
+  WriteLn(' fichier.csv  Nom du fichier a analyser');
+  WriteLn(' target.svg   Nom du fichier allant contenir le SVG');
+  WriteLn(' /FORMAT:SVG  Sort le rÇsultat en format SVG.');
  End
   Else
  If ParamCount>0 Then Begin
+  MakeSVG:=False;
   NombreSommet:=0;
   FileName:='';
+  FileNameSVG:='';
   FillChar(Value,SizeOf(Value),0);
   FillChar(ValueMessage,SizeOf(ValueMessage),#0);
   FillChar(Web,SizeOf(Web),0);
   FillChar(WebNotes,SizeOf(WebNotes),0);
   For I:=1 to ParamCount do Begin
-   FileName:=ParamStr(I);
+   If(StrToUpper(ParamStr(I))='/SVG')or
+     (StrToUpper(ParamStr(I))='/FORMAT:SVG')Then MakeSVG:=True Else
+   If FileName=''Then FileName:=ParamStr(I)
+                 Else FileNameSVG:=ParamStr(I);
   End;
   If FileName=''Then Begin
    WriteLn('Fichier de donnÇes attendue !');
@@ -113,54 +130,169 @@ BEGIN
    End;
   End;
   Close(SourceCSV);
-  InitScr;
-  TailleAngle:=(360/NombreSommet)*0.017453292520;
-  CenterX:=320 {(GetMaxX+1) shr 1};
-  CenterY:=100 {(GetMaxY+1) shr 1};
-  SetColor(8);
-  For J:=1 to 5 do Begin
-   Rayon:=J*10;
-   For I:=1 to NombreSommet do Begin
-    XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
-    YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
-    Web[I].X:=CenterX+XMove;
-    Web[I].Y:=CenterY+YMove;
-   End;
-   Web[NombreSommet+1].X:=Web[1].X;
-   Web[NombreSommet+1].Y:=Web[1].Y;
-   DrawPoly(NombreSommet+1,Web);
-  End;
-  For I:=1 to NombreSommet do Begin
-   Rayon:=7*10;
-   XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
-   YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
-   Line(CenterX,CenterY,CenterX+XMove,CenterY+YMove);
-  End;
-  SetColor(LightGreen);
-  For I:=1 to NombreSommet do Begin
-   Rayon:=9*10;
-   XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
-   YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
-   If(YMove=0)and(XMove>0)Then Begin
-    OutTextXY(CenterX+XMove,
-              CenterY+YMove,ValueMessage[I]);
+  If(MakeSVG)Then Begin
+   If FileNameSVG<>''Then Begin
+    {$I+}Assign(TargetSVG,FileNameSVG);
+    Rewrite(TargetSVG);{$I-}
+    If IOResult=0 Then Begin
+     WriteLn(TargetSVG,'<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">');
+     TailleAngle:=(360/NombreSommet)*0.017453292520;
+     CenterX:=320 {(GetMaxX+1) shr 1};
+     CenterY:=100 {(GetMaxY+1) shr 1};
+     For J:=1 to 5 do Begin
+      Rayon:=J*10;
+      Write(TargetSVG,'<polyline stroke="black" stroke-width="1" fill="none" points="');
+      For I:=1 to NombreSommet do Begin
+       XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+       YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+       Web[I].X:=CenterX+XMove;
+       Web[I].Y:=CenterY+YMove;
+       Write(TargetSVG,Web[I].X,' ',Web[I].Y,' ');
+      End;
+      Web[NombreSommet+1].X:=Web[1].X;
+      Web[NombreSommet+1].Y:=Web[1].Y;
+      Write(TargetSVG,Web[NombreSommet+1].X,' ',Web[NombreSommet+1].Y);
+      WriteLn(TargetSVG,'"/>');
+     End;
+     For I:=1 to NombreSommet do Begin
+      Rayon:=7*10;
+      XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+      YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+      Write(TargetSVG,'<line x1="',CenterX,'" ',
+                      'y1="',CenterY,'" ',
+                      'x2="',CenterX+XMove,'" ',
+                      'y2="',CenterY+YMove,'"/>');
+     End;
+     For I:=1 to NombreSommet do Begin
+      Rayon:=9*10;
+      XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+      YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+      Write(TargetSVG,'<text x="',CenterX+XMove,'" y="',CenterY+YMove,'">');
+      Write(TargetSVG,ValueMessage[I]);
+      WriteLn(TargetSVG,'</text>');
+     End;
+     Write(TargetSVG,'<polyline stroke="blue" stroke-width="1" fill="none" points="');
+     For I:=1 to NombreSommet do Begin
+      Rayon:=Value[I]*10;
+      XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+      YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+      WebNotes[I].X:=CenterX+XMove;
+      WebNotes[I].Y:=CenterY+YMove;
+      Write(TargetSVG,WebNotes[I].X,' ',WebNotes[I].Y,' ');
+     End;
+     WebNotes[NombreSommet+1].X:=WebNotes[1].X;
+     WebNotes[NombreSommet+1].Y:=WebNotes[1].Y;
+     Write(TargetSVG,WebNotes[NombreSommet+1].X,' ',WebNotes[NombreSommet+1].Y);
+     WriteLn(TargetSVG,'"/>');
+     WriteLn(TargetSVG,'</svg>');
+     Close(TargetSVG);
+    End;
    End
     Else
-   OutTextXY(CenterX+XMove-(TextWidth(ValueMessage[I])shr 1),
-             CenterY+YMove,ValueMessage[I]);
+   Begin
+    WriteLn('<svg width="640" height="480" xmlns="http://www.w3.org/2000/svg">');
+    TailleAngle:=(360/NombreSommet)*0.017453292520;
+    CenterX:=320 {(GetMaxX+1) shr 1};
+    CenterY:=100 {(GetMaxY+1) shr 1};
+    For J:=1 to 5 do Begin
+     Rayon:=J*10;
+     Write('<polyline stroke="black" stroke-width="1" fill="none" points="');
+     For I:=1 to NombreSommet do Begin
+      XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+      YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+      Web[I].X:=CenterX+XMove;
+      Web[I].Y:=CenterY+YMove;
+      Write(Web[I].X,' ',Web[I].Y,' ');
+     End;
+     Web[NombreSommet+1].X:=Web[1].X;
+     Web[NombreSommet+1].Y:=Web[1].Y;
+     Write(Web[NombreSommet+1].X,' ',Web[NombreSommet+1].Y);
+     WriteLn('"/>');
+    End;
+    For I:=1 to NombreSommet do Begin
+     Rayon:=7*10;
+     XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+     YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+     Write('<line x1="',CenterX,'" ',
+            'y1="',CenterY,'" ',
+            'x2="',CenterX+XMove,'" ',
+            'y2="',CenterY+YMove,'"/>');
+    End;
+    For I:=1 to NombreSommet do Begin
+     Rayon:=9*10;
+     XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+     YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+     Write('<text x="',CenterX+XMove,'" y="',CenterY+YMove,'">');
+     Write(ValueMessage[I]);
+     WriteLn('</text>');
+    End;
+    Write('<polyline stroke="blue" stroke-width="1" fill="none" points="');
+    For I:=1 to NombreSommet do Begin
+     Rayon:=Value[I]*10;
+     XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+     YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+     WebNotes[I].X:=CenterX+XMove;
+     WebNotes[I].Y:=CenterY+YMove;
+     Write(WebNotes[I].X,' ',WebNotes[I].Y,' ');
+    End;
+    WebNotes[NombreSommet+1].X:=WebNotes[1].X;
+    WebNotes[NombreSommet+1].Y:=WebNotes[1].Y;
+    Write(WebNotes[NombreSommet+1].X,' ',WebNotes[NombreSommet+1].Y);
+    WriteLn('"/>');
+    WriteLn('</svg>');
+   End;
+  End
+   Else
+  Begin
+   InitScr;
+   TailleAngle:=(360/NombreSommet)*0.017453292520;
+   CenterX:=320 {(GetMaxX+1) shr 1};
+   CenterY:=100 {(GetMaxY+1) shr 1};
+   SetColor(8);
+   For J:=1 to 5 do Begin
+    Rayon:=J*10;
+    For I:=1 to NombreSommet do Begin
+     XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+     YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+     Web[I].X:=CenterX+XMove;
+     Web[I].Y:=CenterY+YMove;
+    End;
+    Web[NombreSommet+1].X:=Web[1].X;
+    Web[NombreSommet+1].Y:=Web[1].Y;
+    DrawPoly(NombreSommet+1,Web);
+   End;
+   For I:=1 to NombreSommet do Begin
+    Rayon:=7*10;
+    XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+    YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+    Line(CenterX,CenterY,CenterX+XMove,CenterY+YMove);
+   End;
+   SetColor(LightGreen);
+   For I:=1 to NombreSommet do Begin
+    Rayon:=9*10;
+    XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+    YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+    If(YMove=0)and(XMove>0)Then Begin
+     OutTextXY(CenterX+XMove,
+               CenterY+YMove,ValueMessage[I]);
+    End
+     Else
+    OutTextXY(CenterX+XMove-(TextWidth(ValueMessage[I])shr 1),
+              CenterY+YMove,ValueMessage[I]);
+   End;
+   SetColor(Yellow);
+   For I:=1 to NombreSommet do Begin
+    Rayon:=Value[I]*10;
+    XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
+    YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
+    WebNotes[I].X:=CenterX+XMove;
+    WebNotes[I].Y:=CenterY+YMove;
+   End;
+   WebNotes[NombreSommet+1].X:=WebNotes[1].X;
+   WebNotes[NombreSommet+1].Y:=WebNotes[1].Y;
+   DrawPoly(NombreSommet+1,WebNotes);
+   ReadKey;
   End;
-  SetColor(Yellow);
-  For I:=1 to NombreSommet do Begin
-   Rayon:=Value[I]*10;
-   XMove:=Trunc(Cos(TailleAngle*I)*Rayon);
-   YMove:=Trunc(Sin(TailleAngle*I)*Rayon);
-   WebNotes[I].X:=CenterX+XMove;
-   WebNotes[I].Y:=CenterY+YMove;
-  End;
-  WebNotes[NombreSommet+1].X:=WebNotes[1].X;
-  WebNotes[NombreSommet+1].Y:=WebNotes[1].Y;
-  DrawPoly(NombreSommet+1,WebNotes);
-  ReadKey;
  End
   Else
  WriteLn('Paramätre attendue !');
