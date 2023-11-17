@@ -1324,6 +1324,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>XBM2PY.PAS</b></td>
 			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source Python.</td>
 		</tr>
+		<tr>
+			<td><b>XBM2RUBY.PAS</b></td>
+			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source Ruby.</td>
+		</tr>			
 	        <tr>
 			<td><b>XCOPY.PAS</b></td>
 			<td>Cette commande permet d'effectuer la copie étendue avec sous-répertoire de fichier(s) vers un nouvel emplacement.</td>
