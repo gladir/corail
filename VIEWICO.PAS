@@ -4,7 +4,7 @@
   @abstract(Target: Turbo Pascal 7, Free Pascal 3.2)
 }
 
-Program ICO2PAS;
+Program VIEWICO;
 
 {$A-}
 
