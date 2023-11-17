@@ -1309,6 +1309,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effacer totalement les données et le fichier.</td>
 		</tr>
 		<tr>
+			<td><b>XBM2ASM.PAS</b></td>
+			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source assembleur.</td>
+		</tr>				
+		<tr>
 			<td><b>XBM2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source Pascal.</td>
 		</tr>
