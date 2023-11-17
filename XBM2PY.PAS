@@ -4,7 +4,7 @@
   @abstract(Target: Turbo Pascal 7, Free Pascal 3.2)
 }
 
-Program XBM2PAS;
+Program XBM2PY;
 
 Var
  SourceXBM:Text;
@@ -74,10 +74,10 @@ End;
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('XBM2PAS : Cette commande permet de convertir une image ',
-                     'de format XBM (X BitMap) en code source Pascal.');
+  WriteLn('XBM2PY : Cette commande permet de convertir une image ',
+                   'de format XBM (X BitMap) en code source Python.');
   WriteLn;
-  WriteLn('Syntaxe : XBM2PAS nomdufichier.XBM');
+  WriteLn('Syntaxe : XBM2PY nomdufichier.XBM');
   WriteLn;
   WriteLn(' nomdufichier   Ce paramätre permet d''indiquer le nom du fichier XBM.');
  End
@@ -135,15 +135,11 @@ BEGIN
   CountData:=0;
   {$I-}Assign(SourceXBM,SourceFileName);
   Reset(SourceXBM);{$I+}
-  WriteLn('Const');
-  WriteLn(' NumXPixels=',ImageWidth,';');
-  WriteLn(' NumYPixels=',ImageHeight,';');
-  WriteLn(' BitsPerPixel=',BitsPerPixel,';');
-  WriteLn(' BytesPerLine=',BytesPerLine,';');
-  WriteLn(' BitmapData:Array[0..',
-          Pred(BytesPerLine*ImageHeight),
-          ']of Byte=(');
-  Write('  ');
+  WriteLn('NUM_X_PIXELS = ',ImageWidth);
+  WriteLn('NUM_Y_PIXELS = ',ImageHeight);
+  WriteLn('BITS_PER_PIXEL = ',BitsPerPixel);
+  WriteLn('BYTES_PER_LINE = ',BytesPerLine);
+  WriteLn('BITMAP_DATA = [');
   CountByLine:=0;
   If IOResult=0 Then Begin
    While Not EOF(SourceXBM)do Begin
@@ -167,13 +163,12 @@ BEGIN
         End
          Else
         Val(CurrWord,Value,Err);
-        Write('$',ByteHex2Str(Value),',');
+        Write(Value,',');
         Inc(CurrData);
         If(CurrData<CountData)Then Write(',');
         Inc(CountByLine);
         If(CountByLine>16)Then Begin
          WriteLn;
-         Write('  ');
          CountByLine:=0;
         End;
         CurrWord:='';
@@ -188,7 +183,7 @@ BEGIN
       End
        Else
       Val(CurrWord,Value,Err);
-      Write('$',ByteHex2Str(Value));
+      Write(Value);
       Inc(CurrData);
       If(CurrData<CountData)Then Write(',');
       Inc(CountByLine);
@@ -201,10 +196,11 @@ BEGIN
     End;
    End;
    WriteLn;
-   WriteLn(' );');
+   WriteLn(']');
    Close(SourceXBM);
   End;
  End
   Else
  WriteLn('Paramätre attendu !');
 END.
+

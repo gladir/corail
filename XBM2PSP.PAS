@@ -4,7 +4,7 @@
   @abstract(Target: Turbo Pascal 7, Free Pascal 3.2)
 }
 
-Program XBM2PAS;
+Program XBM2PSP;
 
 Var
  SourceXBM:Text;
@@ -74,10 +74,11 @@ End;
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('XBM2PAS : Cette commande permet de convertir une image ',
-                     'de format XBM (X BitMap) en code source Pascal.');
+  WriteLn('XBM2PSP : Cette commande permet de convertir une image ',
+                     'de format XBM (X BitMap) en code source PSP ',
+                     '(Pascal Server Pages).');
   WriteLn;
-  WriteLn('Syntaxe : XBM2PAS nomdufichier.XBM');
+  WriteLn('Syntaxe : XBM2PSP nomdufichier.XBM');
   WriteLn;
   WriteLn(' nomdufichier   Ce paramätre permet d''indiquer le nom du fichier XBM.');
  End
@@ -135,6 +136,7 @@ BEGIN
   CountData:=0;
   {$I-}Assign(SourceXBM,SourceFileName);
   Reset(SourceXBM);{$I+}
+  WriteLn('<%');
   WriteLn('Const');
   WriteLn(' NumXPixels=',ImageWidth,';');
   WriteLn(' NumYPixels=',ImageHeight,';');
@@ -202,9 +204,11 @@ BEGIN
    End;
    WriteLn;
    WriteLn(' );');
+   WriteLn('%>');
    Close(SourceXBM);
   End;
  End
   Else
  WriteLn('Paramätre attendu !');
 END.
+
