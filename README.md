@@ -1311,7 +1311,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>XBM2ASM.PAS</b></td>
 			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source assembleur.</td>
-		</tr>				
+		</tr>
+		<tr>	
+			<td><b>XBM2BAS.PAS</b></td>
+			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source BASIC.</td>
+		</tr>			
 		<tr>
 			<td><b>XBM2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source Pascal.</td>
