@@ -127,7 +127,7 @@ BEGIN
     4:Begin
      For I:=0 to Header.NumXPixels-1 do Begin
       PutPixel(I*2,J,Buffer[I]shr 4);
-      PutPixel(I*2+1,J,Buffer[I]shr 4);
+      PutPixel(I*2+1,J,Buffer[I]and $F);
      End;
     End;
     8:For I:=0 to Header.NumXPixels-1 do PutPixel(I,J,Buffer[I]);
