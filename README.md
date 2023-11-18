@@ -1319,7 +1319,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>	
 			<td><b>XBM2BAS.PAS</b></td>
 			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source BASIC.</td>
-		</tr>			
+		</tr>
+		<tr>
+			<td><b>XBM2BGX.PAS</b></td>
+			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en format BGX (MonsterBook).</td>
+		</tr>
 		<tr>
 			<td><b>XBM2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source Pascal.</td>
@@ -1335,7 +1339,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>XBM2RUBY.PAS</b></td>
 			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source Ruby.</td>
-		</tr>			
+		</tr>
 	        <tr>
 			<td><b>XCOPY.PAS</b></td>
 			<td>Cette commande permet d'effectuer la copie étendue avec sous-répertoire de fichier(s) vers un nouvel emplacement.</td>
