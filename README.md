@@ -1329,6 +1329,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source Pascal.</td>
 		</tr>
 		<tr>
+			<td><b>XBM2PPM.PAS</b></td>
+			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en format PPM (Portable PixMap).</td>
+		</tr>
+		<tr>
 			<td><b>XBM2PSP.PAS</b></td>
 			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en code source PSP (Pascal Server Pages).</td>
 		</tr>
