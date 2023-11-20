@@ -1273,6 +1273,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de visualiser un icône (.ICO).</td>
 		</tr>
 		<tr>
+			<td><b>VIEWLSP.PAS</b></td>
+			<td>Cette commande permet de visualiser un image contenu dans un code source AutoLisp (AutoCAD ou CorelCAD).</td>
+		</tr>
+		<tr>
 			<td><b>VIEWPPM.PAS</b></td>
 			<td>Cette commande permet de visualiser une image en format PPM (Portable PixMap).</td>
 		</tr>
