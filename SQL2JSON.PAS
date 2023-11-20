@@ -341,9 +341,11 @@ Begin
      WriteLn('Donn‚es attendue !');
      Halt;
     End;
-    WriteLn(' ':8,'"',Trim(FieldList[CurrField].FieldName),'":"',
+    Write(' ':8,'"',Trim(FieldList[CurrField].FieldName),'":"',
                 CurrWord,'"');
     Inc(CurrField);
+    If(CurrField<FieldCount)Then Write(',');
+    WriteLn;
    End;
   Until(I>=Length(ParamList))or(Finished);
   If Not(Finished)Then Begin
