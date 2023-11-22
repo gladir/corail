@@ -74,10 +74,10 @@ End;
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('XBM2PY : Cette commande permet de convertir une image ',
-                   'de format XBM (X BitMap) en code source Python.');
+  WriteLn('XBM2RUBY : Cette commande permet de convertir une image ',
+                   'de format XBM (X BitMap) en code source Ruby.');
   WriteLn;
-  WriteLn('Syntaxe : XBM2PY nomdufichier.XBM');
+  WriteLn('Syntaxe : XBM2RUBY nomdufichier.XBM');
   WriteLn;
   WriteLn(' nomdufichier   Ce paramätre permet d''indiquer le nom du fichier XBM.');
  End
