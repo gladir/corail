@@ -1176,6 +1176,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>SUBST.PAS</b></td>
 			<td>Cette commande permet de créer un disque virtuel à partir d'un répertoire.</td>
 		</tr>
+		<tr>
+			<td><b>SVG2LSP.PAS</b></td>
+			<td>Cette commande permet de convertir une image de format SVG en format LSP (AutoLisp).</td>
+		</tr>
 	        <tr>
 			<td><b>SYMDEB.PAS</b></td>
 			<td>Cette commande permet de lancer le débogueur DOS. Cette commande est inspiré du SYMDEB du MASM.</td>
