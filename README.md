@@ -431,7 +431,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>CSV2HTML.PAS</b></td>
-			<td>Cette commande permet de convertir un fichier .CSV en format XML.</td>
+			<td>Cette commande permet de convertir un fichier .CSV en format HTML.</td>
 		</tr>
 		<tr>
 			<td><b>CSV2PAS.PAS</b></td>
