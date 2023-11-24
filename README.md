@@ -1157,6 +1157,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier SQL en JSON.</td>
 		</tr>
 		<tr>
+			<td><b>SQL2HTML.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier SQL en HTML.</td>
+		</tr>
+		<tr>
 			<td><b>SQL2XML.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier SQL en XML.</td>
 		</tr>
