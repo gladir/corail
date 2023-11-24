@@ -232,10 +232,12 @@ BEGIN
      End;
     End
      Else
-    CurrWord:=CurrWord+C;
+    If(C in[#13,#10])Then CurrWord:=''
+                     Else CurrWord:=CurrWord+C;
    End
     Else
-   CurrWord:=CurrWord+C;
+   If(C in[#13,#10])Then CurrWord:=''
+                    Else CurrWord:=CurrWord+C;
   End;
   Close(SourceLSP);
   If(ReadKey=#0)Then Begin
