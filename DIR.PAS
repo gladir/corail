@@ -16,7 +16,7 @@ Var
  P:Byte;
  Info:SearchRec;
  T:DateTime;
- Option:Set of (Pause,Subdirectory,Lower,Brief,Description);
+ Option:Set of (Pause,Subdirectory,Lower,Brief,Description,Slow);
  Column:Set Of (Double,Width);
  TotalNumFiles,TotalSize:LongInt;
  CurrParam,ShowDir,CurrLabel:String;
@@ -104,7 +104,7 @@ BEGIN
     _Albanian:Begin
      WriteLn('Kjo komandâ pârdoret pâr tâ shfaqur pârmbajtjen e njâ repertori nâ njâsinâ e diskut');
      WriteLn;
-     WriteLn('Formati:   DIR [/?] [/2|/W] [/B] [/P] [path] [/FORMAT:formati]');
+     WriteLn('Sintaksa: DIR [/?] [/2|/W] [/B] [/P] [path] [/FORMAT:formati]');
     End;
     _Germany:Begin
      WriteLn('Listet die Dateien und Unterverzeichnisse eines Verzeichnisses auf.');
@@ -126,9 +126,10 @@ BEGIN
      WriteLn(' /?             Ce parametre permet d''afficher l''aide sur cette commande');
      WriteLn(' /2             Ce parametre permet d''afficher sur 2 colonnes');
      WriteLn(' /B             Ce parametre enläve l''entàte et les dÇtails de la fin');
-     WriteLn(' /P             Ce parametre affiche une pause apräs l''affichage d''une page pleine');
-     WriteLn(' /W             Ce parametre affiche seulement les fichiers sur plein de colonnes');
      WriteLn(' /FORMAT:format Ce parametre permet d''indiquer CSV, HTML, Json, PASCAL, SQL ou XML');
+     WriteLn(' /P             Ce parametre affiche une pause apräs l''affichage d''une page pleine');
+     WriteLn(' /SLOW          Ce paramätre permet d''afficher la liste plus lentement');
+     WriteLn(' /W             Ce parametre affiche seulement les fichiers sur plein de colonnes');
     End;
    End;
    Exit;
@@ -138,6 +139,7 @@ BEGIN
   If(CurrParam='/B')or(CurrParam='/b')Then Include(Option,Brief) Else
   If(CurrParam='/L')or(CurrParam='/l')Then Include(Option,Lower) Else
   If(CurrParam='/P')or(CurrParam='/p')Then Include(Option,Pause) Else
+  If(CurrParam='/SLOW')or(CurrParam='/slow')Then Include(Option,Slow) Else
   If(CurrParam='/W')or(CurrParam='/w')Then Include(Column,Width) Else
   If(StrToUpper(Copy(CurrParam,1,8))='/FORMAT:')Then Begin
    If StrToUpper(Copy(CurrParam,9,255))='CSV'Then OutputFormat:=_CSV Else
@@ -404,6 +406,7 @@ BEGIN
    If(Width)in(Column)Then While DOSError=0 do Begin
     Write(PadRight(Info.Name,16));
     FindNext(Info);
+    If(Slow)in(Option)Then Delay(100);
     If(Pause)in(Option)Then Begin
     Inc(P);
      If P=Hi(WindMax)Then Begin
@@ -425,6 +428,7 @@ BEGIN
     UnpackTime(Info.Time,T);
     Write(' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2),' ');
     FindNext(Info);
+    If(Slow)in(Option)Then Delay(100);
     If(Pause)in(Option)Then Begin
      Inc(P);
      If P=Hi(WindMax)Then Begin
@@ -453,6 +457,7 @@ BEGIN
      Write(Info.Size:15);
      UnpackTime(Info.Time,T);
      WriteLn(' ',T.Year:4,'-',PadZeroLeft(T.Month,2),'-',PadZeroLeft(T.Day,2),' ',T.Hour:2,':',PadZeroLeft(T.Min,2));
+     If(Slow)in(Option)Then Delay(100);
      FindNext(Info);
      If(Pause)in(Option)Then Begin
       Inc(P);
