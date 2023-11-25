@@ -57,7 +57,7 @@ BEGIN
   WriteLn('CSV2BAS : Cette commande permet de convertir un fichier CSV ',
                      'en code source BASIC.');
   WriteLn;
-  WriteLn('Syntaxe : CSV2PAS source.CSV [target.BAS]');
+  WriteLn('Syntaxe : CSV2BAS source.CSV [target.BAS]');
   WriteLn;
   WriteLn(' fichier.CSV  Nom du fichier a convertir');
   WriteLn(' fichier.BAS  Nom du fichier du r‚sultat');
