@@ -40,10 +40,10 @@ End;
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')or
    (ParamStr(1)='/h')or(ParamStr(1)='/H')Then Begin
-  WriteLn('CSV2XML : Cette commande permet de convertir un fichier CSV en ',
+  WriteLn('CSV2YAML : Cette commande permet de convertir un fichier CSV en ',
                     'format YAML (extension .YML).');
   WriteLn;
-  WriteLn('Syntaxe : CSV2XML source.CSV target.YML');
+  WriteLn('Syntaxe : CSV2YAML source.CSV target.YML');
   WriteLn;
   WriteLn(' fichier.CSV  Nom du fichier a convertir');
   WriteLn(' fichier.YML  Nom du fichier du resultat');
