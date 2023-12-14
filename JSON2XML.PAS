@@ -93,7 +93,7 @@ BEGIN
   Ident:=0;
   CurrWord:='';
   Mode:=Key;
-  FillChar(FieldName,SizeOf(FileName),0);
+  FillChar(FieldName,SizeOf(FieldName),0);
   FillChar(GroupValue,SizeOf(GroupValue),0);
   If ParamStr(2)=''Then Begin
    WriteLn('<?xml version="1.0" encoding="UTF-8"?>');
