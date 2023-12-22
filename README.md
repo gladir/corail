@@ -218,6 +218,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher une bannière. Cette commande est un équivalent de la commande UNIX.</td>
 		</tr>
 		<tr>
+			<td><b>BAR.PAS</b></td>
+			<td>Cette commande permet d'afficher un graphique à barre sur les données d'un fichier CSV.</td>
+		</tr>
+		<tr>
 			<td><b>BASE64.PAS</b></td>
 			<td>Cette commande permet de retourner en base64 un fichier.</td>
 		</tr>	
