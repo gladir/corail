@@ -591,7 +591,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>DIR64.PAS</b></td>
-			<td>Cette commande permet d'afficher la liste des fichiers que contient une image de foremat .D64 du Commodore 64.</td>
+			<td>Cette commande permet d'afficher la liste des fichiers que contient une image de format .D64 du Commodore 64.</td>
 		</tr>
 		<tr>
 			<td><b>DIRNAME.PAS</b></td>
