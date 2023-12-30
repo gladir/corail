@@ -1318,7 +1318,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>				
 		<tr>
 			<td><b>UUDECODE.PAS</b></td>
-			<td>Cette commande permet d'effectuer le décoddage d'un ficiher binaire de format UUE.</td>
+			<td>Cette commande permet d'effectuer le décodage d'un fichier binaire de format UUE.</td>
 		</tr>
 		<tr>
 			<td><b>UUENCODE.PAS</b></td>
