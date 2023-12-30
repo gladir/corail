@@ -590,6 +590,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher les fichiers contenu dans un répertoire. Cette commande est un équivalent du DOS.</td>
 		</tr>
 		<tr>
+			<td><b>DIR64.PAS</b></td>
+			<td>Cette commande permet d'afficher la liste des fichiers que contient une image de format .D64 du Commodore 64.</td>
+		</tr>
+		<tr>
 			<td><b>DIRNAME.PAS</b></td>
 			<td>Cette commande permet de retourner le chemin seulement à partir d'un chemin complet de nom de fichier. Cette commande est un équivalent de UNIX et Linux.</td>
 		</tr>
