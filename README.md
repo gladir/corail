@@ -1309,12 +1309,12 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de sortir le contenu d'un fichier sans duplication du contenu de ses lignes.</td>
 		</tr>
 		<tr>
-			<td><b>UUENCODE.PAS</b></td>
-			<td>Cette commande permet d'effectuer un encodage d'un fichier binaire.</td>
-		</tr>
-		<tr>
 			<td><b>UNTAB.PAS</b></td>
 			<td>Cette commande permet de convertir des tabulations en espaces.</td>
+		</tr>				
+		<tr>
+			<td><b>UUENCODE.PAS</b></td>
+			<td>Cette commande permet d'effectuer un encodage d'un fichier binaire.</td>
 		</tr>
 		<tr>
 			<td><b>VDIAG.PAS</b></td>
