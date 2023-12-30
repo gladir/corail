@@ -1317,6 +1317,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir des tabulations en espaces.</td>
 		</tr>				
 		<tr>
+			<td><b>UUDECODE.PAS</b></td>
+			<td>Cette commande permet d'effectuer le décoddage d'un ficiher binaire de format UUE.</td>
+		</tr>
+		<tr>
 			<td><b>UUENCODE.PAS</b></td>
 			<td>Cette commande permet d'effectuer un encodage d'un fichier binaire.</td>
 		</tr>
