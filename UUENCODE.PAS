@@ -90,7 +90,7 @@ BEGIN
   End;
   Rewrite(g);
   If IOResult<>0 Then Begin
-   Writeln('Error: could not create file ',FileName);
+   Writeln('Erreur: Impossible de cr‚er le fichier ',FileName);
    Halt(4)
   End;
   Writeln(G,'begin 0777 ',ParamStr(1));
