@@ -1233,6 +1233,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher la fin d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
 		<tr>
+			<td><b>TAB.PAS</b></td>
+			<td>Cette commande permet de convertir des espaces en tabulation.</td>
+		</tr>
+		<tr>
 			<td><b>TABSPACE.PAS</b></td>
 			<td>Cette commande permet de convertir des tabulations en espaces.</td>
 		</tr>
