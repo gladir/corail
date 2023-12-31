@@ -948,6 +948,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>MAKEDIR.PAS</b></td>
 			<td>Cette commande permet de créer un répertoire. Cette commande est inspiré du AmigaDOS.</td>
 		</tr>
+		<tr>
+			<td><b>MD5.PAS</b></td>
+			<td>Cette commande permet d'appliquer un algorithme MD5 sur la chaine de caractères spécifiés.</td>
+		</tr>
 	        <tr>
 			<td><b>MEM.PAS</b></td>
 			<td>Cette commande permet d'afficher les informations sur la mémoire. Cette commande est un clone de la commande MS-DOS ou PC-DOS.</td>
