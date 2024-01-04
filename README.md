@@ -1128,6 +1128,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>ROMDATE.PAS</b></td>
 			<td>Cette commande permet de retourner la date de la ROM. Cette commande inspiré de la commande ROMDATE.COM du «VEGA Utility Disk».</td>
 		</tr>
+		<tr>
+			<td><b>ROT13.PAS</b></td>
+			<td>Cette commande permet d'effectuer une rotation de 13 lettres de l'alphabet latin.</td>
+		</tr>
 	        <tr>
 			<td><b>RTMRES.PAS</b></td>
 			<td>Cette commande permet de charger le RTM en mode résident.</td>
