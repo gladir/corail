@@ -537,7 +537,9 @@ End;
 
 Var
  Language:(_French,_English,_Germany,_Italian,_Spain);
- TmpLanguage:String;
+ OutputData:(odNone,odBash,odC,odPascal);
+ OutputFileName,TmpLanguage:String;
+ FileOutput:Text;
  P,I,J,K:Integer;
  Masque:Word;
  CurrString:String;
@@ -558,32 +560,129 @@ BEGIN
    _English:Begin
     WriteLn('Print the ASCII character string in large letter to standard output.');
     WriteLn;
-    WriteLn('Syntax: BANNER text');
+    WriteLn('Syntax: BANNER text [/OUTPUT:format] [/FILE:file]');
    End;
    Else Begin
-    WriteLn('BANNER : Cette commande permet d''afficher une banniere.');
+    WriteLn('BANNER : Cette commande permet d''afficher une banniŠre.');
     WriteLn;
-    WriteLn('Syntaxe : BANNER message');
+    WriteLn('Syntaxe : BANNER message [/OUTPUT:format] [/FILE:fichier]');
+    WriteLn;
+    WriteLn(' message        Message … sortir');
+    WriteLn('/FILE:fichier   Nom du fichier de sortie … place de l''‚cran');
+    WriteLn('/OUTPUT:BASH    Message en code source BASH');
+    WriteLn('/OUTPUT:C       Message en code source C');
+    WriteLn('/OUTPUT:PASCAL  Message en code source Pascal');
    End;
   End;
  End
   Else
- If ParamCount>0Then
- Begin
+ If ParamCount>0Then Begin
+  OutputData:=odNone;
+  OutputFileName:='';
+  For P:=1to ParamCount do Begin
+   If(StrToUpper(Copy(ParamStr(P),1,Length('/FILE:')))='/FILE:')Then Begin
+    OutputFileName:=Copy(ParamStr(P),Length('/FILE:')+1,255);
+   End
+    Else
+   If StrToUpper(ParamStr(P))='/OUTPUT:BASH'Then Begin
+    OutputData:=odBASH;
+   End
+    Else
+   If StrToUpper(ParamStr(P))='/OUTPUT:C'Then Begin
+    OutputData:=odC;
+   End
+    Else
+   If StrToUpper(ParamStr(P))='/OUTPUT:PASCAL'Then Begin
+    OutputData:=odPascal;
+   End;
+  End;
   For P:=1to ParamCount do Begin
    CurrString:=ParamStr(P);
-   If Length(CurrString)>10Then CurrString:=Copy(CurrString,1,10);
-   FillChar(TB,SizeOf(TB),0);
-   For J:=0to Length(CurrString)-1do For I:=0to Height-1 do Begin
-    Masque:=Matrix8x16[Height*Byte(CurrString[J+1])+I];
-    For K:=0to 7 do Begin
-     If Masque and 128<>0Then TB[I,J*8+K]:='#';
-     Masque:=Masque shl 1;
+   If(StrToUpper(Copy(ParamStr(P),1,Length('/FILE:')))='/FILE:')Then Begin
+    { Saut ... }
+   End
+    Else
+   If StrToUpper(ParamStr(P))='/OUTPUT:BASH'Then Begin
+    { Saut ... }
+   End
+    Else
+   If StrToUpper(CurrString)='/OUTPUT:C'Then Begin
+    { Saut ...}
+   End
+    Else
+   If StrToUpper(CurrString)='/OUTPUT:PASCAL'Then Begin
+    { Saut ...}
+   End
+    Else
+   Begin
+    { G‚n‚ration de la chaine de caractŠres }
+    If Length(CurrString)>10Then CurrString:=Copy(CurrString,1,10);
+    FillChar(TB,SizeOf(TB),0);
+    For J:=0to Length(CurrString)-1do For I:=0to Height-1 do Begin
+     Masque:=Matrix8x16[Height*Byte(CurrString[J+1])+I];
+     For K:=0to 7 do Begin
+      If Masque and 128<>0Then TB[I,J*8+K]:='#'
+                          Else TB[I,J*8+K]:=' ';
+      Masque:=Masque shl 1;
+     End;
     End;
-   End;
-   For J:=0to Height-1do Begin
-    For I:=0to Length(CurrString)*8-1do Write(TB[J,I]);
-    WriteLn;
+     { Sortie de la chaine de caractŠres }
+    If OutputFileName<>''Then Begin
+     {$I-}Assign(FileOutput,OutputFileName);
+     Rewrite(FileOutput);{$I+}
+     If IOResult<>0 Then Begin
+      WriteLn('Impossible de cr‚er le fichier de sortie ',OutputFileName);
+      Halt(1);
+     End;
+     Case(OutputData)of
+      odC:WriteLn(FileOutput,'void main() {');
+      odPascal:WriteLn(FileOutput,'BEGIN');
+     End;
+     For J:=0to Height-1do Begin
+      Case(OutputData)of
+       odBash:Write(FileOutput,'echo "');
+       odC:Write(FileOutput,'printf(''');
+       odPascal:Write(FileOutput,'WriteLn(''');
+      End;
+      For I:=0to Length(CurrString)*8-1do Write(FileOutput,TB[J,I]);
+      Case(OutputData)of
+       odBASH:Write(FileOutput,'\n";');
+       odC:Write(FileOutput,'\n");');
+       odPascal:Write(FileOutput,''');');
+      End;
+      WriteLn(FileOutput);
+     End;
+     Case(OutputData)of
+      odC:WriteLn(FileOutput,'}');
+      odPascal:WriteLn(FileOutput,'END.');
+     End;
+     Close(FileOutput);
+    End
+     Else
+    Begin
+     Case(OutputData)of
+      odC:WriteLn('void main() {');
+      odPascal:WriteLn('BEGIN');
+     End;
+     For J:=0to Height-1do Begin
+      Case(OutputData)of
+       odBash:Write('echo "');
+       odC:Write('printf(''');
+       odPascal:Write('WriteLn(''');
+      End;
+      For I:=0to Length(CurrString)*8-1do Write(TB[J,I]);
+      Case(OutputData)of
+       odBASH:Write('\n";');
+       odC:Write('\n");');
+       odPascal:Write(''');');
+      End;
+      WriteLn;
+     End;
+     Case(OutputData)of
+      odC:WriteLn('}');
+      odPascal:WriteLn('END.');
+     End;
+    End;
    End;
   End;
  End;
