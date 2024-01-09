@@ -16,14 +16,16 @@ Uses {$IFDEF FPC}
 
 Var
  SourceSVG:Text;
+ ColorSetted:Boolean;
  C:Char;
  Err:Word;
  CurrColor,Color:LongInt;
- IP,I,X,Y,X1,Y1,X2,Y2,Width,Height,CX,CY,R:Integer;
+ IP,I,X,Y,X1,Y1,X2,Y2,Width,Height,CX,CY,R,RX,RY:Integer;
  OpenTag,OpenStr:Integer;
- CurrTag:(_None,_SVG,_Circle,_Line,_Polyline,_Rect,_Text,_CloseText);
+ CurrTag:(_None,_SVG,_Circle,_Ellipse,_Line,_Polyline,
+          _Rect,_Text,_CloseText);
  CurrParam:(__None,_X,_Y,_X1,_Y1,_X2,_Y2,_Fill,_Points,
-            _CX,_CY,_R,_Stroke,_Width,_Height);
+            _CX,_CY,_R,_RX,_RY,_Stroke,_Width,_Height);
  SubCurrParam:(_None_,_X_,_Y_);
  CurrPoints,CurrWord,CurrString,TextString:String;
  PointsParam:Array[1..255]of PointType;
@@ -44,6 +46,7 @@ Var
 Begin
  If StrToUpper(S)='BLACK'Then ColorToValue:=0 Else
  If StrToUpper(S)='BLUE'Then ColorToValue:=1 Else
+ If StrToUpper(S)='GREEN'Then ColorToValue:=2 Else
  If StrToUpper(S)='MAGENTA'Then ColorToValue:=13 Else
  If StrToUpper(S)='RED'Then ColorToValue:=12 Else
  If StrToUpper(S)='YELLOW'Then ColorToValue:=14 Else
@@ -74,7 +77,7 @@ Begin
   ClearDevice;
   SetColor(8);
   CurrColor:=8;
-  SetLineStyle(0, 0, 1);
+  SetLineStyle(0,0,1);
  End
   Else
  Begin
@@ -120,11 +123,16 @@ BEGIN
      End;
      Case CurrTag of
       _Circle:Circle(CX,CY,R);
+      _Ellipse:Ellipse(CX,CY,0,360,RX,RY);
       _CloseText:Begin
        OutTextXY(X,Y,TextString);
        TextString:='';
       End;
-      _Line:Line(X1,Y1,X2,Y2);
+      _Line:Begin
+       If(ColorSetted)Then SetColor(Color)
+                      Else SetColor(CurrColor);
+       Line(X1,Y1,X2,Y2);
+      End;
       _Polyline:Begin
        SetColor(Color);
        DrawPoly(IP,PointsParam);
@@ -148,11 +156,25 @@ BEGIN
         _CY:Val(CurrString,CY,Err);
         _R:Val(CurrString,R,Err);
        End;
+       _Ellipse:Case CurrParam of
+        _CX:Val(CurrString,CX,Err);
+        _CY:Val(CurrString,CY,Err);
+        _RX:Val(CurrString,RX,Err);
+        _RY:Val(CurrString,RY,Err);
+        _Stroke:Begin
+         Color:=ColorToValue(CurrString);
+         ColorSetted:=True;
+        End;
+       End;
        _Line:Case CurrParam of
         _X1:Val(CurrString,X1,Err);
         _Y1:Val(CurrString,Y1,Err);
         _X2:Val(CurrString,X2,Err);
         _Y2:Val(CurrString,Y2,Err);
+        _Stroke:Begin
+         Color:=ColorToValue(CurrString);
+         ColorSetted:=True;
+        End;
        End;
        _Polyline:Case CurrParam of
         _Points:Begin
@@ -192,7 +214,10 @@ BEGIN
           CurrPoints:='';
          End
         End;
-        _Stroke:Color:=ColorToValue(CurrString);
+        _Stroke:Begin
+         Color:=ColorToValue(CurrString);
+         ColorSetted:=True;
+        End;
        End;
        _Rect:Case CurrParam of
         _X:Val(CurrString,X,Err);
@@ -222,8 +247,15 @@ BEGIN
       Case CurrTag of
        _None:Begin
         If StrToUpper(CurrWord)='CIRCLE'Then CurrTag:=_Circle Else
-        If StrToUpper(CurrWord)='LINE'Then CurrTag:=_Line Else
+        If StrToUpper(CurrWord)='ELLIPSE'Then CurrTag:=_Ellipse Else
+        If StrToUpper(CurrWord)='LINE'Then Begin
+         CurrTag:=_Line;
+         Color:=CurrColor;
+         ColorSetted:=False;
+        End
+         Else
         If StrToUpper(CurrWord)='POLYLINE'Then Begin
+         ColorSetted:=False;
          Color:=CurrColor;
          CurrTag:=_Polyline;
         End
@@ -236,11 +268,19 @@ BEGIN
         If StrToUpper(CurrWord)='CY'Then CurrParam:=_CY Else
         If StrToUpper(CurrWord)='R'Then CurrParam:=_R;
        End;
+       _Ellipse:Begin
+        If StrToUpper(CurrWord)='CX'Then CurrParam:=_CX Else
+        If StrToUpper(CurrWord)='CY'Then CurrParam:=_CY Else
+        If StrToUpper(CurrWord)='RX'Then CurrParam:=_RX Else
+        If STrToUpper(CurrWord)='RY'Then CurrParam:=_RY Else
+        If StrToUpper(CurrWord)='STROKE'Then CurrParam:=_Stroke;         ColorSetted:=True;
+       End;
        _Line:Begin
         If StrToUpper(CurrWord)='X1'Then CurrParam:=_X1 Else
         If StrToUpper(CurrWord)='Y1'Then CurrParam:=_Y1 Else
         If StrToUpper(CurrWord)='X2'Then CurrParam:=_X2 Else
-        If STrToUpper(CurrWord)='Y2'Then CurrParam:=_Y2;
+        If STrToUpper(CurrWord)='Y2'Then CurrParam:=_Y2 Else
+        If StrToUpper(CurrWord)='STROKE'Then CurrParam:=_Stroke;
        End;
        _Polyline:Begin
         If StrToUpper(CurrWord)='FILL'Then CurrParam:=_Fill Else
