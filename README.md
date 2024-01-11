@@ -598,6 +598,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de retourner le chemin seulement à partir d'un chemin complet de nom de fichier. Cette commande est un équivalent de UNIX et Linux.</td>
 		</tr>
 		<tr>
+			<td><b>DIRST.PAS</b></td>
+			<td>Cette commande permet d'afficher la liste des fichiers d'image disque «.ST» du <a href="https://www.gladir.com/LEXIQUE/COMPUTER/atarist.htm">Atari ST</a>.</td>
+		</tr>
+		<tr>
 			<td><b>DISKCOMP.PAS</b></td>
 			<td>Cette commande permet de comparer des disquettes ou des images.</td>
 		</tr>
