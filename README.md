@@ -746,6 +746,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'échanger des fichiers textes de TRS-80 et UNIX (ou Amiga). Utilitaire MISOSYS pour TRS-80.</td>
 		</tr>
 		<tr>
+			<td><b>FLOAD.PAS</b></td>
+			<td>Cette commande permet de charger une police de caractères à partir d'un fichier de format «.FNT» en mémoire vidéo. Cette commande est inspiré de la disquette «IT-VGA2 UTILITY» d'InformTech.</td>
+		</tr>
+		<tr>
 			<td><b>FORMAT.PAS</b></td>
 			<td>Cette commande permet de formater un unité de disquette.</td>
 		</tr>
