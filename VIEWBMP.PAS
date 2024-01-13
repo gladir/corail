@@ -113,10 +113,14 @@ Begin
    End
     Else
    Begin
-    RawValue:=RGBTo16Color(Palette[Value shr 4].R,Palette[Value shr 4].G,Palette[Value shr 4].B);
-    PutPixel(PixelX,PixelY,RawValue);
-    RawValue:=RGBTo16Color(Palette[Value and $F].R,Palette[Value and $F].G,Palette[Value and $F].B);
-    PutPixel(PixelX+1,PixelY,RawValue);
+    If(PixelX<Header.NumXPixels)Then Begin
+     RawValue:=RGBTo16Color(Palette[Value shr 4].R,Palette[Value shr 4].G,Palette[Value shr 4].B);
+     PutPixel(PixelX,PixelY,RawValue);
+    End;
+    If(PixelX+1<Header.NumXPixels)Then Begin
+     RawValue:=RGBTo16Color(Palette[Value and $F].R,Palette[Value and $F].G,Palette[Value and $F].B);
+     PutPixel(PixelX+1,PixelY,RawValue);
+    End;
    End;
    Inc(PixelX,2);
   End;
