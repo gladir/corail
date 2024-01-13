@@ -290,7 +290,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier binaire en tableau de code source PSP (Pascal Server Pages).</td>
 		</tr>
 		<tr>
-			<td></td>BMP2PAS.PAS</b></tr>
+			<td><b>BMP2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en code source Pascal.</td>
 		</tr>
 		<tr>
