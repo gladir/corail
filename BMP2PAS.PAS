@@ -229,7 +229,7 @@ BEGIN
    WriteLn('Const');
    WriteLn(' NumXPixels=',Header.NumXPixels,';');
    WriteLn(' NumYPixels=',Header.NumYPixels,';');
-   WriteLn(' BitsPerPixel=24;');
+   WriteLn(' BitsPerPixel=',BIH.biBitCount,';');
    WriteLn(' BytesPerLine=',BytesPerLine,';');
    WriteLn(' BitmapData:Array[0..',
           Pred(BytesPerLine*Header.NumYPixels),
