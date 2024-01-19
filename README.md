@@ -478,6 +478,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier .CSV en format SQL.</td>
 		</tr>
 		<tr>
+			<td><b>CSV2TSV.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier CSV en TSV (Tab-Separated Values).</td>
+		</tr>
+		<tr>
 			<td><b>CSV2WK1.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier .CSV en format WK1 de Lotus 1-2-3.</td>
 		</tr>
