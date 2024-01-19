@@ -37,6 +37,25 @@ Begin
  Path2Ext:=E;
 End;
 
+
+Function Escape(S:String):String;
+Var
+ I:Integer;
+ T:String;
+Begin
+ T:='';
+ For I:=1 to Length(S)do Begin
+  Case S[I]of
+   '&':T:=T+'&amp;';
+   '<':T:=T+'&lt;';
+   '>':T:=T+'&gt;';
+   '"':T:=T+'&quot;';
+   Else T:=T+S[I];
+  End;
+ End;
+ Escape:=T;
+End;
+
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')or
    (ParamStr(1)='/h')or(ParamStr(1)='/H')Then Begin
@@ -44,8 +63,8 @@ BEGIN
   WriteLn;
   WriteLn('Syntaxe : CSV2HTML source.CSV target.HTML');
   WriteLn;
-  WriteLn(' fichier.CSV   Nom du fichier a convertir');
-  WriteLn(' fichier.HTML  Nom du fichier du resultat');
+  WriteLn(' source.CSV   Nom du fichier a convertir');
+  WriteLn(' target.HTML  Nom du fichier du r‚sultat');
   WriteLn;
  End
   Else
@@ -77,13 +96,13 @@ BEGIN
        If CurrLine[I]=','Then Begin
         If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
          Fields[NumField]:=Copy(CurrWord,2,Length(CurrWord)-2);
-         WriteLn(' ':8,'<th>',Fields[NumField],'</th>');
+         WriteLn(' ':8,'<th>',Escape(Fields[NumField]),'</th>');
          Inc(NumField);
         End
          Else
         Begin
          Fields[NumField]:=CurrWord;
-         WriteLn(' ':8,'<th>',Fields[NumField],'</th>');
+         WriteLn(' ':8,'<th>',Escape(Fields[NumField]),'</th>');
          Inc(NumField);
         End;
         CurrWord:='';
@@ -93,7 +112,7 @@ BEGIN
       End;
       CurrField:=CurrWord;
       Fields[NumField]:=CurrWord;
-      WriteLn(' ':8,'<th>',Fields[NumField],'</th>');
+      WriteLn(' ':8,'<th>',Escape(Fields[NumField]),'</th>');
       Inc(NumField);
       If NumField>High(Fields)Then Begin
        WriteLn('Enregistrement trop grand !');
@@ -110,13 +129,13 @@ BEGIN
        If CurrLine[I]=','Then Begin
         If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
          Write(' ':8,'<td>');
-         Write(Copy(CurrWord,2,Length(CurrWord)-2));
+         Write(Escape(Copy(CurrWord,2,Length(CurrWord)-2)));
          WriteLn('</td>');
         End
          Else
         Begin
          Write(' ':8,'<td>');
-         Write(CurrWord);
+         Write(Escape(CurrWord));
          WriteLn('</td>');
         End;
         CurrWord:='';
@@ -126,7 +145,7 @@ BEGIN
        CurrWord:=CurrWord+CurrLine[I];
       End;
       Write(' ':8,'<td>');
-      Write(Copy(CurrWord,2,Length(CurrWord)-2));
+      Write(Escape(Copy(CurrWord,2,Length(CurrWord)-2)));
       WriteLn('</td>');
       WriteLn(' ':4,'</tr>');
      End;
@@ -159,13 +178,13 @@ BEGIN
        If CurrLine[I]=','Then Begin
         If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
          Fields[NumField]:=Copy(CurrWord,2,Length(CurrWord)-2);
-         WriteLn(TargetHTML,' ':8,'<th>',Fields[NumField],'</th>');
+         WriteLn(TargetHTML,' ':8,'<th>',Escape(Fields[NumField]),'</th>');
          Inc(NumField);
         End
          Else
         Begin
          Fields[NumField]:=CurrWord;
-         WriteLn(TargetHTML,' ':8,'<th>',Fields[NumField],'</th>');
+         WriteLn(TargetHTML,' ':8,'<th>',Escape(Fields[NumField]),'</th>');
          Inc(NumField);
         End;
         CurrWord:='';
@@ -175,7 +194,7 @@ BEGIN
       End;
       CurrField:=CurrWord;
       Fields[NumField]:=CurrWord;
-      WriteLn(TargetHTML,' ':8,'<th>',Fields[NumField],'</th>');
+      WriteLn(TargetHTML,' ':8,'<th>',Escape(Fields[NumField]),'</th>');
       Inc(NumField);
       If NumField>High(Fields)Then Begin
        WriteLn('Enregistrement trop grand !');
@@ -192,13 +211,13 @@ BEGIN
        If CurrLine[I]=','Then Begin
         If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
          Write(TargetHTML,' ':8,'<td>');
-         Write(TargetHTML,Copy(CurrWord,2,Length(CurrWord)-2));
+         Write(TargetHTML,Escape(Copy(CurrWord,2,Length(CurrWord)-2)));
          WriteLn(TargetHTML,'</td>');
         End
          Else
         Begin
          Write(TargetHTML,' ':8,'<td>');
-         Write(TargetHTML,CurrWord);
+         Write(TargetHTML,Escape(CurrWord));
          WriteLn(TargetHTML,'</td>');
         End;
         CurrWord:='';
@@ -208,7 +227,7 @@ BEGIN
        CurrWord:=CurrWord+CurrLine[I];
       End;
       Write(TargetHTML,' ':8,'<td>');
-      Write(TargetHTML,Copy(CurrWord,2,Length(CurrWord)-2));
+      Write(TargetHTML,Escape(Copy(CurrWord,2,Length(CurrWord)-2)));
       WriteLn(TargetHTML,'</td>');
       WriteLn(TargetHTML,' ':4,'</tr>');
      End;
