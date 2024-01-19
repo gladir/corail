@@ -45,8 +45,8 @@ BEGIN
   WriteLn;
   WriteLn('Syntaxe : CSV2YAML source.CSV target.YML');
   WriteLn;
-  WriteLn(' fichier.CSV  Nom du fichier a convertir');
-  WriteLn(' fichier.YML  Nom du fichier du resultat');
+  WriteLn(' source.CSV  Nom du fichier a convertir');
+  WriteLn(' target.YML  Nom du fichier du r‚sultat');
   WriteLn;
  End
   Else
@@ -118,7 +118,11 @@ BEGIN
        CurrWord:=CurrWord+CurrLine[I];
       End;
       Write(' ':8,Fields[PosField],': ');
-      WriteLn(Copy(CurrWord,2,Length(CurrWord)-2));
+      If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
+        Write(Copy(CurrWord,2,Length(CurrWord)-2));
+       End
+        Else
+       Write(CurrWord);
      End;
     End;
     Close(SourceCSV);
@@ -187,7 +191,11 @@ BEGIN
        CurrWord:=CurrWord+CurrLine[I];
       End;
       Write(TargetYML,' ':8,Fields[PosField],': ');
-      WriteLn(TargetYML,Copy(CurrWord,2,Length(CurrWord)-2));
+      If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
+        Write(TargetYML,Copy(CurrWord,2,Length(CurrWord)-2));
+       End
+        Else
+       Write(TargetYML,CurrWord);
      End;
     End;
     Close(TargetYML);
