@@ -44,8 +44,8 @@ BEGIN
   WriteLn;
   WriteLn('Syntaxe : CSV2JSON source.CSV target.JSON');
   WriteLn;
-  WriteLn(' fichier.CSV  Nom du fichier a convertir');
-  WriteLn(' fichier.JSON Nom du fichier du resultat');
+  WriteLn(' source.CSV  Nom du fichier a convertir');
+  WriteLn(' target.JSON Nom du fichier du r‚sultat');
   WriteLn;
  End
   Else
@@ -62,7 +62,7 @@ BEGIN
    {$I-}Reset(SourceCSV);{$I+}
    If IoResult<>0Then Begin
     WriteLn('Fichier CSV introuvable !');
-    Halt;
+    Halt(1);
    End;
    While Not EOF(SourceCSV)do Begin
     ReadLn(SourceCSV,CurrLine);
@@ -74,7 +74,7 @@ BEGIN
    {$I-}Reset(SourceCSV);{$I+}
    If IoResult<>0Then Begin
     WriteLn('Fichier CSV introuvable !');
-    Halt;
+    Halt(2);
    End;
    If ParamStr(2)=''Then Begin
     First:=True;
@@ -105,7 +105,7 @@ BEGIN
       Inc(NumField);
       If NumField>High(Fields)Then Begin
        WriteLn('Enregistrement trop grand !');
-       Halt;
+       Halt(3);
       End;
      End
       Else
@@ -132,7 +132,11 @@ BEGIN
        CurrWord:=CurrWord+CurrLine[I];
       End;
       Write(' ':8,'"',Fields[PosField],'":');
-      WriteLn('"',Copy(CurrWord,2,Length(CurrWord)-2),'"');
+      If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
+       WriteLn('"',Copy(CurrWord,2,Length(CurrWord)-2),'"');
+      End
+       Else
+      WriteLn('"',CurrWord,'"');
       Write(' ':4,'}');
       If(CurrRecord<NumRecord)Then Write(',');
       WriteLn;
@@ -150,7 +154,7 @@ BEGIN
     If IoResult<>0Then Begin
      WriteLn('Impossible de cr‚er le fichier JSON ',TFileName,' !');
      Close(SourceCSV);
-     Halt;
+     Halt(4);
     End;
     First:=True;
     WriteLn(TargetJSON,'{');
@@ -180,7 +184,7 @@ BEGIN
       Inc(NumField);
       If NumField>High(Fields)Then Begin
        WriteLn('Enregistrement trop grand !');
-       Halt;
+       Halt(5);
       End;
      End
       Else
@@ -207,7 +211,11 @@ BEGIN
        CurrWord:=CurrWord+CurrLine[I];
       End;
       Write(TargetJSON,' ':8,'"',Fields[PosField],'":');
-      WriteLn(TargetJSON,'"',Copy(CurrWord,2,Length(CurrWord)-2),'"');
+      If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
+       WriteLn(TargetJSON,'"',Copy(CurrWord,2,Length(CurrWord)-2),'"');
+      End
+       Else
+      WriteLn(TargetJSON,'"',CurrWord,'"');
       Write(TargetJSON,' ':4,'}');
       If(CurrRecord<NumRecord)Then Write(TargetJSON,',');
       WriteLn(TargetJSON);
