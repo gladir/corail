@@ -145,7 +145,11 @@ BEGIN
        CurrWord:=CurrWord+CurrLine[I];
       End;
       Write(' ':8,'<td>');
-      Write(Escape(Copy(CurrWord,2,Length(CurrWord)-2)));
+      If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
+       Write(Escape(Copy(CurrWord,2,Length(CurrWord)-2)));
+      End
+       Else
+      Write(Escape(CurrWord));
       WriteLn('</td>');
       WriteLn(' ':4,'</tr>');
      End;
@@ -227,7 +231,11 @@ BEGIN
        CurrWord:=CurrWord+CurrLine[I];
       End;
       Write(TargetHTML,' ':8,'<td>');
-      Write(TargetHTML,Escape(Copy(CurrWord,2,Length(CurrWord)-2)));
+      If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
+       Write(TargetHTML,Escape(Copy(CurrWord,2,Length(CurrWord)-2)));
+      End
+       Else
+      Write(TargetHTML,Escape(CurrWord));
       WriteLn(TargetHTML,'</td>');
       WriteLn(TargetHTML,' ':4,'</tr>');
      End;
