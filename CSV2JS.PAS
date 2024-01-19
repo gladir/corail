@@ -45,7 +45,7 @@ BEGIN
   WriteLn('Syntaxe : CSV2JS source.CSV target.JS');
   WriteLn;
   WriteLn(' source.CSV   Nom du fichier a convertir');
-  WriteLn(' target.JS    Nom du fichier du resultat');
+  WriteLn(' target.JS    Nom du fichier du r‚sultat');
   WriteLn;
  End
   Else
@@ -62,7 +62,7 @@ BEGIN
    {$I-}Reset(SourceCSV);{$I+}
    If IoResult<>0Then Begin
     WriteLn('Fichier CSV introuvable !');
-    Halt;
+    Halt(1);
    End;
    While Not EOF(SourceCSV)do Begin
     ReadLn(SourceCSV,CurrLine);
@@ -74,7 +74,7 @@ BEGIN
    {$I-}Reset(SourceCSV);{$I+}
    If IoResult<>0Then Begin
     WriteLn('Fichier CSV introuvable !');
-    Halt;
+    Halt(2);
    End;
    If ParamStr(2)=''Then Begin
     First:=True;
@@ -105,7 +105,7 @@ BEGIN
       Inc(NumField);
       If NumField>High(Fields)Then Begin
        WriteLn('Enregistrement trop grand !');
-       Halt;
+       Halt(3);
       End;
      End
       Else
@@ -132,7 +132,11 @@ BEGIN
        CurrWord:=CurrWord+CurrLine[I];
       End;
       Write(' ':8,'"',Fields[PosField],'":');
-      WriteLn('"',Copy(CurrWord,2,Length(CurrWord)-2),'"');
+      If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
+       WriteLn('"',Copy(CurrWord,2,Length(CurrWord)-2),'"');
+      End
+       Else
+      WriteLn('"',CurrWord,'"');
       Write(' ':4,'}');
       If(CurrRecord<NumRecord)Then Write(',');
       WriteLn;
@@ -150,7 +154,7 @@ BEGIN
     If IoResult<>0Then Begin
      WriteLn('Impossible de cr‚er le fichier JavaScript ',TFileName,' !');
      Close(SourceCSV);
-     Halt;
+     Halt(4);
     End;
     First:=True;
     WriteLn(TargetJS,'var ':4,TableName,' = {');
@@ -180,7 +184,7 @@ BEGIN
       Inc(NumField);
       If NumField>High(Fields)Then Begin
        WriteLn('Enregistrement trop grand !');
-       Halt;
+       Halt(5);
       End;
      End
       Else
@@ -207,7 +211,11 @@ BEGIN
        CurrWord:=CurrWord+CurrLine[I];
       End;
       Write(TargetJS,' ':8,'"',Fields[PosField],'":');
-      WriteLn(TargetJS,'"',Copy(CurrWord,2,Length(CurrWord)-2),'"');
+      If(CurrWord[1]='"')and(CurrWord[Length(CurrWord)]='"')Then Begin
+       WriteLn(TargetJS,'"',Copy(CurrWord,2,Length(CurrWord)-2),'"');
+      End
+       Else
+      WriteLn(TargetJS,'"',CurrWord,'"');
       Write(TargetJS,' ':4,'}');
       If(CurrRecord<NumRecord)Then Write(TargetJS,',');
       WriteLn(TargetJS);
