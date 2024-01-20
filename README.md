@@ -1346,7 +1346,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>TSV2MD.PAS</b></td>
-			<td>Cette commande permet de convertir un fichier TSV (Tab-Separated Values) en une talbe Markdown.</td>
+			<td>Cette commande permet de convertir un fichier TSV (Tab-Separated Values) en une table Markdown.</td>
 		</tr>
 		<tr>
 			<td><b>TYPE.PAS</b></td>
