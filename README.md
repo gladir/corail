@@ -498,6 +498,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier .CSV en format .YAML (extension .YML).</td>
 		</tr>
 		<tr>
+			<td><b>CSVFAKER.PAS</b></td>
+			<td>Cette commande permet de générer un fichier CSV selon les données aléatoires spécifiés.</td>
+		</tr>
+		<tr>
 			<td><b>CSVQUOTE.PAS</b></td>
 			<td>Cette commande permet d''enlever les sauts de lignes dans les champs entre guillemets d'un CSV.</td>
 		</tr>	
