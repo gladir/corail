@@ -24,8 +24,67 @@ Const
   'Washington','Winnipeg'
  );
 
- FirstNameList:Array[0..5]of PChar=(
-  'Andr‚','BenoŒt','Jacques','Sophie','Steeve','Sylvain'
+ CountryList:Array[0..248]of PChar=(
+  'Afghanistan','Afrique du sud','Albanie','Alg‚rie','Allemagne',
+  'Andorre','Angola','Anguilla','Antarctique','Antigua et Barbuda',
+  'Arabie saoudite','Argentine','Armenie','Aruba','Australie',
+  'Autriche','Azerbaidjan','Bahamas','Bahrein','Bangladesh',
+  'Barbade','Belgique','Belize','Benin','Bermudes','Bhutan','Bi‚lorussie',
+  'Bolivie','Bonaire','Bosnie-Herzegovine','Botswana','Br‚sil',
+  'Brunei Darussalam','Bulgarie','Burkina Faso','Burundi','Cambodge',
+  'Cameroun','Canada','Cap-Vert','Centrafrique','Chili','Chine',
+  'Chypre','Colombie','Comores','Congo-Brazzaville','Cor‚e du Nord',
+  'Cor‚e du Sud','Costa Rica','C“te d''Ivoire','Croatie','Cuba',
+  'Curacao','Danemark','Djibouti','Dominique','Egypte',
+  'Emirats arabes unis','Equateur','Erythr‚e','Espagne','Estonie',
+  'Etats-Unis','Ethiopie','Fidji','Finlande','France','Gabon',
+  'Gambie','Georgie','Georgie du Sud','Ghana','Gibraltar','GrŠce',
+  'Grenade','Groenland','Guadeloupe','Guam','Guatemala','Guernesey',
+  'Guin‚e','Guin‚e equatoriale','Guin‚e-Bissau','Guyana','Guyane',
+  'Haiti','Honduras','Hong Kong','Hongrie','Ile Bouvet','Ile Christmas',
+  'Ile de Man','Ile Heard','Ile Norfolk','Iles Aland','Iles Caimans',
+  'Iles Cocos','Iles Cook','Iles Feroe','Iles Malouines',
+  'Iles Mariannes du Nord','Iles Marshall','Iles mineures',
+  'Iles Salomon','Iles Turques-et-Caiques','Iles Vierges',
+  'Iles Vierges des Etats-Unis','Inde','Indon‚sie','Irak','Iran',
+  'Irlande','Islande','Isra‰l','Italie','Jamaique','Japon','Jersey',
+  'Jordanie','Kazakhstan','Kenya','Kirghizistan','Kiribati','Kosovo',
+  'Koweit','Laos','Lesotho','Lettonie','Liban','Liberia','Libye',
+  'Liechtenstein','Lituanie','Luxembourg','Macao','Mac‚doine',
+  'Madagascar','Malaisie','Malawi','Maldives','Mali','Malte','Maroc',
+  'Martinique','Maurice','Mauritanie','Mayotte','Mexique','Micronesie',
+  'Moldavie','Monaco','Mongolie','Montenegro','Montserrat','Mozambique',
+  'Myanmar','Namibie','Nauru','N‚pal','Nicaragua','Niger','Nig‚ria',
+  'Nioue','NorvŠge','Nouvelle-Caledonie','Nouvelle-Z‚lande','Oman',
+  'Ouganda','Ouzbekistan','Pakistan','Palaos','Panama',
+  'Papouasie-Nouvelle Guinee','Paraguay','Pays-Bas','P‚rou','Philippines',
+  'Pitcairn','Pologne','Polyn‚sie Fran‡aise','Porto Rico','Portugal',
+  'Qatar','R‚publique d‚mocratique du congo','R‚publique Dominicaine',
+  'R‚publique Togolaise','R‚union','Roumanie','Royaume-Uni','Russie',
+  'Rwanda','Sahara Occidental','Saint-Barthelemy',
+  'Saint-Christophe-et-Nieves','Saint-Marin','Saint-Martin',
+  'Saint-Pierre et Miquelon','Saint-Vincent-et-les Grenadines',
+  'Sainte-H‚lŠne','Sainte-Lucie','Salvador','Samoa','Samoa americaines',
+  'Sao Tome-et-Principe','S‚n‚gal','Serbie','Seychelles','Sierra Leone',
+  'Singapour','Slovaquie','Slov‚nie','Somalie','Soudan','Sri Lanka',
+  'Sud-Soudan','SuŠde','Suisse','Surinam','Svalbard et Ile Jan Mayen',
+  'Swaziland','Syrie','Tadjikistan','Taiwan','Tanzanie','Tchad',
+  'Tchequie','Terres australes fran‡aises',
+  'Territoire britannique de l''oc‚an Indien','Territoire palestinien',
+  'Thailande','Timor Oriental','Tokelau','Tonga','Trinidad et Tobago',
+  'Tunisie','Turkmenistan','Turquie','Tuvalu','Ukraine','Uruguay',
+  'Vanuatu','Vatican','V‚nezuela','Vietnam','Wallis-et-Futuna',
+  'Y‚men','Zambie','Zimbabwe'
+ );
+
+ FirstNameList:Array[0..45]of PChar=(
+  'Adrien','Albert','Alexandre','Alice','Andr‚','Annie','Antoine',
+  'Arthur','BenoŒt','Charles-EugŠne','Cl‚mence','Daniel','tienne',
+  'Fran‡ois','Francis','Geneveive','Guillaume','Jacques','Jean','J‚r“me',
+  'Joe','John','Joseph','Karl','Louisa','Luc','Manon','Marie',
+  'Marguerite','Marina','Mathieu','Mohamed','Naomy','Philippe','Pierre',
+  'Robert','Roger','Romald','Sophie','Steeve','Sylvain','Th‚odore','Tom',
+  'William','Xavier','Yvan'
  );
 
  LastNameList:Array[0..306]of PChar=(
@@ -88,15 +147,26 @@ Const
   'Joseph','Brodeur','Legar‚','Lafond'
  );
 
- JobsList:Array[0..11]of PChar=(
-  'Agent immobilier','Analyste','Astronome','Barmen','Biologiste',
-  'Blogueur','Diplomate','lectricien','G‚n‚ticien','Guitariste',
-  'Journaliste','Programmeur'
+ JobsList:Array[0..26]of PChar=(
+  'Avocat','Agent immobilier','Analyste','Architecte','Astronome',
+  'Barmen','Biologiste','Blogueur','Chanteur','Charpentier','Chimiste',
+  'Diplomate','lectricien','Enquˆteur','G‚n‚ticien','Guitariste',
+  'InfirmiŠre','Journaliste','Math‚maticien','M‚decin','Paysagiste',
+  'Physicien','Policier','Pompiste','Programmeur','Scrum Master',
+  'Serveuse'
+ );
+
+ StreetList:Array[0..28]of PChar=(
+  'Albert','Armand Frappier','Ampere','Argenson','Boileau','Cadieux',
+  'Daigle','Emile','Favreau','Gagnon','Hervieux','Isabelle','Josiane',
+  'Kugler','Labries','Maheux','Nicolet','Olivier','Papineau',
+  'Quevillon','Racicot','Saint-Henri','Tulipes','Villeneuve','Violette',
+  'Wilfrid Laurier','Xavier','Yamaska','Zephyr'
  );
 
 Type
- GroupType=(None,City,FirstName,LastName,FullName,IntegerNumber,
-            RealNumber,Job,Price);
+ GroupType=(None,Address,City,Country,FirstName,LastName,FullName,
+            IntegerNumber,RealNumber,Job,Price,Street);
 
 Var
  ModeParam:(_None,_Rows,_Delimiter);
@@ -128,7 +198,9 @@ BEGIN
   WriteLn('Syntaxe : CSVFAKER [city|firstname|lastname|name|job|price] [...]');
   WritelN('                   [-R nombre] [-D caractŠre]');
   WriteLn;
+  WriteLn(' address      Colonne d''une adresse');
   WriteLn(' city         Colonne de ville');
+  WriteLn(' country      Colonne de pays');
   WriteLn(' firstname    Colonne de pr‚nom');
   WriteLn(' fullname     Colonne de pr‚nom et nom');
   WriteLn(' integer      Colonne d''un nombre entier');
@@ -136,6 +208,7 @@ BEGIN
   WriteLn(' lasttname    Colonne de nom de famille');
   WriteLn(' price        Colonne de prix');
   WriteLn(' real         Colonne d''un nombre r‚el');
+  WriteLn(' street       Colonne d''une rue');
   WriteLn(' -D caractŠre CaractŠre de s‚p‚ration. Par d‚faut ®,¯.');
   WriteLn(' -R nombre    Nombre de ligne … g‚n‚r‚. Par d‚faut 10.');
  End
@@ -166,8 +239,18 @@ BEGIN
     ModeParam:=_Rows;
    End
     Else
+   If StrToUpper(ParamStr(I))='ADDRESS'Then Begin
+    GroupList[GroupNum]:=Address;
+    Inc(GroupNum);
+   End
+    Else
    If StrToUpper(ParamStr(I))='CITY'Then Begin
     GroupList[GroupNum]:=City;
+    Inc(GroupNum);
+   End
+    Else
+   If StrToUpper(ParamStr(I))='COUNTRY'Then Begin
+    GroupList[GroupNum]:=Country;
     Inc(GroupNum);
    End
     Else
@@ -209,12 +292,22 @@ BEGIN
    If StrToUpper(ParamStr(I))='REAL'Then Begin
     GroupList[GroupNum]:=RealNumber;
     Inc(GroupNum);
+   End
+    Else
+   If StrToUpper(ParamStr(I))='STREET'Then Begin
+    GroupList[GroupNum]:=Street;
+    Inc(GroupNum);
    End;
   End;
   If GroupNum>0 Then For J:=1 to Rows do Begin
    For I:=0 to GroupNum-1 do Begin
     Case GroupList[I] of
+     Address:Begin
+      Str(Random(1000),CurrField);
+      CurrField:=CurrField+' '+StrPas(StreetList[Random(High(StreetList))]);
+     End;
      City:CurrField:=StrPas(CityList[Random(High(CityList))]);
+     Country:CurrField:=StrPas(CountryList[Random(High(CountryList))]);
      FirstName:CurrField:=StrPas(FirstNameList[Random(High(FirstNameList))]);
      FullName:CurrField:=StrPas(FirstNameList[Random(High(FirstNameList))])+' '+
                          StrPas(LastNameList[Random(High(LastNameList))]);
@@ -227,6 +320,7 @@ BEGIN
       CurrField:=CurrField+','+CurrParam+' $';
      End;
      RealNumber:Str(Random,CurrField);
+     Street:CurrField:=StrPas(StreetList[Random(High(StreetList))]);
      Else CurrField:='';
     End;
     If I>0 Then Write(Delimiter);
