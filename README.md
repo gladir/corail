@@ -1346,7 +1346,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>TSV2CSV.PAS</b></td>
-			<td>Cette commande permet de convertir un fichier CSV en TSV (Tab-Separated Values).</td>
+			<td>Cette commande permet de convertir un fichier TSV (Tab-Separated Values) en CSV.</td>
 		</tr>
 		<tr>
 			<td><b>TSV2HTML.PAS</b></td>
