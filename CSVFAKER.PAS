@@ -164,9 +164,39 @@ Const
   'Wilfrid Laurier','Xavier','Yamaska','Zephyr'
  );
 
+ Words:Array[0..177]of PChar=(
+  'lorem','ipsum','dolor','sit','amet','consectetur','adipiscing',
+  'elit','curabitur','vel','hendrerit','libero','eleifend',
+  'blandit','nunc','ornare','odio','ut','orci','gravida',
+  'imperdiet','nullam','purus','lacinia','a','pretium','quis',
+  'congue','praesent','sagittis','laoreet','auctor','mauris',
+  'non','velit','eros','dictum','proin','accumsan','sapien','nec',
+  'massa','volutpat','venenatis','sed','eu','molestie','lacus',
+  'quisque','porttitor','ligula','dui','mollis','tempus','at',
+  'magna','vestibulum','turpis','ac','diam','tincidunt','id',
+  'condimentum','enim','sodales','in','hac','habitasse','platea',
+  'dictumst','aenean','neque','fusce','augue','leo','eget','semper',
+  'mattis','tortor','scelerisque','nulla','interdum','tellus',
+  'malesuada','rhoncus','porta','sem','aliquet','et','nam',
+  'suspendisse','potenti','vivamus','luctus','fringilla','erat',
+  'donec','justo','vehicula','ultricies','varius','ante','primis',
+  'faucibus','ultrices','posuere','cubilia','curae','etiam',
+  'cursus','aliquam','quam','dapibus','nisl','feugiat','egestas',
+  'class','aptent','taciti','sociosqu','ad','litora','torquent',
+  'per','conubia','nostra','inceptos','himenaeos','phasellus',
+  'nibh','pulvinar','vitae','urna','iaculis','lobortis','nisi',
+  'viverra','arcu','morbi','pellentesque','metus','commodo',
+  'ut','facilisis','felis','tristique','ullamcorper','placerat',
+  'aenean','convallis','sollicitudin','integer','rutrum','duis',
+  'est','etiam','bibendum','donec','pharetra','vulputate',
+  'maecenas','mi','fermentum','consequat','suscipit','aliquam',
+  'habitant','senectus','netus','fames','quisque','euismod',
+  'curabitur','lectus','elementum','tempor','risus','cras'
+ );
+
 Type
  GroupType=(None,Address,City,Country,FirstName,LastName,FullName,
-            IntegerNumber,RealNumber,Job,Price,Street);
+            IntegerNumber,RealNumber,Job,Price,Street,TextData);
 
 Var
  ModeParam:(_None,_Rows,_Delimiter);
@@ -189,6 +219,84 @@ Begin
  StrToUpper:=S;
 End;
 
+Function StrToCapital(S:String):String;Begin
+ If Length(S)=0 Then StrToCapital:=''
+                Else StrToCapital:=UpCase(S[1])+Copy(S,2,255);
+End;
+
+Function Gauss:Real;
+Var
+ U,V,X,Y:Real;
+Begin
+ X:=Random;
+ Y:=Random;
+ U:=Sqrt(-2*Ln(X))*Cos(2*PI*Y);
+ V:=Sqrt(-2*Ln(X))*Sin(2*PI*Y);
+ Gauss:=U;
+End;
+
+Function GaussMs(M,S:Real):Real;Begin
+ GaussMs:=Gauss+S+M;
+End;
+
+Function GaussSentence:Integer;Begin
+ GaussSentence:=Round(GaussMs(2.460,5.080));
+End;
+
+Function FakeText:String;
+Const
+ Count=25;
+ LoremIpsum=True;
+Var
+ I,NumWord,_Index,LenSentence:Integer;
+ Capital:Boolean;
+ R,LastWord:String;
+Begin
+ R:='';
+ Capital:=True;
+ LenSentence:=GaussSentence;
+ I:=0;NumWord:=0;
+ If(LoremIpsum)Then Begin
+  I:=2;
+  R:='Lorem ';
+  R:=R+'Ipsum ';
+  NumWord:=2;
+ End;
+ While(I<Count)do Begin
+  _Index:=Random(High(Words));
+  If LastWord=StrPas(Words[_Index])Then _Index:=Random(High(Words));
+  If(Capital)Then Begin
+   R:=R+StrToCapital(StrPas(Words[_Index]));
+   Capital:=False;
+  End
+   Else
+  R:=R+StrPas(Words[_Index]);
+  If I+1<Count Then Begin
+   If NumWord>=LenSentence Then Begin
+    LenSentence:=GaussSentence;
+    Case Random(2) of
+     0:R:=R+', ';
+     1:Begin
+      R:=R+'. ';
+      Capital:=True;
+     End;
+    End;
+    NumWord:=0;
+   End
+    Else
+   Begin
+    R:=R+' ';
+    Inc(NumWord);
+    Capital:=False;
+   End;
+  End;
+  LastWord:=StrPas(Words[_Index]);
+  Inc(I);
+ End;
+ R:=R+'.';
+ FakeText:=R;
+End;
+
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')or
    (ParamStr(1)='/h')or(ParamStr(1)='/H')Then Begin
@@ -209,6 +317,7 @@ BEGIN
   WriteLn(' price        Colonne de prix');
   WriteLn(' real         Colonne d''un nombre r‚el');
   WriteLn(' street       Colonne d''une rue');
+  WriteLn(' text         Colonne d''un texte');
   WriteLn(' -D caractŠre CaractŠre de s‚p‚ration. Par d‚faut ®,¯.');
   WriteLn(' -R nombre    Nombre de ligne … g‚n‚r‚. Par d‚faut 10.');
  End
@@ -297,6 +406,11 @@ BEGIN
    If StrToUpper(ParamStr(I))='STREET'Then Begin
     GroupList[GroupNum]:=Street;
     Inc(GroupNum);
+   End
+    Else
+   If StrToUpper(ParamStr(I))='TEXT'Then Begin
+    GroupList[GroupNum]:=TextData;
+    Inc(GroupNum);
    End;
   End;
   If GroupNum>0 Then For J:=1 to Rows do Begin
@@ -321,6 +435,7 @@ BEGIN
      End;
      RealNumber:Str(Random,CurrField);
      Street:CurrField:=StrPas(StreetList[Random(High(StreetList))]);
+     TextData:CurrField:=FakeText;
      Else CurrField:='';
     End;
     If I>0 Then Write(Delimiter);
