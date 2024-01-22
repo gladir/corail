@@ -1365,6 +1365,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier TSV (Tab-Separated Values) en une table Markdown.</td>
 		</tr>
 		<tr>
+			<td><b>TSVFAKER.PAS</b></td>td
+			<td>Cette commande permet de générer un fichier TSV selon des données aléatoires spécifiés.</td>
+		</tr>
+		<tr>
 			<td><b>TYPE.PAS</b></td>
 			<td>Cette commande permet d'afficher le contenu d'un fichier.</td>
 		</tr>
