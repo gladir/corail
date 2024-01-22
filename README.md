@@ -1516,6 +1516,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>XCOPY.PAS</b></td>
 			<td>Cette commande permet d'effectuer la copie étendue avec sous-répertoire de fichier(s) vers un nouvel emplacement.</td>
 		</tr>
+		<tr>
+			<td><b>XMLFAKER.PAS</b></td>
+			<td>Cette commande permet de générer un fichier XML selon les données aléatoires spécifiés.</td>
+		</tr>
 	</table>
 	
 <h2>Langage humain</h3>
