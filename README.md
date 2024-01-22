@@ -937,6 +937,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier JSON en format YAML (extension .YML).</td>
 		</tr>
 		<tr>
+			<td><b>JSONFAKE.PAS</b></td>
+			<td>Cette commande permet de générer un fichier JSON selon des données aléatoires spécifiés.</td>
+		</tr>
+		<tr>
 			<td><b>L43.PAS</b></td>
 			<td>Cette commande permet de faire passer l'affichage texte en 43 lignes pour les cartes EGA et à 50 lignes pour les cartes VGA. Cette commande est inspiré des utilitaires de cartes <i>EGA Wonder</i> et <i>VGA Wonder</i> de ATI.</td>
 		</tr>
