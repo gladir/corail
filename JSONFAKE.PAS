@@ -300,7 +300,7 @@ BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')or
    (ParamStr(1)='/h')or(ParamStr(1)='/H')Then Begin
   WriteLn('JSONFAKE : Cette commande permet de g‚n‚rer un fichier JSON ',
-                     ' selon des donn‚es al‚tatoires sp‚cifi‚s.');
+                     ' selon des donn‚es al‚atoires sp‚cifi‚s.');
   WriteLn;
   WriteLn('Syntaxe : JSONFAKE [city|firstname|lastname|name|job|price] [...]');
   WritelN('                   [-R nombre]');
