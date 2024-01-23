@@ -1216,6 +1216,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>SEARCH.PAS</b></td>
 			<td>Cette commande permet d'afficher les chemins des fichiers spécifiés. ette commande est originaire du <a href="https://www.gladir.com/OS/ZENITHDATASYSTEMSMICROSOFTMSDOS2/search.htm">Zenith Data Systems Microsoft MS-DOS 2</a>.</td>
 		</tr>
+		<tr>
+			<td><b>SEQ.PAS</b></td>
+			<td>Cette commande permet de générer des nombres selon l'intervalle et le saut spécifié.</td>
+		</tr>
 	        <tr>
 			<td><b>SETIME.PAS</b></td>
 			<td>Cette commande permet de fixer l'horloge du système d'exploitation. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/OS9/settime.htm">SETTIME</a> de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
