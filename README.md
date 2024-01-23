@@ -1432,6 +1432,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>VIEWBMP.PAS</b></td>
 			<td>Cette commande permet de visualiser une image en format Bitmap (.BMP).</td>
 		</tr>
+		<tr>
+			<td><b>VIEWCSV.PAS</b></td>
+			<td>Cette commande permet de visualiser proprement un fichier CSV dans un terminal.</td>
+		</tr>
 	        <tr>
 			<td><b>VIEWHEX.PAS</b></td>
 			<td>Cette commande permet de visualiser un fichier binaire en mode hexadécimal.</td>
