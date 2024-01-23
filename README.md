@@ -1353,6 +1353,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de rechercher une chaine de caractères dans des fichiers. Cette commande est un équivalent du Norton Utilities.</td>
 		</tr>
 		<tr>
+			<td><b>TSV2ASM.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier TSV (Tab-Separated Values) en code source Assembleur.</td>
+		</tr>
+		<tr>
 			<td><b>TSV2CSV.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier TSV (Tab-Separated Values) en CSV.</td>
 		</tr>
