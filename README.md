@@ -1556,6 +1556,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>XMLFAKER.PAS</b></td>
 			<td>Cette commande permet de générer un fichier XML selon les données aléatoires spécifiés.</td>
 		</tr>
+		<tr>
+			<td><b>YES.PAS</b></td>
+			<td>Cette commande permet d'effectuer des répétitions de réponses affirmatives.</td>
+		</tr>
 	</table>
 	
 <h2>Langage humain</h3>
