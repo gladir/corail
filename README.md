@@ -1009,6 +1009,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de modifier les temps de réponse des claviers AT pour permettre une saisie et un mouvement du curseur plus rapides. Cette commande est un clone de la commande MKEYRATE du Mace Utilities.</td>
 		</tr>	
 		<tr>
+			<td><b>MKTEMP.PAS</b></td>
+			<td>Cette commande permet de créer un fichier ou un répertoire temporaire.</td>
+		</tr>
+		<tr>
 			<td><b>MODE.PAS</b></td>
 			<td>Cette commande permet d'effectuer la gestion des paramètres d'un périphérique.</td>
 		</tr>
