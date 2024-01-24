@@ -36,19 +36,34 @@ BEGIN
                          'd''octets sp‚cifi‚ … partir du d‚but.');
   WriteLn(' --lines N    Ce paramŠtre permet d''afficher le nombre de ',
                          'ligne sp‚cifi‚ … partir du d‚but.');
+  WriteLn(' -n N         Ce paramŠtre permet d''afficher le nombre de ',
+                         'ligne sp‚cifi‚ … partir du d‚but.');
  End
   Else
  If ParamCount>0 Then Begin
   For I:=1 to ParamCount do Begin
    If OptionFlag<>_None Then Begin
     Case OptionFlag of
-     _Lines:Val(ParamStr(I),MaxLine,Err);
-     _Bytes:Val(ParamStr(I),MaxBuffer,Err);
+     _Lines:Begin
+      Val(ParamStr(I),MaxLine,Err);
+      If Err>0 Then Begin
+       WriteLn('Nombre de lignes invalides !');
+       Halt(2);
+      End;
+     End;
+     _Bytes:Begin
+      Val(ParamStr(I),MaxBuffer,Err);
+      If Err>0 Then Begin
+       WriteLn('Tampon du tampon invalides !');
+       Halt(3);
+      End;
+     End;
     End;
     OptionFlag:=_None;
    End
     Else
    If ParamStr(I)='--lines'Then OptionFlag:=_Lines Else
+   If ParamStr(I)='-n'Then OptionFlag:=_Lines Else
    If ParamStr(I)='--bytes'Then OptionFlag:=_Bytes Else
    If((Length(ParamStr(I))>=2) and (StringToChar(ParamStr(I),1)='-')and(StringToChar(ParamStr(I),2)in['0'..'9']))Then Begin
     Val(Copy(ParamStr(I),2,255),MaxLine,Err);
@@ -75,7 +90,10 @@ BEGIN
     Close(FileView);
    End
     Else
-   WriteLn('Erreur de lecture du fichier ',FileName);
+   Begin
+    WriteLn('Erreur de lecture du fichier ',FileName);
+    Halt(1);
+   End;
   End
    Else
   Begin
@@ -86,7 +104,7 @@ BEGIN
     Inc(CurrSize,Length(CurrLine));
     If CurrSize>MaxBuffer Then Break;
     Inc(I);
-    If I > MaxLine Then Break;
+    If I>=MaxLine Then Break;
    End;
   End;
  End
@@ -94,12 +112,16 @@ BEGIN
  Begin
   I:=0;
   While Not EOF do Begin
-   ReadLn(Input,CurrLine);
+   {$I-}ReadLn(Input,CurrLine);{$I+}
+   If IOResult<>0 Then Begin
+    WriteLn('Erreur de lecture des donn‚es');
+    Halt(4);
+   End;
    WriteLn(Output,CurrLine);
    Inc(CurrSize,Length(CurrLine));
    If CurrSize>MaxBuffer Then Break;
    Inc(I);
-   If I > MaxLine Then Break;
+   If I>=MaxLine Then Break;
   End;
  End;
 END.

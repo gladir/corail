@@ -31,6 +31,9 @@ BEGIN
    End;
   End;
   If S=''Then S:='y';
-  While True do WriteLn(S);
+  While True do Begin
+   {$I-}WriteLn(S);{$I+}
+   If IOResult<>0 Then Break;
+  End;
  End;
 END.
