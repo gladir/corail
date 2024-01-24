@@ -26,7 +26,7 @@ Aperçu du clone de CodeView :
 
 Aperçu du clone de CheckIt :
 
-![image](https://user-images.githubusercontent.com/11842176/173472724-97e50fd0-eed4-4e71-98c6-b6ac585030a8.png)
+![image](https://github.com/gladir/corail/assets/11842176/5a45cbc4-4bbc-4239-808f-3952c2c0d51f)
 
 Aperçu de la commande NC (North Commander) :
 
