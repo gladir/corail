@@ -933,6 +933,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de vérifier si le courriel est un courriel valide.</td>
 		</tr>
 		<tr>
+			<td><b>JO.PAS</b></td>
+			<td>Cette commande permet de créer des objets JSON.</td>
+		</tr>
+		<tr>
 			<td><b>JSON2XML.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier JSON en format XML.</td>
 		</tr>
