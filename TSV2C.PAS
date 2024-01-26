@@ -9,7 +9,7 @@ Program TSV2C(Input,Output);
 Uses DOS;
 
 Var
- SourceCSV,TargetC:Text;
+ SourceTSV,TargetC:Text;
  CurrLine,CurrWord,CurrField,TableName,FileName,TFileName:String;
  I:Integer;
  First:Boolean;
@@ -53,7 +53,7 @@ End;
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')or
    (ParamStr(1)='/h')or(ParamStr(1)='/H')Then Begin
-  WriteLn('TSV2C : Cette commande permet de convertir un fichier CSV ',
+  WriteLn('TSV2C : Cette commande permet de convertir un fichier TSV ',
                      'en code source C.');
   WriteLn;
   WriteLn('Syntaxe : TSV2C source.TSV target.C');
@@ -72,28 +72,28 @@ BEGIN
    TableName:=Path2Name(ParamStr(1));
    FileName:=FExpand(ParamStr(1));
    If Path2Ext(FileName)=''Then FileName:=FileName+'.TSV';
-   Assign(SourceCSV,FileName);
-   {$I-}Reset(SourceCSV);{$I+}
+   Assign(SourceTSV,FileName);
+   {$I-}Reset(SourceTSV);{$I+}
    If IoResult<>0Then Begin
     WriteLn('Fichier TSV introuvable !');
     Halt;
    End;
-   While Not EOF(SourceCSV)do Begin
-    ReadLn(SourceCSV,CurrLine);
+   While Not EOF(SourceTSV)do Begin
+    ReadLn(SourceTSV,CurrLine);
     Inc(NumRecord);
    End;
-   Close(SourceCSV);
+   Close(SourceTSV);
    Dec(NumRecord);
-   Assign(SourceCSV,FileName);
-   {$I-}Reset(SourceCSV);{$I+}
+   Assign(SourceTSV,FileName);
+   {$I-}Reset(SourceTSV);{$I+}
    If IoResult<>0Then Begin
     WriteLn('Fichier TSV introuvable !');
     Halt;
    End;
    If ParamStr(2)=''Then Begin
     First:=True;
-    While Not EOF(SourceCSV)do Begin
-     ReadLn(SourceCSV,CurrLine);
+    While Not EOF(SourceTSV)do Begin
+     ReadLn(SourceTSV,CurrLine);
      If(First)Then Begin
       First:=False;
       WriteLn('typedef struct ',TableName,'Rec {');
@@ -154,7 +154,7 @@ BEGIN
      End;
     End;
     WriteLn(' };');
-    Close(SourceCSV);
+    Close(SourceTSV);
    End
     Else
    Begin
@@ -164,12 +164,12 @@ BEGIN
     {$I-}Rewrite(TargetC); {$I+}
     If IoResult<>0Then Begin
      WriteLn('Impossible de cr‚er le fichier C ',TFileName,' !');
-     Close(SourceCSV);
+     Close(SourceTSV);
      Halt;
     End;
     First:=True;
-    While Not EOF(SourceCSV)do Begin
-     ReadLn(SourceCSV,CurrLine);
+    While Not EOF(SourceTSV)do Begin
+     ReadLn(SourceTSV,CurrLine);
      If(First)Then Begin
       First:=False;
       WriteLn(TargetC,'typedef struct ',TableName,'Rec {');
@@ -231,7 +231,7 @@ BEGIN
     End;
     WriteLn(TargetC,' };');
     Close(TargetC);
-    Close(SourceCSV);
+    Close(SourceTSV);
    End;
   End
    Else
