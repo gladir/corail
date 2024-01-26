@@ -1417,12 +1417,12 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher des informations sur le système d'exploitation.</td>
 		</tr>
 		<tr>
-			<td><b>UNIQ.PAS</b></td>
-			<td>Cette commande permet de sortir le contenu d'un fichier sans duplication du contenu de ses lignes.</td>
-		</tr>
-		<tr>
 			<td><b>UNEXPAND.PAS</b></td>
 			<td>Cette commande permet de convertir des espaces en tabulations.</td>
+		</tr>				
+		<tr>
+			<td><b>UNIQ.PAS</b></td>
+			<td>Cette commande permet de sortir le contenu d'un fichier sans duplication du contenu de ses lignes.</td>
 		</tr>
 		<tr>
 			<td><b>UNLINK.PAS</b></td>
