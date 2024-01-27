@@ -1293,6 +1293,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de créer un disque virtuel à partir d'un répertoire.</td>
 		</tr>
 		<tr>
+			<td><b>SUM.PAS</b></td>
+			<td>Cette commande permet d'afficher la sommation de chaque fichier.</td>
+		</tr>
+		<tr>
 			<td><b>SVG2LSP.PAS</b></td>
 			<td>Cette commande permet de convertir une image de format SVG en format LSP (AutoLisp).</td>
 		</tr>
