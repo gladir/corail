@@ -1321,6 +1321,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir des tabulations en espaces.</td>
 		</tr>
 		<tr>
+			<td><b>TAC.PAS</b></td>
+			<td>Cette commande permet d'afficher le contenu du fichier dans le sens inverse.</td>
+		</tr>
+		<tr>
 		        <td><b>TB.PAS</b></td>
 			<td>Cette commande permet de lancer le Turbo Basic.</td>
 		</tr>
