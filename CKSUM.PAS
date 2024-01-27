@@ -17,6 +17,8 @@ Var
  NumFiles,i:Word;
  SRec:SearchRec;
  FileArray:Array[1..128] of ^SearchRec;
+ CheckSum,Size:LongInt;
+ C:Char;
 
 Function StrToUpper(S:String):String;
 Var
@@ -28,7 +30,34 @@ Begin
  StrToUpper:=S;
 End;
 
-Function  CRC32(value: Byte;crc:LongInt):LongInt;
+Function PadZeroLeft(Value:LongInt;Space:Byte):String;
+Var
+ S:String;
+Begin
+ Str(Value,S);
+ While Length(S)<Space do S:='0'+S;
+ PadZeroLeft:=S;
+End;
+
+Function Path2Dir(Const Path:String):String;
+Var
+ D:DirStr;
+ N:NameStr;
+ E:ExtStr;
+Begin
+ Path2Dir:='';
+ If Path=''Then Exit;
+ FSplit(Path,D,N,E);
+ If E=''Then Begin
+  If D[Length(D)]<>'\'Then D:=D+'\';
+  D:=D+E;
+ End;
+ If D=''Then Path2Dir:='' Else
+ If D[Length(D)]<>'\'Then D:=D+'\';
+ Path2Dir:=D;
+End;
+
+Function CRC32(Value:Byte;CRC:LongInt):LongInt;
 Const
   crc32_table : Array[0..255] of LongInt = (
     $00000000, $77073096, $ee0e612c, $990951ba, $076dc419, $706af48f,
@@ -76,7 +105,7 @@ Const
     $b40bbe37, $c30c8ea1, $5a05df1b, $2d02ef8d
   );
 Begin
- If crc=0 Then CRC:=$FFFFFFFF;
+ If CRC=0 Then CRC:=$FFFFFFFF;
  CRC32:=crc32_table[Byte(crc xor LongInt(value))] xor((crc shr 8) and $00FFFFFF);
 End;
 
@@ -162,8 +191,9 @@ BEGIN
   End;
  End
   Else
- Begin
+ If ParamCount>0 Then Begin
   Source:=FExpand(ParamStr(1));
+  SourcePath:=Path2Dir(Source);
   NumFiles:=0;
   FindFirst(Source,AnyFile,SRec);
   While Doserror=0 do Begin
@@ -180,5 +210,17 @@ BEGIN
   End
    Else
   For I:=1 to NumFiles do Convert32(SourcePath+FileArray[i]^.Name,FileArray[i]^.Size);
+ End
+  Else
+ Begin
+  CheckSum:=$FFFFFFFF;
+  Size:=0;
+  While Not EOF do Begin
+   {$I-}Read(C);{$I+}
+   If IOResult<>0 Then Break;
+   CheckSum:=CRC32(Byte(C),CheckSum);
+   Inc(Size);
+  End;
+  WriteLn(LongHex2Str(CheckSum),Size:6);
  End;
 END.

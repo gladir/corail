@@ -28,6 +28,25 @@ Begin
  R:='';
  I:=1;
  While I<=Length(S)do Begin
+  If S[I]='\'Then Begin
+   Inc(I);
+   If I>Length(S)Then Break;
+   Case S[I]of
+    '0':R:=R+#0;
+    'a':R:=R+#7;
+    'b':R:=R+#8;
+    'f':R:=R+#12;
+    'n':R:=R+#10;
+    'r':R:=R+#13;
+    't':R:=R+#9;
+    'v':R:=R+#11;
+    '\':R:=R+'\';
+    '''':R:=R+'''';
+    '"':R:=R+'"';
+    '?':R:=R+'?';
+   End;
+  End
+   Else
   If S[I]='%'Then Begin
    Inc(I);
    If I>Length(S)Then Break;
@@ -76,6 +95,6 @@ BEGIN
   Else
  If ParamCount>0Then Begin
   CurrParam:=2;
-  WriteLn(FormatString(ParamStr(1)));
+  Write(FormatString(ParamStr(1)));
  End;
 END.
