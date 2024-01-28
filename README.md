@@ -1401,6 +1401,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier TSV en code source C++.</td>
 		</tr>
 		<tr>
+			<td><b>TSV2CS.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier TSV en code source C# (C Sharp).</td>
+		</tr>
+		<tr>
 			<td><b>TSV2CSV.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier TSV (Tab-Separated Values) en CSV.</td>
 		</tr>
