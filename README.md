@@ -1417,6 +1417,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier TSV (Tab-Separated Values) en HTML.</td>
 		</tr>
 		<tr>
+			<td><b>TSV2JS.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier TSV en JavaScript.</td>
+		</tr>
+		<tr>
 			<td><b>TSV2MD.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier TSV (Tab-Separated Values) en une table Markdown.</td>
 		</tr>
