@@ -734,6 +734,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Ce programme permet de reduire la taille de l'entête EXE d'un programme 16 bits.</td>
 		</tr>
 		<tr>
+			<td><b>EXPAND.PAS</b></td>
+			<td>Cette commande permet de convertir des tabulations en espaces.</td>
+		</tr>
+		<tr>
 			<td><b>FA.PAS</b></td>
 			<td>Cette commande permet de demander ou de changer les attributs d'un fichier. Cette commande est équivalent de la commande FA des utilitaires Norton Utilities.</td>
 		</tr>	
