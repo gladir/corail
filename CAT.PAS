@@ -140,6 +140,7 @@ Procedure ProcessLine;Begin
      #0:Write('''+#0+''');
      #1..#26:Write('''+^',Chr(64+Byte(CurrLine[I])),'+''');
      #27..#31:Write('''+#',Byte(CurrLine[I]),'+''');
+     '''':Write('''','''');
      Else Write(CurrLine[J]);
     End;
    End;
@@ -233,6 +234,7 @@ BEGIN
     WriteLn(' --help                   Display this help and exit');
     WriteLn(' --hex                    Display each line in hexadecimal');
     WriteLn(' --html                   Display each line in HTML');
+    WriteLn(' --lower                  Lower each line');
     WriteLn(' --pascal                 Display each line in Pascal string');
     WriteLn(' --trim                   Trim each line');
     WriteLn(' --uniq                   Displays once lines are duplicated');
@@ -258,6 +260,7 @@ BEGIN
     WriteLn(' --help             Affiche l''aide de cette commande');
     WriteLn(' --hex              Affiche chacune des lignes en hexad‚cimal');
     WriteLn(' --html             Affiche chacune des lignes en HTML');
+    WriteLn(' --lower            Met en minuscule chacune des lignes');
     WriteLn(' --number           Affiche les num‚ros de ligne');
     WriteLn(' --number-nonblank  Affiche les num‚ros de ligne si la ligne n''est pas vide');
     WriteLn(' --pascal           Affiche chacune des lignes en chaŒne de caractŠres Pascal');
