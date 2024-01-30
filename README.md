@@ -786,6 +786,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de reformater le texte de paragraphe.</td>
 		</tr>
 		<tr>
+			<td><b>FOLD.PAS</b></td>
+			<td>Cette commande permet d''envelopper les lignes d'entrée pour s'adapter à la largeur spécifié.</td>
+		</tr>
+		<tr>
 			<td><b>FORMAT.PAS</b></td>
 			<td>Cette commande permet de formater un unité de disquette.</td>
 		</tr>
