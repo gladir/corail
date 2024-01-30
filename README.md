@@ -434,6 +434,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer l'interpréteur de commande C Shell.</td>
 		</tr>
 		<tr>
+			<td><b>CSPLIT.PAS</b></td>
+			<td>Cette commande permet de séparer un fichier en plusieurs sections déterminé par des lignes de contextes.</td>
+		</tr>
+		<tr>
 			<td><b>CSV2ASM.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier CSV en code source Assembleur.</td>
 		</tr>			
