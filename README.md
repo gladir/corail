@@ -581,6 +581,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>DBF2XML.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier .DBF (DBase III) en format XML.</td>
 		</tr>				
+		<tr>
+			<td><b>DD.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier tant qu'il se copie.</td>
+		</tr>
 	         <tr>
 			 <td><b>DEBUG.PAS</b></td>
 			 <td>Cette commande permet de deboguer un programme.</td>
