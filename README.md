@@ -782,6 +782,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de charger une police de caractères à partir d'un fichier de format «.FNT» en mémoire vidéo. Cette commande est inspiré de la disquette «IT-VGA2 UTILITY» d'InformTech.</td>
 		</tr>
 		<tr>
+			<td><b>FMT.PAS</b></td>
+			<td>Cette commande permet de reformater le texte de paragraphe.</td>
+		</tr>
+		<tr>
 			<td><b>FORMAT.PAS</b></td>
 			<td>Cette commande permet de formater un unité de disquette.</td>
 		</tr>
