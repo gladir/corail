@@ -1380,6 +1380,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>TOUCH.PAS</b></td>
 			<td>Cette commande permet de changer la date et l'heure d'un fichier. Cette commande est un équivalent de UNIX, AIX et Linux.</td>
 	        </tr>
+		<tr>
+			<td><b>TR.PAS</b></td>
+			<td>Cette commande permet d'envoyer le contenu de l'entrée standard vers la sortie standard en effectuant le traitement spécifié.</td>
+		</tr>
 	        <tr>
 			<td><b>TREE.PAS</b></td>
 			<td>Cette commande permet d'afficher un arbre de répertoire.</td>
