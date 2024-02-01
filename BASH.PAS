@@ -22,14 +22,27 @@ Const
 
 Type
  StrPointer=^String;
+ PAliasRec=^AliasRec;
+ AliasRec=Record
+  Name,Value:String;
+  Next:PAliasRec;
+ End;
+ PVariableRec=^VariableRec;
+ VariableRec=Record
+  Name,Value:String;
+  Next:PVariableRec;
+ End;
 
 Var
  CommandFound,Terminated:Boolean;
  CmdStr:String;
+ Option:(optNone,optCommand);
  CurrCommand,ParamList:String;
  I,J:Byte;
  History:Array[1..MaxHistory] of StrPointer;
  NumberHistory:Integer;
+ AliasList:PAliasRec;
+ VariableList:PVariableRec;
 
 Function TrimL(S:String):String;
 Var
@@ -44,12 +57,163 @@ Begin
  TrimL:=S;
 End;
 
+Function PadZeroLeft(Value:String;Space:Byte):String;
+Var
+ S:String;
+Begin
+ S:=Value;
+ While Length(S)<Space do S:='0'+S;
+ PadZeroLeft:=S;
+End;
+
 Procedure ChangeChar(Var Str:String;OldChar,NewChar:Char);
 Var
  I:Byte;
 Begin
  For I:=1 to Length(Str)do Begin
   If Str[I]=OldChar Then Str[I]:=NewChar;
+ End;
+End;
+
+Function FileExist(Name:String):Boolean;
+Var
+ Rec:SearchRec;
+Begin
+ FindFirst(Name,AnyFile,Rec);
+ FileExist:=DosError=0;
+End;
+
+Function AliasExist(Name:String):Boolean;
+Var
+ P:PAliasRec;
+Begin
+ AliasExist:=False;
+ P:=AliasList;
+ While P<>NIL do Begin
+  If P^.Name=Name Then Begin
+   AliasExist:=True;
+   Exit;
+  End;
+  P:=P^.Next;
+ End;
+End;
+
+Function GetAliasValue(Name:String):String;
+Var
+ P:PAliasRec;
+Begin
+ GetAliasValue:='';
+ P:=AliasList;
+ While P<>NIL do Begin
+  If P^.Name=Name Then Begin
+   GetAliasValue:=P^.Value;
+   Exit;
+  End;
+  P:=P^.Next;
+ End;
+End;
+
+Function SetAliasValue(Name,Value:String):Boolean;
+Var
+ P:PAliasRec;
+Begin
+ SetAliasValue:=False;
+ P:=AliasList;
+ While P<>NIL do Begin
+  If P^.Name=Name Then Begin
+   P^.Value:=Value;
+   SetAliasValue:=True;
+   Exit;
+  End;
+  P:=P^.Next;
+ End;
+End;
+
+Function AddAlias(Name,Value:String):Boolean;
+Var
+ P:PAliasRec;
+Begin
+ AddAlias:=False;
+ If AliasExist(Name)Then Begin
+  SetAliasValue(Name,Value);
+  AddAlias:=True;
+ End
+  Else
+ Begin
+  New(P);
+  If P=NIL Then Exit;
+  P^.Name:=Name;
+  P^.Value:=Value;
+  P^.Next:=AliasList;
+  AliasList:=P;
+  AddAlias:=True;
+ End;
+End;
+
+Function VariableExist(Name:String):Boolean;
+Var
+ P:PVariableRec;
+Begin
+ VariableExist:=False;
+ P:=VariableList;
+ While P<>NIL do Begin
+  If P^.Name=Name Then Begin
+   VariableExist:=True;
+   Exit;
+  End;
+  P:=P^.Next;
+ End;
+End;
+
+Function GetVariableValue(Name:String):String;
+Var
+ P:PVariableRec;
+Begin
+ GetVariableValue:='';
+ P:=VariableList;
+ While P<>NIL do Begin
+  If P^.Name=Name Then Begin
+   GetVariableValue:=P^.Value;
+   Exit;
+  End;
+  P:=P^.Next;
+ End;
+End;
+
+Function SetVariableValue(Name,Value:String):Boolean;
+Var
+ P:PVariableRec;
+Begin
+ SetVariableValue:=False;
+ P:=VariableList;
+ While P<>NIL do Begin
+  If P^.Name=Name Then Begin
+   P^.Value:=Value;
+   SetVariableValue:=True;
+   Exit;
+  End;
+  P:=P^.Next;
+ End;
+End;
+
+Function AddVariable(Name,Value:String):Boolean;
+Var
+ P:PVariableRec;
+Begin
+ AddVariable:=False;
+ If VariableExist(Name)Then Begin
+  SetVariableValue(Name,Value);
+  AddVariable:=True;
+ End
+  Else
+ Begin
+  New(P);
+  If P=NIL Then Exit;
+  P^.Name:=Name;
+  P^.Value:=Value;
+  P^.Next:=VariableList;
+  VariableList:=P;
+  AddVariable:=True;
  End;
 End;
 
@@ -92,14 +256,74 @@ Begin
  ParamList:='';
 End;
 
+Function ExtractParam(Index:Byte):String;
+Var
+ Count:Word;
+ LocalIndex:Word;
+ l:Byte;
+ Temp:String;
+Begin
+ Temp:='';Count:=1;LocalIndex:=1;l:=0;
+ While Count<=Length(ParamList)do Begin
+  If Not(ParamList[Count] in [' ',#9])then Begin
+   If LocalIndex=Index Then Begin
+    While (Count<=Length(ParamList)) and (Not(ParamList[count] in[' ',#9])) and (l < 256) do Begin
+     Temp:=Temp+ParamList[count];
+     Inc(l);
+     Inc(Count);
+    end;
+    Temp[0]:=Char(l);
+    ExtractParam:=Temp;
+    Exit;
+   End;
+   While (Count<=Length(ParamList)) and (Not(ParamList[count] in [' ',#9])) do Inc(Count);
+   Inc(LocalIndex);
+  End;
+  If Count>=Length(ParamList)Then Break;
+  Inc(Count);
+ End;
+ ExtractParam:=Temp;
+End;
+
 Procedure HomeMessage;Begin
  WriteLn;
  WriteLn('bash - Bourne Again SHell');
  WriteLn;
 End;
 
-Procedure AliasCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure AliasCommand;
+Var
+ List:PAliasRec;
+ I,P:Integer;
+ AliasName,AliasValue:String;
+Begin
+ If ParamList<>''Then Begin
+  AliasName:='';
+  AliasValue:='';
+  P:=0;
+  For I:=1 to Length(ParamList)do Begin
+   If ParamList[I]='='Then Begin
+    P:=I;
+    Break;
+   End;
+  End;
+  If P>0 Then Begin
+   AliasName:=Copy(ParamList,1,P-1);
+   If P=Length(ParamList)Then Begin
+    AddAlias(AliasName,'');
+   End
+    Else
+   AddAlias(AliasName,Copy(ParamList,P+1,255));
+  End;
+ End
+  Else
+ Begin
+  List:=AliasList;
+  While List<>NIL do Begin
+   WriteLn(List^.Name,'=',List^.Value);
+   List:=List^.Next;
+  End;
+ End;
 End;
 
 Procedure BindCommand;Begin
@@ -134,8 +358,28 @@ Procedure DeclareCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure EchoCommand;Begin
- WriteLn(ParamList);
+Procedure EchoCommand;
+Var
+ NewLine:Boolean;
+ I:Integer;
+ S:String;
+Begin
+ Newline:=True;
+ S:=ExtractParam(1);
+ I:=1;
+ While S<>''do Begin
+  If(S='-n')Then Newline:=False;
+  If(S[1]='$')and(VariableExist(Copy(S,2,255)))Then Begin
+   Write(GetVariableValue(Copy(S,2,255)));
+  End
+   Else
+  Write(S);
+  Write(' ');
+  Inc(I);
+  If I>255 Then Exit;
+  S:=ExtractParam(I);
+ End;
+ If(NewLine)Then WriteLn;
 End;
 
 Procedure EnableCommand;Begin
@@ -209,8 +453,80 @@ Procedure MapfileCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure PrintfCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure PrintfCommand;
+Var
+ CurrParam:Integer;
+ I,PadLeft:Integer;
+ Err:Word;
+ S,R,T:String;
+ ValueStr:String;
+Begin
+ CurrParam:=2;
+ S:=ExtractParam(1);
+ R:='';
+ I:=1;
+ While I<=Length(S)do Begin
+  If S[I]='$'Then Begin
+   Inc(I);
+   ValueStr:='';
+   While(I<=Length(S))and(S[I]in['A'..'Z','a'..'z','0'..'9'])do Begin
+    ValueStr:=ValueStr+S[I];
+    Inc(I);
+   End;
+   R:=R+GetVariableValue(ValueStr);
+   Dec(I);
+  End
+   Else
+  If S[I]='\'Then Begin
+   Inc(I);
+   If I>Length(S)Then Break;
+   Case S[I]of
+    '0':R:=R+#0;
+    'a':R:=R+#7;
+    'b':R:=R+#8;
+    'f':R:=R+#12;
+    'n':R:=R+#10;
+    'r':R:=R+#13;
+    't':R:=R+#9;
+    'v':R:=R+#11;
+    '\':R:=R+'\';
+    '''':R:=R+'''';
+    '"':R:=R+'"';
+    '?':R:=R+'?';
+   End;
+  End
+   Else
+  If S[I]='%'Then Begin
+   Inc(I);
+   If I>Length(S)Then Break;
+   Case S[I]of
+    'c':Begin
+     ValueStr:=ExtractParam(CurrParam);
+     Inc(CurrParam);
+     If Length(ValueStr)>0 Then R:=R+ValueStr[1];
+    End;
+    'd','f','g','i','l':Begin
+     T:=ExtractParam(CurrParam);
+     Inc(CurrParam);
+     R:=R+T;
+    End;
+    '0'..'9':Begin
+     T:='';
+     While(S[I]in['0'..'9'])and(I<=Length(S))do Begin
+      T:=T+S[I];
+      Inc(I);
+     End;
+     Val(T,PadLeft,Err);
+     R:=R+PadZeroLeft(ExtractParam(CurrParam),PadLeft);
+     Inc(CurrParam);
+    End;
+   End;
+  End
+   Else
+  R:=R+S[I];
+  Inc(I);
+ End;
+ WriteLn(R);
 End;
 
 Procedure PwdCommand;
@@ -222,8 +538,16 @@ Begin
  WriteLn(CurrDir);
 End;
 
-Procedure ReadCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure ReadCommand;
+Var
+ S:String;
+Begin
+ If ExtractParam(1)=''Then ReadLn
+  Else
+ Begin
+  ReadLn(S);
+  AddVariable(ExtractParam(1),S);
+ End;
 End;
 
 Procedure ReadarrayCommand;Begin
@@ -283,12 +607,120 @@ Procedure UnsetCommand;Begin
 End;
 
 Procedure ShowPrompt;Begin
- Write('$');
+ Write('$ ');
 End;
 
-Procedure UnknownCommand;Begin
- WriteLn('Commande ou nom de fichier non reconnu');;
+Procedure UnknownCommand;
+Var
+ Err:Word;
+Begin
+ Exec(CurrCommand,ParamList);
+ Err:=DosError;
+ If Err>0 Then WriteLn('Commande ou nom de fichier non reconnu');
  WriteLn;
+End;
+
+Procedure RunCommandInternal;Begin
+ For J:=Low(CommandList) to High(CommandList) do Begin
+  If CurrCommand=CommandList[J]Then Begin
+   Case(J)of
+    0:AliasCommand;
+    1:BindCommand;
+    2:BreakCommand;
+    3:BuiltinCommand;
+    4:CallerCommand;
+    5:CdCommand;
+    6:CommandCommand;
+    7:ContinueCommand;
+    8:DeclareCommand;
+    9:EchoCommand;
+    10:EnableCommand;
+    11:EvalCommand;
+    12:ExecCommand;
+    13:ExitCommand;
+    14:ExportCommand;
+    15:GetopsCommand;
+    16:HashCommand;
+    17:HelpCommand;
+    18:LetCommand;
+    19:LocalCommand;
+    20:LogoutCommand;
+    21:MapfileCommand;
+    22:PrintfCommand;
+    23:PwdCommand;
+    24:ReadCommand;
+    25:ReadarrayCommand;
+    26:ReadonlyCommand;
+    27:ReturnCommand;
+    28:ShiftCommand;
+    29:SourceCommand;
+    30:TestCommand;
+    31:TimesCommand;
+    32:TrapCommand;
+    33:TypeCommand;
+    34:TypesetCommand;
+    35:UlimitCommand;
+    36:UmaskCommand;
+    37:UnaliasCommand;
+    38:UnsetCommand;
+   End;
+   If J<=High(CommandList)Then Begin
+    CommandFound:=True;
+    Break;
+   End;
+  End;
+ End;
+End;
+
+Procedure RunCommand;
+Var
+ Err:Word;
+ I:Integer;
+Begin
+ AddHistory(CmdStr);
+ If Copy(CmdStr,1,2)='./'Then Begin
+  CurrCommand:=Copy(CmdStr,3,Pos(' ',CmdStr)-3);
+  ParamList:=Copy(CmdStr,Pos(' ',CmdStr),255);
+  Exec(CurrCommand,ParamList);
+  Err:=DosError;
+  If Err>0 Then WriteLn('Commande ou nom de fichier non reconnu');
+ End
+  Else
+ Begin
+  I:=1;
+  While(I<=Length(CmdStr))and(CmdStr[I]in['A'..'Z','a'..'z','0'..'9','-'])do Inc(I);
+  If(I>1)and(I<=Length(CmdStr))Then Begin
+   If CmdStr[I]='='Then Begin
+    AddVariable(Copy(CmdStr,1,I-1),Copy(CmdStr,I+1,255));
+    Exit;
+   End;
+  End;
+  ExtractCommand;
+  CommandFound:=False;
+  If AliasExist(CurrCommand)Then Begin
+   CmdStr:=GetAliasValue(CurrCommand);
+   ExtractCommand;
+  End;
+  RunCommandInternal;
+  If Not(CommandFound)Then UnknownCommand;
+ End;
+End;
+
+Procedure RunScript(FileName:String);
+Var
+ FileBat:Text;
+Begin
+ Assign(FileBat,FileName);
+ {$I-}Reset(FileBat);{$I+}
+ If IOResult=0Then Begin
+  While Not EOF(FileBat)do Begin
+   ReadLn(FileBat,CmdStr);
+   RunCommand;
+  End;
+ End
+  Else
+ WriteLn('Probleme de lecture du fichier de traitement par lot');
+ Close(FileBat);
 End;
 
 Procedure ReadLine(Var S:String);
@@ -303,7 +735,12 @@ Begin
  S:='';
  Repeat
   GotoXY(X,Y);
-  Write(S);
+  TextColor(LightGray);
+  For I:=1 to Length(S)do Begin
+   If S[I]=' 'Then TextColor(Cyan);
+   Write(S[I]);
+  End;
+  TextColor(Cyan);
   ClrEol;
   K:=ReadKey;
   Case K of
@@ -328,78 +765,59 @@ Begin
   End;
  Until K=#13;
  GotoXY(X,Y);
- WriteLn(S);
+ TextColor(LightGray);
+ For I:=1 to Length(S)do Begin
+  If S[I]=' 'Then TextColor(Cyan);
+  Write(S[I]);
+ End;
+ TextColor(White);
+ ClrEol;
+ WriteLn
 End;
 
 BEGIN
+ {$IFDEF FPC}
+  {$IFDEF WINDOWS}
+   SetUseACP(False);
+  {$ENDIF}
+ {$ENDIF}
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('BASH : Cette commande permet de lancer l''interpreteur de commande BASH.');
+  WriteLn('BASH : Cette commande permet de lancer l''interpr‚teur de commande BASH.');
   WriteLn;
-  WriteLn('Syntaxe : BASH');
+  WriteLn('Syntaxe : BASH [option] [script.sh]');
+  WriteLn;
+  WriteLn(' script.sh  Indique un script a ex‚cuter.');
+  WriteLn(' -c cmd     Indique une commande a ex‚cuter.');
  End
   Else
  Begin
   FillChar(History,SizeOf(History),0);
+  AliasList:=NIL;
+  VariableList:=NIL;
   NumberHistory:=0;
   Terminated:=False;
-  HomeMessage;
-  Repeat
-   ShowPrompt;
-   ReadLine(CmdStr);
-   AddHistory(CmdStr);
-   ExtractCommand;
-   CommandFound:=False;
-   For J:=Low(CommandList) to High(CommandList) do Begin
-    If CurrCommand=CommandList[J]Then Begin
-     Case(J)of
-      0:AliasCommand;
-      1:BindCommand;
-      2:BreakCommand;
-      3:BuiltinCommand;
-      4:CallerCommand;
-      5:CdCommand;
-      6:CommandCommand;
-      7:ContinueCommand;
-      8:DeclareCommand;
-      9:EchoCommand;
-      10:EnableCommand;
-      11:EvalCommand;
-      12:ExecCommand;
-      13:ExitCommand;
-      14:ExportCommand;
-      15:GetopsCommand;
-      16:HashCommand;
-      17:HelpCommand;
-      18:LetCommand;
-      19:LocalCommand;
-      20:LogoutCommand;
-      21:MapfileCommand;
-      22:PrintfCommand;
-      23:PwdCommand;
-      24:ReadCommand;
-      25:ReadarrayCommand;
-      26:ReadonlyCommand;
-      27:ReturnCommand;
-      28:ShiftCommand;
-      29:SourceCommand;
-      30:TestCommand;
-      31:TimesCommand;
-      32:TrapCommand;
-      33:TypeCommand;
-      34:TypesetCommand;
-      35:UlimitCommand;
-      36:UmaskCommand;
-      37:UnaliasCommand;
-      38:UnsetCommand;
-     End;
-     If J<=High(CommandList)Then Begin
-      CommandFound:=True;
-      WriteLn;
-      Break;
-     End;
-    End;
+  Option:=optNone;
+  If ParamCount>0 Then Begin
+   For I:=1 to ParamCount do Begin
+    If(Option=optCommand)Then Begin
+     CmdStr:=ParamStr(I);
+     RunCommand;
+     Option:=optNone;
+    End
+     Else
+    If ParamStr(I)='-c'Then Option:=optCommand
+                       Else RunScript(ParamStr(I));
    End;
-   If Not(CommandFound)Then UnknownCommand;
-  Until Terminated;
+  End
+   Else
+  Begin
+   If FileExist('.bashrc')Then RunScript('.bashrc');
+   HomeMessage;
+   Repeat
+    ShowPrompt;
+    ReadLine(CmdStr);
+    RunCommand;
+   Until Terminated;
+  End;
  End;
 END.
