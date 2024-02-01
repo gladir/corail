@@ -44,6 +44,9 @@ Var
  AliasList:PAliasRec;
  VariableList:PVariableRec;
 
+Procedure RunScript(FileName:String);Forward;
+Procedure RunCommandInternal;Forward;
+
 Function TrimL(S:String):String;
 Var
  I:Byte;
@@ -150,6 +153,26 @@ Begin
  End;
 End;
 
+Function DeleteAlias(Name:String):Boolean;
+Var
+ Previous,P:PAliasRec;
+Begin
+ DeleteAlias:=False;
+ Previous:=NIL;
+ P:=AliasList;
+ While P<>NIL do Begin
+  If P^.Name=Name Then Begin
+   If(Previous=NIL)Then AliasList:=P^.Next
+                   Else Previous^.Next:=P^.Next;
+   Dispose(P);
+   DeleteAlias:=True;
+   Exit;
+  End;
+  Previous:=P;
+  P:=P^.Next;
+ End;
+End;
+
 Function VariableExist(Name:String):Boolean;
 Var
  P:PVariableRec;
@@ -214,6 +237,26 @@ Begin
   P^.Next:=VariableList;
   VariableList:=P;
   AddVariable:=True;
+ End;
+End;
+
+Function DeleteVariable(Name:String):Boolean;
+Var
+ Previous,P:PVariableRec;
+Begin
+ DeleteVariable:=False;
+ Previous:=NIL;
+ P:=VariableList;
+ While P<>NIL do Begin
+  If P^.Name=Name Then Begin
+   If(Previous=NIL)Then VariableList:=P^.Next
+                   Else Previous^.Next:=P^.Next;
+   Dispose(P);
+   DeleteVariable:=True;
+   Exit;
+  End;
+  Previous:=P;
+  P:=P^.Next;
  End;
 End;
 
@@ -297,7 +340,16 @@ Var
  I,P:Integer;
  AliasName,AliasValue:String;
 Begin
- If ParamList<>''Then Begin
+ If ExtractParam(1)='--help'Then Begin
+  WriteLn('alias : Cette commande permet de cr‚er un alias.');
+  WriteLn;
+  WriteLn('Syntaxe : alias nom=valeur');
+  WriteLn;
+  WriteLn(' nom     Nom de l''alias');
+  WriteLn(' valeur  La valeur de l''alias');
+ End
+  Else
+ If(ParamList<>'')Then Begin
   AliasName:='';
   AliasValue:='';
   P:=0;
@@ -335,7 +387,21 @@ Procedure BreakCommand;Begin
 End;
 
 Procedure BuiltinCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ If ExtractParam(1)='--help'Then Begin
+  WriteLn('builtin : Cette commande permet d''ex‚cuter une commande int‚grer ',
+                     'dans BASH');
+  WriteLn;
+  WriteLn('Syntaxe : builtin commande parametres');
+  WriteLn;
+  WriteLn(' commande     La commande a ex‚cuter');
+  WriteLn(' parameters   La listes des paramŠtres.');
+ End
+  Else
+ Begin
+  CmdStr:=ParamList;
+  ExtractCommand;
+  RunCommandInternal;
+ End;
 End;
 
 Procedure CallerCommand;Begin
@@ -343,19 +409,79 @@ Procedure CallerCommand;Begin
 End;
 
 Procedure CdCommand;Begin
+ If ExtractParam(1)='--help'Then Begin
+  WriteLn('cd : Cette commande permet de changer le r‚pertoire courant.');
+  WriteLn;
+  WriteLn('Syntaxe : cd chemin');
+  WriteLn;
+  WriteLn(' chemin     Ce paramŠtre permet d''indiquer le nouveau chemin de r‚pertoire');
+ End
+  Else
  ChDir(ParamList);
 End;
 
-Procedure CommandCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure CommandCommand;
+Var
+ I:Integer;
+ Param1,Param2:String;
+Begin
+ If ExtractParam(1)='--help'Then Begin
+  WriteLn('command : Cette commande permet d''ex‚cuter la commande sp‚cifi‚');
+  WriteLn;
+  WriteLn('Syntaxe : command commande parametres');
+  WriteLn;
+  WriteLn(' commande     La commande a ex‚cuter');
+  WriteLn(' parameters   La listes des paramŠtres.');
+ End
+  Else
+ Begin
+  Param1:='';
+  Param2:='';
+  For I:=1 to Length(ParamList)do Begin
+   If Not(ParamList[I]in['A'..'Z','a'..'z','_','-','0'..'9'])Then Begin
+    Param1:=Copy(ParamList,1,I-1);
+    Param2:=TrimL(Copy(ParamList,I,255));
+    Break;
+   End;
+  End;
+  If Param1=''Then Param1:=ParamList;
+  Exec(Param1,Param2);
+ End;
 End;
 
 Procedure ContinueCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure DeclareCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure DeclareCommand;
+Var
+ S:String;
+ P,I:Integer;
+Begin
+ S:=ExtractParam(1);
+ P:=1;
+ If S='--help'Then Begin
+  WriteLn('declare : Cette commande permet de d‚clarer une variable.');
+  WriteLn;
+  WriteLn('Syntaxe : declare nom=valeur');
+  WriteLn;
+  WriteLn(' nom      Nom de la variable');
+  WriteLn(' valeur   Valeur de la variable');
+  WriteLn(' --help  Affiche l''aide de cette commande');
+ End
+  Else
+ While S<>''do Begin
+  I:=1;
+  While(I<=Length(S))and(S[I]in['A'..'Z','a'..'z','0'..'9','-'])do Inc(I);
+  If(I>1)and(I<=Length(S))Then Begin
+   If S[I]='='Then Begin
+    AddVariable(Copy(S,1,I-1),Copy(S,I+1,255));
+   End;
+  End;
+  Inc(P);
+  If P>255 Then Exit;
+  S:=ExtractParam(P);
+ End;
 End;
 
 Procedure EchoCommand;
@@ -366,20 +492,31 @@ Var
 Begin
  Newline:=True;
  S:=ExtractParam(1);
- I:=1;
- While S<>''do Begin
-  If(S='-n')Then Newline:=False;
-  If(S[1]='$')and(VariableExist(Copy(S,2,255)))Then Begin
-   Write(GetVariableValue(Copy(S,2,255)));
-  End
-   Else
-  Write(S);
-  Write(' ');
-  Inc(I);
-  If I>255 Then Exit;
-  S:=ExtractParam(I);
+ If S='--help'Then Begin
+  WriteLn('echo : Cette commande permet d''afficher le message sp‚cifi‚');
+  WriteLn;
+  WriteLn('Syntaxe : echo message');
+  WriteLn;
+  WriteLn(' message   Indique le message a afficher');
+  WriteLn(' --help  Affiche l''aide de cette commande');
+ End
+  Else
+ Begin
+  I:=1;
+  While S<>''do Begin
+   If(S='-n')Then Newline:=False;
+   If(S[1]='$')Then Begin
+    If(VariableExist(Copy(S,2,255)))Then Write(GetVariableValue(Copy(S,2,255)));
+   End
+    Else
+   Write(S);
+   Write(' ');
+   Inc(I);
+   If I>255 Then Exit;
+   S:=ExtractParam(I);
+  End;
+  If(NewLine)Then WriteLn;
  End;
- If(NewLine)Then WriteLn;
 End;
 
 Procedure EnableCommand;Begin
@@ -395,17 +532,29 @@ Var
  I:Integer;
  Param1,Param2:String;
 Begin
- Param1:='';
- Param2:='';
- For I:=1 to Length(ParamList)do Begin
-  If Not(ParamList[I]in['A'..'Z','a'..'z','_','-','0'..'9'])Then Begin
-   Param1:=Copy(ParamList,1,I-1);
-   Param2:=TrimL(Copy(ParamList,I,255));
-   Break;
+ If ExtractParam(1)='--help'Then Begin
+  WriteLn('exec : Cette commande permet d''ex‚cuter la commande sp‚cifi‚');
+  WriteLn;
+  WriteLn('Syntaxe : exec commande parametres');
+  WriteLn;
+  WriteLn(' commande     La commande a ex‚cuter');
+  WriteLn(' parameters   La listes des paramŠtres.');
+  WriteLn(' --help  Affiche l''aide de cette commande');
+ End
+  Else
+ Begin
+  Param1:='';
+  Param2:='';
+  For I:=1 to Length(ParamList)do Begin
+   If Not(ParamList[I]in['A'..'Z','a'..'z','_','-','0'..'9'])Then Begin
+    Param1:=Copy(ParamList,1,I-1);
+    Param2:=TrimL(Copy(ParamList,I,255));
+    Break;
+   End;
   End;
+  If Param1=''Then Param1:=ParamList;
+  Exec(Param1,Param2);
  End;
- If Param1=''Then Param1:=ParamList;
- Exec(Param1,Param2);
 End;
 
 Procedure ExitCommand;Begin
@@ -441,6 +590,18 @@ Var
  Value:Integer;
  Err:Word;
 Begin
+ If ExtractParam(1)='--help'Then Begin
+  WriteLn('logout : Cette commande permet de se d‚connecter de ',
+                    'l''interpr‚teur de commande et de retourner ',
+                    'le code optionnel sp‚cifi‚ … l''interpr‚teur ',
+                    'de commande.');
+  WriteLn;
+  WriteLn('Syntaxe : logout [n]');
+  WriteLn;
+  WriteLn(' n       Indique la valeur num‚rique … retourner');
+  WriteLn(' --help  Affiche l''aide de cette commande');
+ End
+  Else
  If ParamList<>''Then Begin
   Val(ParamList,Value,Err);
   Halt(Value);
@@ -461,87 +622,122 @@ Var
  S,R,T:String;
  ValueStr:String;
 Begin
- CurrParam:=2;
- S:=ExtractParam(1);
- R:='';
- I:=1;
- While I<=Length(S)do Begin
-  If S[I]='$'Then Begin
-   Inc(I);
-   ValueStr:='';
-   While(I<=Length(S))and(S[I]in['A'..'Z','a'..'z','0'..'9'])do Begin
-    ValueStr:=ValueStr+S[I];
+ If ExtractParam(1)='--help'Then Begin
+  WriteLn('printf : Cette commande permet d''‚crire une chaine de ',
+                    'caractŠres, selon un certain formatage, vers ',
+                    'la sortie standard.');
+  WriteLn;
+  WriteLn('Syntaxe : printf format [arguments]');
+  WriteLn;
+  WriteLn(' format     Le format … utiliser');
+  WriteLn(' arguments  La liste des paramŠtres … mettre dans le format');
+  WriteLn(' --help     Affiche l''aide de cette commande');
+ End
+  Else
+ Begin
+  CurrParam:=2;
+  S:=ExtractParam(1);
+  R:='';
+  I:=1;
+  While I<=Length(S)do Begin
+   If S[I]='$'Then Begin
     Inc(I);
-   End;
-   R:=R+GetVariableValue(ValueStr);
-   Dec(I);
-  End
-   Else
-  If S[I]='\'Then Begin
-   Inc(I);
-   If I>Length(S)Then Break;
-   Case S[I]of
-    '0':R:=R+#0;
-    'a':R:=R+#7;
-    'b':R:=R+#8;
-    'f':R:=R+#12;
-    'n':R:=R+#10;
-    'r':R:=R+#13;
-    't':R:=R+#9;
-    'v':R:=R+#11;
-    '\':R:=R+'\';
-    '''':R:=R+'''';
-    '"':R:=R+'"';
-    '?':R:=R+'?';
-   End;
-  End
-   Else
-  If S[I]='%'Then Begin
-   Inc(I);
-   If I>Length(S)Then Break;
-   Case S[I]of
-    'c':Begin
-     ValueStr:=ExtractParam(CurrParam);
-     Inc(CurrParam);
-     If Length(ValueStr)>0 Then R:=R+ValueStr[1];
+    ValueStr:='';
+    While(I<=Length(S))and(S[I]in['A'..'Z','a'..'z','0'..'9'])do Begin
+     ValueStr:=ValueStr+S[I];
+     Inc(I);
     End;
-    'd','f','g','i','l':Begin
-     T:=ExtractParam(CurrParam);
-     Inc(CurrParam);
-     R:=R+T;
+    R:=R+GetVariableValue(ValueStr);
+    Dec(I);
+   End
+    Else
+   If S[I]='\'Then Begin
+    Inc(I);
+    If I>Length(S)Then Break;
+    Case S[I]of
+     '0':R:=R+#0;
+     'a':R:=R+#7;
+     'b':R:=R+#8;
+     'f':R:=R+#12;
+     'n':R:=R+#10;
+     'r':R:=R+#13;
+     't':R:=R+#9;
+     'v':R:=R+#11;
+     '\':R:=R+'\';
+     '''':R:=R+'''';
+     '"':R:=R+'"';
+     '?':R:=R+'?';
     End;
-    '0'..'9':Begin
-     T:='';
-     While(S[I]in['0'..'9'])and(I<=Length(S))do Begin
-      T:=T+S[I];
-      Inc(I);
+   End
+    Else
+   If S[I]='%'Then Begin
+    Inc(I);
+    If I>Length(S)Then Break;
+    Case S[I]of
+     'c':Begin
+      ValueStr:=ExtractParam(CurrParam);
+      Inc(CurrParam);
+      If Length(ValueStr)>0 Then R:=R+ValueStr[1];
      End;
-     Val(T,PadLeft,Err);
-     R:=R+PadZeroLeft(ExtractParam(CurrParam),PadLeft);
-     Inc(CurrParam);
+     'd','f','g','i','l':Begin
+      T:=ExtractParam(CurrParam);
+      Inc(CurrParam);
+      R:=R+T;
+     End;
+     '0'..'9':Begin
+      T:='';
+      While(S[I]in['0'..'9'])and(I<=Length(S))do Begin
+       T:=T+S[I];
+       Inc(I);
+      End;
+      Val(T,PadLeft,Err);
+      R:=R+PadZeroLeft(ExtractParam(CurrParam),PadLeft);
+      Inc(CurrParam);
+     End;
     End;
-   End;
-  End
-   Else
-  R:=R+S[I];
-  Inc(I);
+   End
+    Else
+   R:=R+S[I];
+   Inc(I);
+  End;
+  WriteLn(R);
  End;
- WriteLn(R);
 End;
 
 Procedure PwdCommand;
 Var
  CurrDir:String;
 Begin
- GetDir(0,CurrDir);
- ChangeChar(CurrDir,'\','/');
- WriteLn(CurrDir);
+ If ExtractParam(1)='--help'Then Begin
+  WriteLn('pwd : Cette commande permet d''afficher le chemin du ',
+                 'r‚pertoire courant.');
+  WriteLn;
+  WriteLn('Syntaxe : pwd [--help]');
+  WriteLn;
+  WriteLn(' --help  Affiche l''aide de cette commande');
+ End
+  Else
+ Begin
+  GetDir(0,CurrDir);
+  ChangeChar(CurrDir,'\','/');
+  WriteLn(CurrDir);
+ End;
 End;
 
 Procedure ReadCommand;
 Var
  S:String;
 Begin
+ If ExtractParam(1)='--help'Then Begin
+  WriteLn('read : Cette commande permet de lire une ligne sur ',
+                  'l''entr‚e standard.');
+  WriteLn;
+  WriteLn('Syntaxe : read [variable]');
+  WriteLn;
+  WriteLn(' variable   Nom de la variable recevant les donn‚es');
+  WriteLn(' --help  Affiche l''aide de cette commande');
+ End
+  Else
  If ExtractParam(1)=''Then ReadLn
   Else
  Begin
@@ -567,7 +763,18 @@ Procedure ShiftCommand;Begin
 End;
 
 Procedure SourceCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+ If ExtractParam(1)='--help'Then Begin
+  WriteLn('source : Cette commande permet de lire et ',
+                    'd''ex‚cuter les commandes dans le fichier ',
+                    'sp‚cifi‚.');
+  WriteLn;
+  WriteLn('Syntaxe : source filename');
+  WriteLn;
+  WriteLn(' filename  Nom du fichier BASH');
+  WriteLn(' --help    Affiche l''aide de cette commande');
+ End
+  Else
+ If ExtractParam(1)<>''Then RunScript(ExtractParam(1));
 End;
 
 Procedure TestCommand;Begin
@@ -586,8 +793,34 @@ Procedure TypeCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure TypesetCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure TypesetCommand;
+Var
+ S:String;
+ P,I:Integer;
+Begin
+ S:=ExtractParam(1);
+ P:=1;
+ If S='--help'Then Begin
+  WriteLn('typeset : Cette commande permet de d‚clarer une variable.');
+  WriteLn;
+  WriteLn('Syntaxe : typeset nom=valeur');
+  WriteLn;
+  WriteLn(' nom      Nom de la variable');
+  WriteLn(' valeur   Valeur de la variable');
+ End
+  Else
+ While S<>''do Begin
+  I:=1;
+  While(I<=Length(S))and(S[I]in['A'..'Z','a'..'z','0'..'9','-'])do Inc(I);
+  If(I>1)and(I<=Length(S))Then Begin
+   If S[I]='='Then Begin
+    AddVariable(Copy(S,1,I-1),Copy(S,I+1,255));
+   End;
+  End;
+  Inc(P);
+  If P>255 Then Exit;
+  S:=ExtractParam(P);
+ End;
 End;
 
 Procedure UlimitCommand;Begin
@@ -598,12 +831,67 @@ Procedure UmaskCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
 End;
 
-Procedure UnaliasCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure UnaliasCommand;
+Var
+ P:Integer;
+ S:String;
+Begin
+ P:=1;
+ S:=ExtractParam(1);
+ If S='--help'Then Begin
+  WriteLn('unalias : Cette commande permet de supprimer un alias.');
+  WriteLn;
+  WriteLn('Syntaxe : unalias [-a] name');
+  WriteLn('          unalias --help');
+  WriteLn;
+  WriteLn(' name    Le nom de l''alias … supprimer');
+  WriteLn(' -a      Permet de supprimer tous les alias');
+  WriteLn(' --help  Affiche l''aide de cette commande');
+ End
+  Else
+ While S<>''do Begin
+  If S='-a'Then Begin
+   While AliasList<>NIL do Begin
+    If Not DeleteAlias(AliasList^.Name)Then WriteLn('Impossible de supprimer l''alias ',AliasList^.Name);
+   End;
+   Exit;
+  End;
+  If Not DeleteAlias(S)Then Begin
+   WriteLn('Impossible de supprimer l''alias ',S);
+   Exit;
+  End;
+  Inc(P);
+  If P>255 Then Break;
+  S:=ExtractParam(P);
+ End;
 End;
 
-Procedure UnsetCommand;Begin
- WriteLn('Cette commande n''est pas mise en oeuvre');
+Procedure UnsetCommand;
+Var
+ P:Integer;
+ S:String;
+Begin
+ P:=1;
+ S:=ExtractParam(1);
+ If S='--help'Then Begin
+  WriteLn('unset : Cette commande permet de supprimer une variable.');
+  WriteLn;
+  WriteLn('Syntaxe : unset name');
+  WriteLn('          unset --help');
+  WriteLn;
+  WriteLn(' name    Le nom de l''alias … supprimer');
+  WriteLn(' --help  Affiche l''aide de cette commande');
+ End
+  Else
+ While S<>''do Begin
+  If Not DeleteVariable(S)Then Begin
+   WriteLn('Impossible de supprimer la variable ',S);
+   Exit;
+  End;
+  Inc(P);
+  If P>255 Then Break;
+  S:=ExtractParam(P);
+ End;
 End;
 
 Procedure ShowPrompt;Begin
