@@ -214,6 +214,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de demander ou de changer les attributs d'un fichier.</td>
 		</tr>
 		<tr>
+			<td><b>AWK.PAS</b></td>
+			<td>Cette commande permet de lancer le langage de programmation AWK.</td>
+		</tr>	
+		<tr>
 			<td><b>BANNER.PAS</b></td>
 			<td>Cette commande permet d'afficher une bannière. Cette commande est un équivalent de la commande UNIX.</td>
 		</tr>
