@@ -1220,6 +1220,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>RM.PAS</b></td>
 			<td>Cette commande permet de supprimer un fichier. Cette commande est un équivalent de Linux.</td>
 		</tr>
+		<tr>
+			<td><b>RMUSER.PAS</b></td>
+			<td>Cette commande permet de supprimer un utilisateur du système. Cette commande est inspiré de la commande du système d'exploitation XENIX.</td>
+		</tr>
 		<tr>     
 			<td><b>ROMDATE.PAS</b></td>
 			<td>Cette commande permet de retourner la date de la ROM. Cette commande inspiré de la commande ROMDATE.COM du «VEGA Utility Disk».</td>
