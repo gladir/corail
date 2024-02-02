@@ -1189,6 +1189,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher le répertoire d'exécution. Cette commande est inspiré du <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
 		</tr>
 		<tr>
+			<td><b>RANDOM.PAS</b></td>
+			<td>Cette commande permet de générer un nombre aléatoire. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/XENIX/random.htm">RANDOM</a> du système d'exploitation <a href="https://www.gladir.com/OS/XENIX/intro.htm">XENIX</a>.</td>
+		</tr>
+		<tr>
 			<td><b>RAW2WAV.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier de son RAW en format WAV (mono en 11025 Hz).</td>
 		</tr>
