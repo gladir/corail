@@ -1507,7 +1507,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 		<tr>
 			<td><b>UNTAB.PAS</b></td>
 			<td>Cette commande permet de convertir des tabulations en espaces.</td>
-		</tr>				
+		</tr>
+		<tr>
+			<td><b>USERDEL.PAS</b></td>
+			<td>Cette commande permet de supprimer un utilisateur du système.</td>
+		</tr>
 		<tr>
 			<td><b>UUDECODE.PAS</b></td>
 			<td>Cette commande permet d'effectuer le décodage d'un fichier binaire de format UUE.</td>
