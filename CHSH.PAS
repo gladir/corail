@@ -6,11 +6,31 @@
 
 Program CHSH;
 
+Uses DOS;
+
 Var
  ModeParam:(_None,_Root,_Shell);
  I:Integer;
- ChangeRoot,ChangeShell:Boolean;
+ ChangeDOS,ChangeRoot,ChangeShell:Boolean;
  UserName,RootName,ShellName:String;
+
+Function StrToUpper(S:String):String;
+Var
+ I:Byte;
+Begin
+ For I:=1 to Length(S)do Begin
+  If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
+ End;
+ StrToUpper:=S;
+End;
+
+Function FileExist(Name:String):Boolean;
+Var
+ Rec:SearchRec;
+Begin
+ FindFirst(Name,AnyFile,Rec);
+ FileExist:=DosError=0;
+End;
 
 Function ChangeUserShell(UserOrID,Root,ShellName:String;ChangeRoot,ChangeShell:Boolean):Boolean;
 Var
@@ -82,22 +102,111 @@ Begin
  Rename(NewFilepasswd,'/etc/passwd');
 End;
 
-Procedure ShowListShells;
+Procedure ShowListShells(DOSMode:Boolean);
+Const
+ CorailCmds:Array[0..15]of String[12]=(
+  '4DOS.EXE','AMIGADOS.EXE','AMIGADOS.EXE','APPLEDOS.EXE',
+  'BASH.EXE','BASH.EXE','COMMAND.EXE','CSH.EXE','DRDOS.EXE',
+  'KSH.EXE','OS2CMD.EXE','OS9.EXE','PS.EXE','PS.EXE','SH.EXE',
+  'TRSDOS.EXE'
+ );
 Var
  ListShells:Text;
- CurrLine:String;
+ I:Integer;
+ CurrLine,Corail:String;
 Begin
- {$I-}Assign(ListShells,'/etc/shells');
- Reset(ListShells);{$I+}
+ If(DOSMode)Then Begin
+  WriteLn('\COMMAND.COM');
+   { 4DOS installÇ ? }
+  If FileExist('\4DOS\4DOS.COM')Then WriteLn('\4DOS\4DOS.COM');
+   { NDOS du Norton Utilities installÇ ? }
+  If FileExist('\NU\NDOS.COM')Then WriteLn('\NU\NDOS.COM');
+   { Les interprÇteurs de commandes de Corail installÇ ? }
+  Corail:=GetEnv('CORAIL');
+  If Corail=''Then Corail:='\CORAIL';
+  If Corail[Length(Corail)]<>'\'Then Corail:=Corail+'\';
+  For I:=Low(CorailCmds) to High(CorailCmds)do Begin
+   If FileExist(Corail+CorailCmds[I])Then WriteLn(Corail,CorailCmds[I]);
+  End;
+ End
+  Else
+ Begin
+  {$I-}Assign(ListShells,'/etc/shells');
+  Reset(ListShells);{$I+}
+  If IOResult<>0 Then Begin
+   WriteLn('Impossible de lire le fichier /etc/shells');
+   Halt(6);
+  End;
+  While Not EOF(ListShells)do Begin
+   ReadLn(ListShells,CurrLine);
+   WriteLn(CurrLine);
+  End;
+  Close(ListShells);
+ End;
+End;
+
+Function ChangeDOSShell(ShellName:String):Boolean;
+Var
+ ConfigFile,NewConfigFile:Text;
+ I:Integer;
+ Found,ShellHigh:Boolean;
+ CurrLine,CurrWord:String;
+Begin
+ ChangeDOSShell:=False;
+ {$I-}Assign(ConfigFile,'\CONFIG.SYS');
+ Reset(ConfigFile);{$I+}
  If IOResult<>0 Then Begin
-  WriteLn('Impossible de lire le fichier /etc/shells');
-  Halt(6);
+  {$I-}Rewrite(ConfigFile);{$I+}
+  If IOResult<>0 Then Begin
+   WriteLn('Impossible de lire ou de crÇer un nouveau fichier \CONFIG.SYS');
+   Halt(1);
+  End;
+  WriteLn(ConfigFile,'Shell=',ShellName);
+  Close(ConfigFile);
+  Exit;
  End;
- While Not EOF(ListShells)do Begin
-  ReadLn(ListShells,CurrLine);
-  WriteLn(CurrLine);
+ {$I-}Assign(NewConfigFile,'/CONFIG.NEW');
+ Rewrite(NewConfigFile);{$I+}
+ If IOResult<>0 Then Begin
+  WriteLn('Impossible de crÇer un nouveau fichier \CONFIG.SYS');
+  Halt(2);
  End;
- Close(ListShells);
+ While Not EOF(ConfigFile)do Begin
+  ReadLn(ConfigFile,CurrLine);
+  CurrWord:='';
+  Found:=False;
+  For I:=1 to Length(CurrLine)do Begin
+   If CurrLine[I]='='Then Begin
+    If StrToUpper(CurrWord)='SHELL'Then Begin
+     Found:=True;
+     ShellHigh:=False;
+    End
+     Else
+    If StrToUpper(CurrWord)='SHELLHIGH'Then Begin { DR-DOS ? }
+     Found:=True;
+     ShellHigh:=True;
+    End;
+   End
+    Else
+   CurrWord:=CurrWord+CurrLine[I];
+  End;
+  If(Found)Then Begin
+   If(ShellHigh)Then WriteLn(NewConfigFile,'ShellHigh=',ShellName)
+                Else WriteLn(NewConfigFile,'Shell=',ShellName);
+  End
+   Else
+  WriteLn(NewConfigFile,CurrLine);
+ End;
+ Close(NewConfigFile);
+ Close(ConfigFile);
+ Assign(ConfigFile,'\CONFIG.SYS');
+ {$I-}Erase(ConfigFile);{$I+}
+ If IOResult<>0 Then Begin
+  WriteLn('Impossible de remplacer le fichier \CONFIG.SYS');
+  Halt(3);
+ End;
+ Assign(NewConfigFile,'\CONFIG.NEW');
+ Rename(NewConfigFile,'\CONFIG.SYS');
 End;
 
 BEGIN
@@ -107,12 +216,14 @@ BEGIN
                   'de commande par dÇfaut.');
   WriteLn;
   WriteLn('Syntaxe : chsh [option] [-R root] [ -s login_shell] user');
+  WriteLn('          chsh --dos -s login_shell ');
   WriteLn;
   WriteLn(' user                 Indique le nom de l''utilisateur');
   WriteLn(' -l                   Affiche la liste des interprÇteurs de commande ');
   WriteLn('                      disponibles');
   WriteLn(' -R root              Indique le chemin du root de l''utilisateur');
   WriteLn(' -s login-shell       Indique le nom de l''interprÇteur de commande');
+  WriteLn(' --dos                Indique qu''il faut changer l''interprÇteur de commande DOS');
   WriteLn(' --help               Affiche l''aide sur cette commande');
   WriteLn(' --list-shells        Affiche la liste des interprÇteurs de commande ');
   WriteLn('                      disponibles');
@@ -121,7 +232,8 @@ BEGIN
  End
   Else
  If(ParamStr(1)='-v')or(ParamStr(1)='--version')Then Begin
-  WriteLn('CHSH 1.0 - Clone Pascal de shadow-utils, linux ou corail');
+  WriteLn('CHSH 1.1 - Clone Pascal de shadow-utils, linux, freebsd, ',
+                      'xenix ou corail');
   WriteLn('Licence MIT');
   WriteLn;
   WriteLn('êcrit par Sylvain Maltais');
@@ -130,6 +242,7 @@ BEGIN
  Begin
   ChangeRoot:=False;
   ChangeShell:=False;
+  ChangeDOS:=False;
   ModeParam:=_None;
   RootName:='';
   ShellName:='';
@@ -147,8 +260,9 @@ BEGIN
      ChangeShell:=True;
     End;
     Else Begin
+     If(ParamStr(I)='--dos')Then ChangeDOS:=True Else
      If(ParamStr(I)='-l')or(ParamStr(I)='--list-shells')Then Begin
-      ShowListShells;
+      ShowListShells(ChangeDOS);
       Halt;
      End
       Else
@@ -158,11 +272,18 @@ BEGIN
     End;
    End;
   End;
-  If UserName=''Then Begin
-   WriteLn('Nom d''utilisateur requis !');
-   Halt(3);
-  End;
+  If(ChangeDOS)Then Begin
+   If ChangeDOSShell(ShellName)Then Begin
+    WriteLn('Impossible de changer l''interprÇteur de commande DOS !');
+    Halt(6);
+   End;
+  End
+   Else
   If(ChangeRoot)or(ChangeShell)Then Begin
+   If UserName=''Then Begin
+    WriteLn('Nom d''utilisateur requis !');
+    Halt(3);
+   End;
    If Not ChangeUserShell(UserName,RootName,ShellName,ChangeRoot,ChangeShell)Then Begin
     WriteLn('Utilisateur introuvable !');
     Halt(5);
