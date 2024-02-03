@@ -367,7 +367,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>CHSH.PAS</b></td>
-			<td>Cette commande permet de changer l''interpréteur de commande par défaut.</td>
+			<td>Cette commande permet de changer l'interpréteur de commande par défaut.</td>
 		</tr>
 		<tr>
 			<td><b>CKCMOS.PAS</b></td>
