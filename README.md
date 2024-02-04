@@ -838,6 +838,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de demander la distance entre deux villes, soit par coordonnée géographique, soit par son nom s'il est répertorié.</td>
 		</tr>
 		<tr>
+			<td><b>GETENT.PAS</b></td>
+			<td>Cette commande permet de demander les entrées de la base de données administrative.</td>
+		</tr>
+		<tr>			
 			<td><b>GETGUID.PAS</b></td>
 			<td>Cette commande permet de générer un nombre GUID.</td>
 		</tr>		
