@@ -869,6 +869,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>GWBASIC.PAS</b></td>
 			<td>Cette commande permet de lancer un interpréteur BASIC étant un clone du GWBASIC.</td>
 		</tr>
+		<tr>
+			<td><b>HALT.PAS</b></td>
+			<td>Cette commande permet d'arrêter l'ordinateur.</td>
+		</tr>
 	        <tr>
 			<td><b>HD.PAS</b></td>
 			<td>Cette commande permet d'afficher le contenu d'un fichier en format hexadecimal. Cette commande est inspiré de la commande HD du compilateur Aztec C86 ou de Linux.</td>
