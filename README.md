@@ -1225,6 +1225,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier de son RAW en format WAV (mono en 11025 Hz).</td>
 		</tr>
 		<tr>
+			<td><b>REALPATH.PAS</b></td>
+			<td>Cette commande permet de convertir le paramètre du nom en chemin absolue, avec toutes les références à «.», «..» et les liens symboliques résolus.</td>
+		</tr>
+		<tr>
 			<td><b>REBOOT.PAS</b></td>
 			<td>Cette commande permet de redémarrer l'ordinateur.</td>
 		</tr>
