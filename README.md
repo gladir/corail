@@ -534,6 +534,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'activer l'instruction CPUID du Pentium sur des Cyrix 5x86 et 6x86 et 6x86MX.</td>
 		</tr>
 		<tr>
+			<td><b>D2U.PAS</b>
+			<td>Cette commande permet de convertir les sauts de ligne DOS en saut de ligne UNIX.</td>
+		</tr>
+		<tr>
 			<td><b>D3ERR.PAS</b></td>
 			<td>Cette commande permet d'afficher un code d'erreur DBase III.</td>
 		<tr>
