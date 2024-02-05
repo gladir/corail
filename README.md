@@ -857,6 +857,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>GETMAC.PAS</b></td>
 			<td>Cette commande permet d'afficher la liste des adresses MAC de la machine local.</td>
 		</tr>
+		<tr>
+			<td><b>GETTEXT.PAS</b></td>
+			<td>Cette commande permet d'afficher les traductions de langages humains natif dans un message textuel.</td>
+		</tr>
 	        <tr>
 			<td><b>GRAFTABL.PAS</b></td>
 			<td>Cette commande permet d'effectuer le chargement en mémoire conventionnelle d'une table de police de caractères pour les modes graphiques.</td>
