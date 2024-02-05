@@ -705,6 +705,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>DU.PAS</b></td>
 			<td>Cette commande permet de comptabilisé l'espace occupé par un répertoire et ses enfants.</td>
 		</tr>
+		<tr>
+			<td><b>DUMP.PAS</b></td>
+			<td>Cette commande permet d'afficher le contenu d'un fichier en format hexadécimal.</td>
+		</tr>
 	        <tr>
 			<td><b>E.PAS</b></td>
 			<td>Cette commande permet d'éditer un fichier texte ASCII. Clone de la commande E du PC DOS d'IBM.</td>
