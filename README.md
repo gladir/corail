@@ -1537,6 +1537,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de sortir le contenu d'un fichier sans duplication du contenu de ses lignes.</td>
 		</tr>
 		<tr>
+			<td><b>UNIX2DOS.PAS</b></td>
+			<td>Cette commande permet de convertir les sauts de ligne UNIX en saut de ligne DOS.</td>
+		</tr>
+		<tr>
 			<td><b>UNLINK.PAS</b></td>
 			<td>Cette commande permet de supprimer un lien symbolique.</td>
 		</tr>				
