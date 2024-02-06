@@ -412,7 +412,7 @@ BEGIN
    Else Begin
     WriteLn('id : Cette commande permet d''afficher les informations ',
                   'd''utilisateur ou de groupe pour l''utilisateur sp‚cifi‚ ',
-                  'ou (quand il est omis) por l''utilisateur courant');
+                  'ou (quand il est omis) pour l''utilisateur courant');
     WriteLn;
     WriteLn('Syntaxe : id [OPTION]... [user]');
     WriteLn;
