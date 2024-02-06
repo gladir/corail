@@ -530,6 +530,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer un clone de CodeView. Cette utilitaire était fournit avec MASM, Microsoft C,...</td>
 		</tr>
 		<tr>
+			<td><b>CYGSTART.PAS</b></td>
+			<td>Cette commande permet de démarrer un programme, ouvrir un fichier ou un URL.</td>
+		</tr>
+		<tr>
 			<td><b>CYRIXCPU.PAS</b></td>
 			<td>Cette commande permet d'activer l'instruction CPUID du Pentium sur des Cyrix 5x86 et 6x86 et 6x86MX.</td>
 		</tr>
