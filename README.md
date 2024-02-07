@@ -886,6 +886,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de supprimer un groupe système.</td>
 		</tr>
 		<tr>
+			<td><b>GROUPS.PAS</b></td>
+			<td>Cette commande permet d'afficher les groupes d'un utilisateur.</td>
+		</tr>
+		<tr>
 			<td><b>GUID.PAS</b></td>
 			<td>Cette commande permet de générer un nombre GUID.</td>
 		</tr>	
