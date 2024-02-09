@@ -1033,6 +1033,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de changer le nom d'un volume.</td>
 		</tr>
 		<tr>
+			<td><b>LASTLOG.PAS</b></td>
+   			<td>Cette commande permet d'afficher la dernière connexion d'un utilisateur spécifié ou de tous les utilisateurs.</td>
+		</tr>
+		<tr>
 			<td><b>LESS.PAS</b></td>
 			<td>Cette commande permet d'afficher un fichier de la fin vers le début.</td>
 		</tr>
