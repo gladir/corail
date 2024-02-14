@@ -1544,6 +1544,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>TSV2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier TSV en code source Pascal.</td>
 		</tr>
+		<tr>
+			<td><b>TSV2QB.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier TSV en code source QuickBASIC ou QBasic.</td>
+		</tr>
 		</tr>
 			<td><b>TSVFAKER.PAS</b></td>
 			<td>Cette commande permet de générer un fichier TSV selon des données aléatoires spécifiés.</td>
