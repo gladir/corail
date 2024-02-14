@@ -155,7 +155,7 @@ BEGIN
   Begin
    Val(CurrParam,W,Err);
    If Err=0Then Begin
-    If Not(W in [1..150])Then Begin
+    If Not(W in [1..76])Then Begin
      WriteLn('Le nombre ',W,' est en dehors de l''intervalle');
     End
      Else
