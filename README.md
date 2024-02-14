@@ -498,6 +498,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier CSV en code source PSP (Pascal Server Pages).</td>
 		</tr>
 		<tr>
+			<td><b>CSV2QB.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier CSV en code source QuickBASIC ou QBasic.</td>
+		</tr>
+		<tr>
 			<td><b>CSV2SQL.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier .CSV en format SQL.</td>
 		</tr>
