@@ -174,6 +174,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier ASCII en code source Python.</td>
 		</tr>
 		<tr>
+			<td><b>ASC2QB.PAS</b></td>
+			<td>Cette commande permet de transformer du texte en code source QBasic ou QuickBASIC.</td>
+		</tr>
+		<tr>
 			<td><b>ASC2REXX.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier ASCII en code source REXX.</td>
 		</tr>
