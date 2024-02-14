@@ -1253,6 +1253,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un code source QBasic ou QuickBasic en BBC BASIC.</td>
 		</tr>
 		<tr>
+			<td><b>QBERR.PAS</b></td>
+			<td>Cette commande permet d'afficher un code d'erreur QuickBASIC ou QBasic.</td>
+		</tr>
+		<tr>
 			<td><b>RANDOM.PAS</b></td>
 			<td>Cette commande permet de générer un nombre aléatoire. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/XENIX/random.htm">RANDOM</a> du système d'exploitation <a href="https://www.gladir.com/OS/XENIX/intro.htm">XENIX</a>.</td>
 		</tr>
