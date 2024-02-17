@@ -9,16 +9,18 @@ Program BASH;
 Uses Crt,DOS;
 
 Const
- CommandList:Array[0..38]of String[16]=(
+ BashFileNameHistory={$IFDEF FPC}'.bash_history'{$ELSE}'.BASHIST'{$ENDIF};
+
+ CommandList:Array[0..39]of String[16]=(
   'alias','bind','break','builtin','caller','cd','command',
   'continue','declare','echo','enable','eval','exec','exit',
-  'export','getops','hash','help','let','local','logout',
+  'export','getops','hash','help','history','let','local','logout',
   'mapfile','printf','pwd','read','readarray','readonly','return',
   'shift','source','test','times','trap','type','typeset','ulimit',
   'umask','unalias','unset'
  );
 
- MaxHistory=100;
+ MaxHistory={$IFDEF FPC}10000{$ELSE}100{$ENDIF};
 
 Type
  StrPointer=^String;
@@ -34,13 +36,13 @@ Type
  End;
 
 Var
- CommandFound,Terminated:Boolean;
- CmdStr:String;
+ CommandFound,Terminated,NoRC,Manual:Boolean;
+ CmdStr,LogName:String;
  Option:(optNone,optCommand);
- CurrCommand,ParamList:String;
+ BaseDir,CurrCommand,ParamList:String;
  I,J:Byte;
  History:Array[1..MaxHistory] of StrPointer;
- NumberHistory:Integer;
+ NumberHistory:LongInt;
  AliasList:PAliasRec;
  VariableList:PVariableRec;
 
@@ -78,12 +80,69 @@ Begin
  End;
 End;
 
+Procedure TruncAfterSemicolon(Var S:String);
+Var
+ I:Byte;
+Begin
+ For I:=1to Length(S)do If S[I]=';'Then Begin
+  S[0]:=Chr(I-1);
+  Exit;
+ End;
+End;
+
+Function _Path2Dir(Const Path:String):String;
+Var
+ D:DirStr;
+ N:NameStr;
+ E:ExtStr;
+Begin
+ _Path2Dir:='';
+ If Path=''Then Exit;
+ FSplit(Path,D,N,E);
+ If E=''Then Begin
+  If D[Length(D)]<>'\'Then D:=D+'\';
+  D:=D+E;
+ End;
+ If D=''Then _Path2Dir:='' Else
+ If D[Length(D)]<>'\'Then D:=D+'\';
+ _Path2Dir:=D;
+End;
+
+Function IsWildCard(Const Path:String):Boolean;Begin
+ IsWildCard:=(Pos('*',Path)>0)or(Pos('?',Path)>0);
+End;
+
+Function DirExist(Dir:String):Boolean;
+Var
+ Rec:SearchRec;
+Begin
+ If Length(Dir)=0Then DirExist:=True
+  Else
+ Begin
+  TruncAfterSemicolon(Dir);
+  If Dir[Length(Dir)]='\'Then Dir:=Dir+'*.*' Else
+  If IsWildCard(Dir)Then Dir:=_Path2Dir(Dir)+'*.*';
+  FindFirst(Dir,Directory,Rec);
+  DirExist:=DOSError=0;
+ End;
+End;
+
 Function FileExist(Name:String):Boolean;
 Var
  Rec:SearchRec;
 Begin
  FindFirst(Name,AnyFile,Rec);
  FileExist:=DosError=0;
+End;
+
+Function Path2Dir(S:String):String;
+Var
+ D:DirStr;
+ N:NameStr;
+ E:ExtStr;
+Begin
+ FSplit(S,D,N,E);
+ Path2Dir:=D;
 End;
 
 Function AliasExist(Name:String):Boolean;
@@ -281,6 +340,49 @@ Begin
   P^:=S;
   History[NumberHistory]:=P;
   AddHistory:=True;
+ End;
+End;
+
+Procedure ClearHistory;
+Var
+ I:LongInt;
+Begin
+ For I:=1 to NumberHistory do Begin
+  FreeMem(History[I],Length(History[I]^)+1);
+  History[I]:=NIL;
+ End;
+ NumberHistory:=0;
+End;
+
+Procedure LoadHistory;
+Var
+ History:Text;
+ CurrLine:String;
+Begin
+ {$I-}Assign(History,BashFileNameHistory);
+ Reset(History);{$I+}
+ If IOResult=0 Then Begin
+  While Not EOF(History)do Begin
+   ReadLn(History,CurrLine);
+   AddHistory(CurrLine);
+  End;
+  Close(History);
+ End;
+End;
+
+Procedure SaveHistory(Add:Boolean);
+Var
+ HistoryFile:Text;
+ I:LongInt;
+Begin
+ {$I-}Assign(HistoryFile,BashFileNameHistory);
+ If(Add)Then Append(HistoryFile)
+        Else Rewrite(HistoryFile);{$I+}
+ If IOResult=0 Then Begin
+  For I:=1 to NumberHistory do Begin
+   WriteLn(HistoryFile,History[I]^);
+  End;
+  Close(HistoryFile);
  End;
 End;
 
@@ -575,6 +677,41 @@ End;
 
 Procedure HelpCommand;Begin
  WriteLn('Cette commande n''est pas mise en oeuvre');
+End;
+
+Procedure HistoryCommand;
+Var
+ FirstParam:String;
+ I:LongInt;
+Begin
+ FirstParam:=ExtractParam(1);
+ If FirstParam='--help'Then Begin
+  WriteLn('history : Cette commande permet d''afficher l''historique des ',
+                     'commandes.');
+  WriteLn;
+  WriteLn('Syntaxe : history [option]');
+  WriteLn;
+  WriteLn(' -a   Ajoute l''historique dans le fichier d''historique');
+  WriteLn(' -c   Efface l''historique');
+  WriteLn(' -r   Charge l''historique du fichier d''historique');
+  WriteLn(' -w   crit l''historique dans le fichier d''historique');
+ End
+  Else
+ If FirstParam='-a'Then SaveHistory(True) Else
+ If FirstParam='-c'Then ClearHistory Else
+ If FirstParam='-r'Then Begin
+  ClearHistory;
+  LoadHistory;
+ End
+  Else
+ If FirstParam='-w'Then SaveHistory(False) Else
+ If FirstParam=''Then Begin
+  IF NumberHistory>0 Then For I:=1 to NumberHistory do Begin
+   Write(I:5);
+   If History[I]^=''Then WriteLn('*')
+                    Else WriteLn('  ',History[I]^);
+  End;
+ End
 End;
 
 Procedure LetCommand;Begin
@@ -895,7 +1032,7 @@ Begin
 End;
 
 Procedure ShowPrompt;Begin
- Write('$ ');
+ Write(LogName,'$ ');
 End;
 
 Procedure UnknownCommand;
@@ -930,27 +1067,28 @@ Procedure RunCommandInternal;Begin
     15:GetopsCommand;
     16:HashCommand;
     17:HelpCommand;
-    18:LetCommand;
-    19:LocalCommand;
-    20:LogoutCommand;
-    21:MapfileCommand;
-    22:PrintfCommand;
-    23:PwdCommand;
-    24:ReadCommand;
-    25:ReadarrayCommand;
-    26:ReadonlyCommand;
-    27:ReturnCommand;
-    28:ShiftCommand;
-    29:SourceCommand;
-    30:TestCommand;
-    31:TimesCommand;
-    32:TrapCommand;
-    33:TypeCommand;
-    34:TypesetCommand;
-    35:UlimitCommand;
-    36:UmaskCommand;
-    37:UnaliasCommand;
-    38:UnsetCommand;
+    18:HistoryCommand;
+    19:LetCommand;
+    20:LocalCommand;
+    21:LogoutCommand;
+    22:MapfileCommand;
+    23:PrintfCommand;
+    24:PwdCommand;
+    25:ReadCommand;
+    26:ReadarrayCommand;
+    27:ReadonlyCommand;
+    28:ReturnCommand;
+    29:ShiftCommand;
+    30:SourceCommand;
+    31:TestCommand;
+    32:TimesCommand;
+    33:TrapCommand;
+    34:TypeCommand;
+    35:TypesetCommand;
+    36:UlimitCommand;
+    37:UmaskCommand;
+    38:UnaliasCommand;
+    39:UnsetCommand;
    End;
    If J<=High(CommandList)Then Begin
     CommandFound:=True;
@@ -965,6 +1103,16 @@ Var
  Err:Word;
  I:Integer;
 Begin
+ If(Length(CmdStr)>=2)and(CmdStr[1]='!')and(CmdStr[2]in['0'..'9'])Then Begin
+  Val(Copy(CmdStr,2,255),I,Err);
+  If(I>=1)and(I<=NumberHistory)Then Begin
+   CmdStr:=History[I]^;
+  End
+   Else
+  Begin
+   WriteLn('Nombre en dehors de l''intervalle d''historique');
+  End;
+ End;
  AddHistory(CmdStr);
  If Copy(CmdStr,1,2)='./'Then Begin
   CurrCommand:=Copy(CmdStr,3,Pos(' ',CmdStr)-3);
@@ -998,7 +1146,7 @@ Procedure RunScript(FileName:String);
 Var
  FileBat:Text;
 Begin
- Assign(FileBat,FileName);
+ Assign(FileBat,BaseDir+FileName);
  {$I-}Reset(FileBat);{$I+}
  If IOResult=0Then Begin
   While Not EOF(FileBat)do Begin
@@ -1007,15 +1155,17 @@ Begin
   End;
  End
   Else
- WriteLn('Probleme de lecture du fichier de traitement par lot');
+ WriteLn('ProblŠme de lecture du fichier de traitement par lot');
  Close(FileBat);
 End;
 
 Procedure ReadLine(Var S:String);
 Var
+ Rec:SearchRec;
+ Dir:String;
  K:Char;
  X,Y:Byte;
- CurrHistory:Integer;
+ CurrHistory:LongInt;
 Begin
  CurrHistory:=NumberHistory;
  X:=WhereX;
@@ -1044,6 +1194,18 @@ Begin
    End;
    #8:Begin
     If S<>''Then S:=Copy(S,1,Length(S)-1);
+   End;
+   #9:If S<>''Then Begin
+    For I:=Length(S) downto 1 do Begin
+     If S[I]=' 'Then Begin
+      Dir:=Path2Dir(Copy(S,I+1,255));
+      FindFirst(Copy(S,I+1,255)+'*.*',AnyFile,Rec);
+      If DosError=0 Then Begin
+       S:=Copy(S,1,I)+Dir+Rec.Name;
+      End;
+      Break;
+     End;
+    End;
    End;
    Else S:=S+K;
   End;
@@ -1076,36 +1238,69 @@ BEGIN
   WriteLn;
   WriteLn(' script.sh  Indique un script a ex‚cuter.');
   WriteLn(' -c cmd     Indique une commande a ex‚cuter.');
+  WriteLn(' --cygwin   Recherche dans les dossiers de Cygwin');
+  WriteLn(' --norc     Indique qu''il ne faut pas charger le fichier personnalis‚ ®.bashrc¯');
+  WriteLn(' --help     Affiche l''aide de cette commande.');
+  WriteLn(' --version  Indique la version de cette commande.');
+ End
+  Else
+ If ParamStr(1)='--version'Then Begin
+  WriteLn('BASH 1.0 - Clone Pascal de bash-0, linux, unix ou corail');
+  WriteLn('Licence MIT');
+  WriteLn;
+  WriteLn('crit par Sylvain Maltais');
  End
   Else
  Begin
+  BaseDir:='';
+  Manual:=True;
+  NoRC:=False;
+  NumberHistory:=0;
   FillChar(History,SizeOf(History),0);
+  LoadHistory;
   AliasList:=NIL;
   VariableList:=NIL;
-  NumberHistory:=0;
   Terminated:=False;
   Option:=optNone;
+  LogName:=GetEnv('LOGNAME');
   If ParamCount>0 Then Begin
    For I:=1 to ParamCount do Begin
     If(Option=optCommand)Then Begin
      CmdStr:=ParamStr(I);
      RunCommand;
      Option:=optNone;
+     Manual:=False;
     End
      Else
-    If ParamStr(I)='-c'Then Option:=optCommand
-                       Else RunScript(ParamStr(I));
+    If ParamStr(I)='-c'Then Option:=optCommand Else
+    If ParamStr(I)='--cygwin'Then Begin
+     If DirExist('/cygwin')Then BaseDir:='/cygwin' Else
+     If DirExist('/cygwin32')Then BaseDir:='/cygwin32' Else
+     If DirExist('/cygwin64')Then BaseDir:='/cygwin64';
+     If LogName=''Then LogName:=GetEnv('USERNAME');
+    End
+     Else
+    If ParamStr(I)='--cygwin64'Then BaseDir:='/cygwin64' Else
+    If ParamStr(I)='--cygwin32'Then BaseDir:='/cygwin32' Else
+    If ParamStr(I)='--norc'Then NoRC:=True
+     Else
+    Begin
+     RunScript(ParamStr(I));
+     Manual:=False;
+    End;
    End;
-  End
-   Else
-  Begin
-   If FileExist('.bashrc')Then RunScript('.bashrc');
+  End;
+  If(Manual)Then Begin
+   If Not(NoRC)Then Begin
+    If FileExist('.bashrc')Then RunScript('.bashrc');
+   End;
    HomeMessage;
    Repeat
     ShowPrompt;
     ReadLine(CmdStr);
     RunCommand;
    Until Terminated;
+   SaveHistory(False);
   End;
  End;
 END.
