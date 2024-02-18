@@ -9,7 +9,7 @@ Program BASH;
 Uses Crt,DOS;
 
 Const
- BashFileNameHistory={$IFDEF FPC}'.bash_history'{$ELSE}'.BASHIST'{$ENDIF};
+ BashFileNameHistory={$IFDEF FPC}'.bash_history'{$ELSE}'BASHIST'{$ENDIF};
 
  CommandList:Array[0..39]of String[16]=(
   'alias','bind','break','builtin','caller','cd','command',
