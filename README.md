@@ -1193,6 +1193,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer l'interpréteur de commande <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a> des Color Computer de Tandy Radio Shack.</td>
 		</tr>
 		<tr>
+			<td><b>PCIINFO.PAS</b></td>
+			<td>Cette commande permet de rechercher les périphériques PCI installé sur le micro-ordinateur.</td>
+		</tr>
+		<tr>
 			<td><b>PCTOOLS.PAS</b></td>
 			<td>Cette commande permet de lancer un clone du PC Tools original de Central-Point.</td>
 		</tr>
