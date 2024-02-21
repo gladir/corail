@@ -8,6 +8,7 @@ Program TXT2RTF;
 
 Var
  F:Text;
+ I:Integer;
  CurrLine:String;
 
 Procedure PrintRTFBegin;Begin
@@ -101,7 +102,16 @@ BEGIN
      PrintRTFEnd;
      PrintRTFBegin;
     End;
-    WriteLn(CurrLine);
+    For I:=1 to Length(CurrLine)do Begin
+     Case CurrLine[I]of
+      #12:Write('\page');
+      '\':Write('\\');
+      '{':Write('\{');
+      '}':Write('\}');
+      Else Write(CurrLine[I]);
+     End;
+    End;
+    WriteLn;
    End;
   End
    Else
