@@ -1573,6 +1573,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de visualiser un fichier CSV comme dans un tableur (Table Viewer).</td>
 		</tr>
 		<tr>
+			<td><b>TXT2RTF.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier TXT en format RTF.</td>
+		</tr>
+		<tr>
 			<td><b>TYPE.PAS</b></td>
 			<td>Cette commande permet d'afficher le contenu d'un fichier.</td>
 		</tr>
