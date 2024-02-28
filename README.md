@@ -998,7 +998,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>ICONV.PAS</b></td>
-			<td>Cette commande permet de converitr un fichier d'un format à un autre.</td>
+			<td>Cette commande permet de convertir un fichier d'un format à un autre.</td>
 		</tr>
 		<tr>
 			<td><b>ID.PAS</b></td>
