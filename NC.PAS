@@ -6,14 +6,15 @@
 
 Program NorthCommander;
 
-{$M 8192,0,65556}
+{$M 16384,0,65556}
 
 Uses Crt,Dos;
 
 Const
+ Version='1.0.1';
  MinCote=0;
  MaxCote=1;
- MaxFiles=511;
+ MaxFiles={$IFDEF FPC}4095{$ELSE}511{$ENDIF};
 
  PanelHeightSize=17;
  LengthMenu:Array[0..4] of Byte = (9,16,26,30,9);
@@ -91,12 +92,16 @@ Type
  String12=String[12];
  String64=String[64];
  Binaire=0..1;
+ StrName=String[12];
 
 Var
+ Language:(_Albanian,_French,_English,_Germany,_Italian,_Spain);
+ TmpLanguage:String;
+ DoubleFrame:Boolean;
  I:Integer;
  ShowASCII128:Boolean;
- Nombre:Array[0..1] of 0..511;
- PositionX:Array[0..1] of 0..511;
+ Nombre:Array[0..1] of 0..MaxFiles;
+ PositionX:Array[0..1] of 0..MaxFiles;
  YPos:Array[0..1] of 0..17;
  PanelPath:Array[0..1] of PathStr;
  PanelType:Array[0..1] of 0..7;
@@ -113,6 +118,36 @@ Var
  Numerique:Word;
  XS,YS:Word;
  BS:Word;
+
+Var
+ Nom              : Array[MinCote..MaxCote,0..MaxFiles] of StrName;
+ Temps            : Array[MinCote..MaxCote,0..MaxFiles] of LongInt;
+ Taille           : Array[MinCote..MaxCote,0..MaxFiles] of LongInt;
+ Attribt          : Array[MinCote..MaxCote,0..MaxFiles] of Byte;
+ Accepte          : Array[MinCote..MaxCote,0..MaxFiles] of 0..1;
+ NombreFichierX   : Array[MinCote..MaxCote] of 0..MaxFiles;
+ TypeTri          : Array[MinCote..MaxCote] of 0..4;
+
+{$IFNDEF FPC}
+ Procedure CursorOff;
+ Var
+  Regs:Registers;
+ Begin
+  Regs.AH:=1;
+  Regs.CH:=32;
+  Regs.CL:=0;
+  Intr($10,Regs);
+ End;
+
+ Procedure CursorOn;
+ Var
+  Regs:Registers;
+ Begin
+  Regs.AX:=$0100;
+  Regs.CX:=(7 shl 8)+9;
+  Intr($10,Regs);
+ End;
+{$ENDIF}
 
 Function StrToUpper(S:String):String;
 Var
@@ -263,12 +298,23 @@ Begin
  End
   Else
  Begin
-  ChrHori:=#$C4;
-  ChrVert:=#$B3;
-  Chr218:=#218;
-  Chr192:=#192;
-  Chr191:=#191;
-  Chr217:=#217;
+  If(DoubleFrame)Then Begin
+   ChrHori:=#205;
+   ChrVert:=#186;
+   Chr218:=#201;
+   Chr192:=#200;
+   Chr191:=#187;
+   Chr217:=#188;
+  End
+   Else
+  Begin
+   ChrHori:=#$C4;
+   ChrVert:=#$B3;
+   Chr218:=#218;
+   Chr192:=#192;
+   Chr191:=#191;
+   Chr217:=#217;
+  End;
  End;
  For Compteur:=Y1+1 to Y2-1 do Begin
   Write1(X1,Compteur,Ord(ChrVert),Couleur);
@@ -304,48 +350,57 @@ End;
 Procedure FrameChoice(X1,Y1,X2,Y2:Byte);
 Var
  I:Integer;
+ ChrHori,ChrVert:Byte;
+ Chr218,Chr192,Chr191,Chr217:Byte;
 Begin
+ If(ShowASCII128)Then Begin
+  ChrHori:=Byte('-');
+  ChrVert:=Byte('|');
+  Chr218:=Byte('+');
+  Chr192:=Byte('+');
+  Chr191:=Byte('+');
+  Chr217:=Byte('+');
+ End
+  Else
+ Begin
+  ChrHori:=$C4;
+  ChrVert:=$B3;
+  Chr218:=218;
+  Chr192:=192;
+  Chr191:=191;
+  Chr217:=217;
+ End;
  Box(X1,Y1,X2,Y2,63);
- Write1(X1,Y1,218,63);
- Write1(X1,Y2,192,63);
+ Write1(X1,Y1,Chr218,63);
+ Write1(X2,Y1,Chr191,63);
+ Write1(X1,Y2,Chr192,63);
+ Write1(X2,Y2,Chr217,63);
  For I:=X1+1 to X2-1 do Begin
-  Write1(I,Y1,$C4,63);
-  Write1(I,Y2,$C4,63);
+  Write1(I,Y1,ChrHori,63);
+  Write1(I,Y2,ChrHori,63);
  End;
  For I:=Y1+1 to Y2-1 do Begin
-  Write1(X1,I,$B3,63);
-  Write1(X2,I,$B3,63);
+  Write1(X1,I,ChrVert,63);
+  Write1(X2,I,ChrVert,63);
  End;
 End;
 
-Type StrName = String[12];
-
+Procedure DiskNotReady(Disque:Byte);
 Var
- Nom              : Array[MinCote..MaxCote,0..MaxFiles] of StrName;
- Temps            : Array[MinCote..MaxCote,0..MaxFiles] of LongInt;
- Taille           : Array[MinCote..MaxCote,0..MaxFiles] of LongInt;
- Attribt          : Array[MinCote..MaxCote,0..MaxFiles] of Byte;
- Accepte          : Array[MinCote..MaxCote,0..MaxFiles] of 0..1;
- NombreFichierX   : Array[MinCote..MaxCote] of 0..MaxFiles;
- TypeTri          : Array[MinCote..MaxCote] of 0..4;
-
-Procedure DisqueNonPret(Disque:Byte);
-Var
-  Registre:Registers;
-  OK:Boolean;
-  Touche:Char;
+ Registre:Registers;
+ OK:Boolean;
+ Touche:Char;
 Begin
  OK := False;
  Repeat
   Box(11,11,68,12,$4F);
   FrameEmpty(10,10,69,13,$4F);
-  WriteCenter(11,'Disque '+Chr(Disque+65)+' pas pret',$4F);
-  WriteCenter(12,'Mettre la disquette et presse une touche',$4E);
-  Touche := UpCase(ReadKey);
-  If(KeyPressed)Then
-  Begin
-   Touche := ReadKey;
-   Touche := #0;
+  WriteCenter(11,'Disque '+Chr(Disque+65)+' pas pràt',$4F);
+  WriteCenter(12,'Mettre la disquette et pressÇ une touche',$4E);
+  Touche:=UpCase(ReadKey);
+  If(KeyPressed)Then Begin
+   Touche:=ReadKey;
+   Touche:=#0;
   End;
   Registre.AH := $1C;
   Registre.DL := Disque + 1;
@@ -355,45 +410,47 @@ Begin
 End;
 
 Function Volume(Drive:Char):PathStr;
-Var Palette : SearchRec;
-    Erreur  : Integer;
+Var
+ Info:SearchRec;
+ Error:Integer;
 Begin
- Volume := 'Aucun';
- FindFirst(Drive + ':\*.*',VolumeID,Palette);
- Erreur := DosError;
- If(Erreur = 0)Then Volume := Palette.Name
+ Volume:='Aucun';
+ FindFirst(Drive+':\*.*',VolumeID,Info);
+ Error:=DOSError;
+ If(Error=0)Then Volume:=Info.Name
   else
- If(ERREUR=152)Then
+ If(Error=152)Then
  Begin
   Repeat
-   DisqueNonPret(Ord(Drive)-65);
-   FindFirst(Drive + ':\*.*',VolumeID,Palette);
-   Erreur := DosError;
-   If(Erreur = 0)Then Volume := Palette.Name;
-  Until (Erreur <> 152);
+   DiskNotReady(Ord(Drive)-65);
+   FindFirst(Drive+':\*.*',VolumeID,Info);
+   Error:=DOSError;
+   If(Error=0)Then Volume:=Info.Name;
+  Until(Error<>152);
  End;
 End;
 
 Procedure ReadFiles(Chaine:PathStr;Attribut:Word;Cote:Byte);
-Var Compteur,Position : Word;
-    OK                : Boolean;
-    Ecart,I,J,K,M     : LongInt;
-    Sortie            : Boolean;
-    X                 : String[12];
-    XTaille           : LongInt;
-    XAttribt          : Byte;
-    XSeconde          : 0..59;
-    XMinute           : 0..59;
-    XHeure            : 0..23;
-    XJour             : 1..31;
-    XMois             : 1..12;
-    XAnnees           : Word;
-    Date_TimeB	      : DateTime;
-    Palette	      : SearchRec;
-    Directory 	      : DirStr;
-    FileName  	      : NameStr;
-    Extension 	      : ExtStr;
-    Erreur            : Integer;
+Var
+ Compteur,Position : Word;
+ OK                : Boolean;
+ Ecart,I,J,K,M     : LongInt;
+ Sortie            : Boolean;
+ X                 : String[12];
+ XTaille           : LongInt;
+ XAttribt          : Byte;
+ XSeconde          : 0..59;
+ XMinute           : 0..59;
+ XHeure            : 0..23;
+ XJour             : 1..31;
+ XMois             : 1..12;
+ XAnnees           : Word;
+ Date_TimeB	   : DateTime;
+ Palette	   : SearchRec;
+ Directory 	   : DirStr;
+ FileName  	   : NameStr;
+ Extension 	   : ExtStr;
+ Erreur            : Integer;
 
  Procedure SousTri;Begin
   UnpackTime(Temps[Cote,I],Date_Time);
@@ -512,12 +569,12 @@ Var Compteur,Position : Word;
  End;
 
 Begin
- Position 	      := 1;
+ Position:=1;
  FindFirst(Chaine,$FFF7,Palette);
- Erreur := DOSERROR;
+ Erreur:=DOSError;
  While ((Erreur = 0)or(Erreur = 152)) do Begin
-  If(Erreur = 152)Then DisqueNonPret(Ord(Chaine[1])-65);
-  If((Palette.Name <> '.')and(Erreur=0))Then Begin
+  If(Erreur=152)Then DiskNotReady(Ord(Chaine[1])-65);
+  If((Palette.Name<>'.')and(Erreur=0))Then Begin
    Accepte[Cote,Position] := 0;
    Attribt[Cote,Position] := Palette.Attr and 22;
    Temps[Cote,Position]   := Palette.Time;
@@ -543,14 +600,14 @@ Begin
   If Position>=MaxFiles Then Break;
   If(Erreur<>0)Then FindFirst(Chaine,$FFF7,Palette)
                Else FindNext(Palette);
-  Erreur := DOSERROR;
+  Erreur:=DOSError;
  End;
  NombreFichierX[Cote] := Position - 1;
  Case TypeTri[Cote] of
-  0 : TriNom;
-  1 : TriExtension;
-  2 : TriHeure;
-  3 : TriTaille;
+  0:TriNom;
+  1:TriExtension;
+  2:TriHeure;
+  3:TriTaille;
  End;
  For Compteur := 1 to NombreFichierX[Cote] do Begin
   If(Copy(Nom[Cote,Compteur],1,1)<#32)Then Nom[Cote,Compteur] := Copy(Nom[Cote,Compteur],2,11);
@@ -589,22 +646,32 @@ Begin
   Else
  ChrVert:=' ';
  Inc(Ligne);
- If(Ligne <= NombreFichierX[Cote])Then Begin
+ If(Ligne<=NombreFichierX[Cote])Then Begin
   If(Selected)Then Begin
-   If(Accepte[Cote,Ligne]=0)Then Couleur := 48 else Couleur := 62;
+   If(Accepte[Cote,Ligne]=0)Then Couleur:=48
+                            Else Couleur:=62;
   End
    Else
   Begin
-   If(Accepte[Cote,Ligne] = 0)Then Couleur := 31 else Couleur := 30;
+   If(Accepte[Cote,Ligne]=0)Then Couleur:=$1B
+                            Else Couleur:=$1E;
   End;
   TextColor(Couleur and $F);
   TextBackground((Couleur shr 4)and 7);
   GotoXY(Cote*40+2,Y+3);
   Write(PadRight(Nom[Cote,Ligne],12),ChrVert);
-  If(Attribt[Cote,Ligne] <> 16)Then Write(Taille[Cote,Ligne]:8) Else
+  If(Attribt[Cote,Ligne]<>16)Then Write(Taille[Cote,Ligne]:8) Else
   If(Attribt[Cote,Ligne]=16)Then Begin
-   If(Nom[Cote,Ligne]='..')Then Write('SOUS-REP')
-                           Else Write('SUR-REP ');
+   Case Language of
+    _English:Begin
+     If(Nom[Cote,Ligne]='..')Then Write(#16,'UP--DIR')
+                             Else Write(#16,'SUB-DIR');
+    End;
+    Else Begin
+     If(Nom[Cote,Ligne]='..')Then Write('SOUS-REP')
+                             Else Write('SUR-REP ');
+    End;
+   End;
   End;
   UnPackTime(Temps[Cote,Ligne],Date_Time);
   Write(ChrVert,Date_Time.Year:4,'-',
@@ -623,11 +690,32 @@ Begin
  End;
 End;
 
+Procedure PanelTitlePath(Side:Byte;Activate:Boolean);
+Var
+ Color:Byte;
+Begin
+ If(Activate)Then Color:=49
+             Else Color:=$1B;
+ WriteXY(40*Side+20-((Length(PanelPath[Side])+2) shr 1),
+         0,' '+PanelPath[Side]+' ',Color);
+End;
+
+Procedure UnshowPanelPath;Begin
+ PanelTitlePath(Cote,False);
+End;
+
+Procedure ShowPanelPath;Begin
+ PanelTitlePath(Cote,True);
+End;
+
 Procedure RefreshPanel;
 Var
- I,J:Byte;
- Couleur:Byte;
+ DirInfo:Text;
+ I,J,ParseSide:Byte;
  ChrVert:Char;
+ II:Word;
+ DirSize:LongInt;
+ CurrLine,DirInfoName:String;
 Begin
  If(ShowASCII128)Then ChrVert:='|'
                  Else ChrVert:=#179;
@@ -637,54 +725,119 @@ Begin
   End
    Else
   Case PanelType[I]of
-   2:Begin
-    Box(40*I+1,0,40*I+38,20,31);
-    FrameEmpty(40*I,0,40*I+39,21,31);
-    WriteXY(40*I+13,2,'€ﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂﬂ€',31);
-    WriteXY(40*I+13,3,'€ Information €',31);
-    WriteXY(40*I+13,4,'€‹‹‹‹‹‹‹‹‹‹‹‹‹€',31);
-    WriteXY(40*I+2,6,'Repertoire :',31);
-    WriteXY(40*I+2,7,PanelPath[1],30);
-    TextBackGround(1);
-    TextColor(11);
-    WriteXY(40*I+2,14,'Nombre de Fichier :',31);
-    GotoXY(40*I+23,15);
-    Write(NombreFichierX[1]:7,' Fichiers');
-    WriteXY(40*I+2,13,'Volume            :',31);
-    GotoXY(40*I+23,14);
-    Write(Volume(PanelPath[1,1]));
-    WriteXY(40*I+2,15,'Taille disque     :',31);
-    GotoXY(40*I+23,16);
-    Write(DiskSize(Ord(PanelPath[1,1])-64):9,' Octets');
-    WriteXY(40*I+2,16,'Espace libre      :',31);
-    GotoXY(40*I+23,17);
-    Write(DiskFree(Ord(PanelPath[1,1])-64):9,' Octets');
-    WriteXY(40*I+2,18,'Version du MS-DOS :',31);
-    GotoXY(40*I+23,19);
-    Write(Lo(DosVersion),'.',Hi(DosVersion));
-    WriteXY(40*I+2,19,'MÇmoire total     :',31);
-    GotoXY(40*I+23,20);
-    Write(RAMSize:9,' Octets');
-    WriteXY(40*I+2,20,'MÇmoire libre     :',31);
-    GotoXY(40*I+23,21);
-    Write(640*1024:9,' Octets');
-   End;
    4:Begin
-    FrameEmpty(40*I,0,40*I+39,5+SideLength[I],31);
+    FrameEmpty(40*I,0,40*I+39,5+SideLength[I],$1B);
     WriteXY(40*I+1,1,'   Nom   Ext'+ChrVert+' Taille '+ChrVert+
           '   Date   '+ChrVert+'Heure',30);
     If(PanelPath[I,Length(PanelPath[I])]<>'\')Then PathTem:=PanelPath[I]+'\'
                                               Else PathTem:=PanelPath[I];
     ReadFiles(PathTem+'*.*',$FFFF,I);
     For J:=0 to SideLength[Cote] do ShowLine(J,J,I,False,True);
-    If Cote=0Then Couleur:=49
-             Else Couleur:=31;
-    WriteXY(40*I+20-((Length(PanelPath[I])+2) div 2),0,' '+PanelPath[I]+' ',Couleur);
+    PanelTitlePath(I,Cote=I);
     If NombreFichierX[I]<=SideLength[I]Then Box(40*I+1,NombreFichierX[I]+2,40*I+38,SideLength[I]+2,31);
     GotoXY(40*I+2,21);
     TextBackground(Blue);
-    TextColor(White);
-    Write(DuplicateString('-',38));
+    TextColor(LightCyan);
+    If(ShowASCII128)Then Write(DuplicateString('-',38))
+     Else
+    Begin
+     Write(DuplicateString(#196,12),#193);
+     Write(DuplicateString(#196,8),#193);
+     Write(DuplicateString(#196,10),#193);
+     Write(DuplicateString(#196,5));
+    End;
+   End;
+  End;
+ End;
+ For I:=0 to 1 do Begin
+  Case PanelType[I]of
+   2:Begin
+    ParseSide:=(I+1)and 1;
+    DirSize:=0;
+    Box(40*I+1,0,40*I+38,21,$1B);
+    FrameEmpty(40*I,0,40*I+39,22,$1B);
+    WriteXY(40*I+6,1,'North Commander, Version '+Version,$1B);
+    WriteXY(40*I+8,2,'Clone de Norton Commander',$1B);
+    WriteXY(40*I+1,3,DuplicateString(#196,38),$1B);
+    GotoXY(40*I+2,5);
+    TextColor(Yellow);
+    Write(RAMSize*1024:13);
+    TextColor(LightCyan);
+    Write(' octets de mÇmoire');
+    GotoXY(40*I+2,6);
+    TextColor(Yellow);
+    Write(640*1024:9);
+    TextColor(LightCyan);
+    Write(' octets de mÇmoire de libre');
+    GotoXY(40*I+2,7);
+    TextColor(Yellow);
+    Write(DiskSize(Ord(PanelPath[ParseSide,1])-64));
+    TextColor(LightCyan);
+    Write(' octets total sur le disque ');
+    TextColor(Yellow);
+    Write(PanelPath[ParseSide,1],':');
+    GotoXY(40*I+2,8);
+    Write(DiskFree(Ord(PanelPath[ParseSide,1])-64));
+    TextColor(LightCyan);
+    Write(' octets libre sur le disque ');
+    TextColor(Yellow);
+    Write(PanelPath[ParseSide,1],':');
+    GotoXY(40*I+2,9);
+    Write(NombreFichierX[ParseSide]);
+    TextColor(LightCyan);
+    Write(' fichiers utilisant ');
+    TextColor(Yellow);
+    For II:=0 to NombreFichierX[ParseSide]-1 do Begin
+     Inc(DirSize,Taille[ParseSide,II]);
+    End;
+    Write(DirSize);
+    TextColor(LightCyan);
+    Write(' octets dans ');
+    GotoXY(40*I+2,10);
+    If Length(PanelPath[ParseSide])<38 Then Write(' ':(38-Length(PanelPath[ParseSide]))shr 1);
+    Write(PanelPath[ParseSide]);
+    GotoXY(40*I+2,11);
+    Write(DuplicateString(#196,38));
+    GotoXY(40*I+2,12);
+    TextColor(LightCyan);
+    Write('êtiquette de volume : ');
+    TextColor(Yellow);
+    Write(Volume(PanelPath[ParseSide,1]));
+    TextColor(LightCyan);
+    GotoXY(40*I+2,13);
+    Write(DuplicateString(#196,38));
+    DirInfoName:=PanelPath[ParseSide];
+    If DirInfoName<>''Then Begin
+     If DirInfoName[Length(DirInfoName)]<>'\'Then DirInfoName:=DirInfoName+'\';
+    End;
+    DirInfoName:=DirInfoName+'DIRINFO';
+    {$I-}Assign(DirInfo,DirInfoName);
+    Reset(DirInfo);{$I+}
+    If IOResult=0 Then Begin
+     II:=0;
+     While Not EOF(DirInfo)do Begin
+      ReadLn(DirInfo,CurrLine);
+      GotoXY(40*I+2,14+II);
+      Write(Copy(CurrLine,1,38));
+      Inc(II);
+      If II>9 Then Break;
+     End;
+     Close(DirInfo);
+    End
+     Else
+    Begin
+     GotoXY(40*I+4,15);
+     Case Language of
+      _English:Begin
+       Write('No ''dirinfo'' file in this directory');
+      End;
+      Else Begin
+       Write('Aucun fichier ''dirinfo'' dans ');
+       GotoXY(40*I+4,16);
+       Write('ce rÇpertoire');
+      End;
+     End;
+    End;
    End;
   End;
  End;
@@ -694,6 +847,9 @@ Procedure ShowKeyFunc;
 Const
  FunctionKeyValue:Array[0..9]of String[7]=(
   'Aide','Menu','Affich','Editer','Copier','RenDep','CreRep','Suppr.','Menu','Sortie'
+ );
+ FunctionKeyValueEnglish:Array[0..9]of String[7]=(
+  'Help','Menu','View','Edit','Copy','RenMov','Mkdir','Delete','PullDn','Quit'
  );
 Var
  I:Byte;
@@ -710,7 +866,10 @@ Begin
  TextColor(Black);
  For I:=0 to 8 do Begin
   GotoXY(I*8+2,25);
-  Write(PadRight(FunctionKeyValue[I],6));
+  Case Language of
+   _English:Write(PadRight(FunctionKeyValueEnglish[I],6));
+   Else Write(PadRight(FunctionKeyValue[I],6));
+  End;
  End;
  TextBackground(Black);
  TextColor(LightGray);
@@ -719,7 +878,10 @@ Begin
  TextBackground(Cyan);
  TextColor(Black);
  GotoXY(74,25);
- Write(FunctionKeyValue[9]);
+ Case Language of
+  _English:Write(FunctionKeyValueEnglish[9]);
+  Else Write(FunctionKeyValue[9]);
+ End;
  ClrEol;
 End;
 
@@ -730,7 +892,7 @@ Procedure ShowPanelStatusBar(Cote:Byte);Begin
   TextBackground(Blue);
   TextColor(Yellow);
   GotoXY(40*Cote+2,22);
-  Write(Nombre[Cote],' fichiers selectionnes    ');
+  Write(Nombre[Cote],' fichiers sÇlectionnÇs    ');
  End
   Else
  ShowLine(19,PositionX[Cote],Cote,False,False);
@@ -750,7 +912,7 @@ Begin
  CurrCommand:='';
 End;
 
-Procedure Change(Cote:Binaire);
+Procedure ChangeDrive(Cote:Binaire);
 Var
  Drive:Array['A'..'Z']of Boolean;
  DriveList:String;
@@ -779,7 +941,7 @@ Begin
  If BoxX1<0Then BoxX1:=0;
  BoxX2:=BoxX1+BoxWidth;
  Position:=Ord(PanelPath[Cote,1])-64;
- OK := 0;
+ OK:=0;
  FrameFull(BoxX1,7,BoxX2,12,$70);
  TextColor(0);
  TextBackground(7);
@@ -798,6 +960,7 @@ Begin
  End;
  CurrX:=BoxX1+4;
  Position:=1;
+ CursorOff;
  Repeat
   TextBackground(3);
   GotoXY(BoxX1+4*Position,11);
@@ -825,6 +988,7 @@ Begin
    #27:OK := 1;
   End;
  Until OK=1;
+ CursorOn;
  Refresh;
 End;
 
@@ -838,19 +1002,22 @@ Begin
                       Path2Ext(Nom[Cote,PositionX[Cote]+1]);
 End;
 
-
 Procedure DialogNotImplement;Begin
+ CursorOff;
  FrameFull(10,9,70,16,$70);
- WriteCenter(12,'Cette fonctionnalite n''est pas implante',$70);
+ WriteCenter(12,'Cette fonctionnalitÇ n''est pas implantÇ',$70);
  WriteXY(38,14,' Ok ',$0F);
  ReadKey;
+ CursorOn;
 End;
 
 Procedure ErrorOk(Msg:String);Begin
+ CursorOff;
  FrameFull(10,9,70,16,$4F);
  WriteCenter(12,Msg,$40);
  WriteXY(38,14,' Ok ',$30);
  ReadKey;
+ CursorOn;
 End;
 
 Procedure HelpFunc;Begin
@@ -858,15 +1025,155 @@ Procedure HelpFunc;Begin
  Refresh;
 End;
 
-Procedure MenuFunc;Begin
- DialogNotImplement;
+Procedure MenuFunc;
+Const
+ MaxMenu=39;
+Type
+ MenuRec=Record
+  Letter:String[3];
+  Name:String[50];
+  Cmd:String[127];
+ End;
+Var
+ Mode:(_None,_Letter,_Name,_Cmd);
+ MenuFile:Text;
+ Terminated:Boolean;
+ Menu:Array[0..MaxMenu]of MenuRec;
+ YMenu,PosMenu,NumMenu,WidthBox,HeightBox,X1,Y1,X2,Y2:Byte;
+ I:Integer;
+ CurrLine,CurrWord:String;
+
+ Procedure SelectMenu;Begin
+  GotoXY(X1+2,Y1+2+YMenu);
+  Write(Menu[PosMenu].Letter);
+  TextBackground(0);
+  GotoXY(X1+5,Y1+2+YMenu);
+  Write(' ',PadRight(Copy(Menu[PosMenu].Name,1,50),WidthBox-10));
+  TextBackground(Cyan);
+ End;
+
+ Procedure UnselectMenu;Begin
+  GotoXY(X1+2,Y1+2+YMenu);
+  Write(Menu[PosMenu].Letter);
+  GotoXY(X1+5,Y1+2+YMenu);
+  Write(' ',PadRight(Copy(Menu[PosMenu].Name,1,50),WidthBox-10));
+ End;
+
+Begin
+ {$I-}Assign(MenuFile,'NC.MNU');
+ Reset(MenuFile);{$I+}
+ If IOResult=0 Then Begin
+  NumMenu:=0;
+  FillChar(Menu,SizeOf(Menu),0);
+  Mode:=_None;
+  While Not EOF(MenuFile)do Begin
+   ReadLn(MenuFile,CurrLine);
+   CurrWord:='';
+   If Mode in[_Letter,_Name]Then Begin
+    Menu[NumMenu].Cmd:=CurrLine;
+    Inc(NumMenu);
+    If NumMenu>MaxMenu Then Break;
+    Mode:=_None;
+   End
+    Else
+   Begin
+    For I:=1 to Length(CurrLine)do Begin
+     If CurrLine[I]=' 'Then Begin
+      If CurrWord[Length(CurrWord)]=':'Then Begin
+       Menu[NumMenu].Letter:=CurrWord;
+       CurrWord:='';
+       Mode:=_Letter;
+      End;
+     End
+      Else
+     CurrWord:=CurrWord+CurrLine[I];
+    End;
+    Menu[NumMenu].Name:=Copy(Trim(CurrWord),1,50);
+   End;
+  End;
+  Close(MenuFile);
+  If NumMenu=0 Then ErrorOk('Aucun menu prÇsent dans le fichier nc.mnu !')
+   Else
+  Begin
+   CursorOff;
+   WidthBox:=20;
+   HeightBox:=4+NumMenu;
+   If HeightBox>20 Then HeightBox:=20;
+   For I:=0 to NumMenu-1 do Begin
+    If Length(Menu[I].Name)>WidthBox Then Begin
+     WidthBox:=Length(Menu[I].Name);
+     If WidthBox>50 Then WidthBox:=50;
+    End;
+   End;
+   Inc(WidthBox,20);
+   X1:=40-(WidthBox shr 1);
+   Y1:=12-(HeightBox shr 1);
+   X2:=40+(WidthBox shr 1);
+   Y2:=12+(HeightBox shr 1);
+   FrameChoice(X1-1,Y1-1,X2-1,Y2-1);
+   WriteCenter(Y1-1,'Menu utilisateur',63);
+   For I:=0 to NumMenu-1 do Begin
+    GotoXY(X1+2,Y1+2+I);
+    Write(Menu[I].Letter);
+    GotoXY(X1+5,Y1+2+I);
+    Write(' ',Copy(Menu[I].Name,1,50));
+   End;
+   Terminated:=False;
+   PosMenu:=0;
+   YMenu:=0;
+   SelectMenu;
+   Repeat
+    Case ReadKey of
+     #0:Case ReadKey of
+      #72:Begin { Up }
+      If PosMenu>0 Then Begin
+        UnselectMenu;
+        Dec(PosMenu);
+        If YMenu>0Then Dec(YMenu)
+         Else
+        Begin
+         Window(X1+2,Y1+2,X2-2,Y2-2);
+         InsLine;
+         Window(1,1,80,25);
+        End;
+        SelectMenu;
+       End;
+      End;
+      #80:Begin { Down }
+       If PosMenu<NumMenu-1 Then Begin
+        UnselectMenu;
+        Inc(PosMenu);
+        If YMenu<20-4 Then Inc(YMenu)
+         Else
+        Begin
+         Window(X1+2,Y1+2,X2-2,Y2-2);
+         DelLine;
+         Window(1,1,80,25);
+        End;
+        SelectMenu;
+       End;
+      End;
+     End;
+     #13:Begin
+      Exec(GetEnv('COMSPEC'),'/C '+Menu[PosMenu].Cmd);
+      Refresh;
+      Terminated:=True;
+     End;
+     #27:Terminated:=True;
+    End;
+   Until Terminated;
+   CursorOn;
+  End;
+ End
+  Else
+ ErrorOk('Fichier Ænc.mnuØ non prÇsent ou impossible Ö lire');
  Refresh;
 End;
 
 Procedure ViewFunc;
 Var
  Finish:Boolean;
- FileView:File{$IFDEF FPC}of Byte{$ENDIF};
+ FileView:File;
  ByteReaded:Word;
  I,CurrLinePos:Integer;
  FileName:String;
@@ -918,8 +1225,8 @@ Var
   TextBackground(Cyan);
   TextColor(Black);
   Write(Pour:3,'%');
-  TextBackground(Black);
-  TextColor(LightGray);
+  TextBackground(Blue);
+  TextColor(LightCyan);
   GotoXY(1,2);
   X:=1;
   J:=0;
@@ -960,11 +1267,11 @@ Var
 
 Begin
  FileName:=GetCurrName;
- Assign(FileView,FileName);
- {$I-}Reset(FileView{$IFNDEF FPC},1{$ENDIF});{$I+}
+ {$I-}Assign(FileView,FileName);
+ Reset(FileView,1);{$I+}
  If IoResult<>0Then Begin
   FrameFull(10,9,70,16,$4F);
-  WriteCenter(12,'Probleme de lecture du fichier :',$40);
+  WriteCenter(12,'Probläme de lecture du fichier :',$40);
   WriteCenter(13,FileName,$40);
   WriteXY(38,14,' Ok ',$0F);
   ReadKey;
@@ -975,6 +1282,7 @@ Begin
  ClrScr;
  ViewFrameASCII;
  Finish:=False;
+ CursorOff;
  Repeat
   FillChar(Buffer,SizeOf(Buffer),0);
   Seek(fileView,CurrPos);
@@ -1017,6 +1325,7 @@ Begin
   End;
  Until Finish;
  Close(FileView);
+ CursorOn;
  Refresh;
 End;
 
@@ -1041,8 +1350,8 @@ Var
 Begin
  Changement:=0;
  FrameFull(8,5,71,18,63);
- WriteCenter(8,'Creation d''un repertoire',62);
- WriteXY(12,10,'Nom du repertoire a creer :',62);
+ WriteCenter(8,'CrÇation d''un rÇpertoire',62);
+ WriteXY(12,10,'Nom du rÇpertoire a crÇer :',62);
  Write1(31,12,91,63);
  Write1(49,12,93,63);
  For Position := 0 to 7 do Begin
@@ -1061,55 +1370,52 @@ Begin
   WriteXY(22,15,PathTem,62);
   GotoXY(34+Position*2,13);
   Touche:=ReadKey;
-  If KeyPressed Then
-  Begin
-   Touche := ReadKey;
+  If(KeyPressed)Then Begin
+   Touche:=ReadKey;
    Case Touche of
-     #71 : Position := 0;
-     #75 : Position := (Position - 1) and 7;
-     #77 : Position := (Position + 1) and 7;
+    #71:Position:=0;
+    #75:Position:=(Position - 1) and 7;
+    #77:Position:=(Position + 1) and 7;
+   End;
+   Touche:=#00;
+  End;
+  Case Touche of
+   #08:Begin
+    If(Position>0)Then Begin
+     Dec(Position);
+     Chaine8[Position]:=#32;
+     Write1(33+Position*2,12,32,15);
     End;
-    Touche := #00;
    End;
-   Case Touche of
-    #08 : Begin
-  	   If(Position > 0)Then Begin
-	    Dec(Position);
-	    Chaine8[Position] := #32;
-	    Write1(33+Position*2,12,32,15);
-	   End;
-	  End;
-    #13 : Begin
-	   PathTem:=PanelPath[Cote];
-	   If(PathTem[Length(PathTem)] <> '\')Then PathTem := PathTem + '\';
-	   PathTem := PathTem + Chaine8 + #00;
-           {$I-}
-           MkDir(PathTem);
-           Erreur:=IoResult;
-           {$I+}
-           If(Erreur<>0)Then Begin
-            Box(11,12,68,14,$4F);
-            FrameEmpty(10,11,69,15,$4F);
-            WriteCenter(12,'Erreur : De rÇpertoire',$4F);
-            WriteCenter(13,'Impossible de crÇe le rÇpertoire',$4F);
-            WriteCenter(14,'Presse une touche pour retourner',$4E);
-            Write(^G);
-            Touche := ReadKey;
-            If(KeyPressed)Then Touche := ReadKey;
-           End
-            else
-           Changement := 1;
-	   Touche := #27;
-	  End;
+   #13:Begin
+    PathTem:=PanelPath[Cote];
+    If(PathTem[Length(PathTem)]<>'\')Then PathTem:=PathTem+'\';
+    PathTem:=PathTem+Chaine8+#00;
+    {$I-}MkDir(PathTem);
+    Erreur:=IoResult;{$I+}
+    If(Erreur<>0)Then Begin
+     Box(11,12,68,14,$4F);
+     FrameEmpty(10,11,69,15,$4F);
+     WriteCenter(12,'Erreur : De rÇpertoire',$4F);
+     WriteCenter(13,'Impossible de crÇe le rÇpertoire',$4F);
+     WriteCenter(14,'Presse une touche pour retourner',$4E);
+     Write(^G);
+     Touche:=ReadKey;
+     If(KeyPressed)Then Touche := ReadKey;
+    End
+     Else
+    Changement:=1;
+    Touche:=#27;
    End;
-   If(Touche > #31)and(Not(Touche in ['?','*']))and(Position < 8)Then Begin
-    Chaine8 := Copy(Chaine8,1,Position) + UpCase(Touche) + Copy(Chaine8,Position + 1,8);
-    Write1(33+Position*2,12,Ord(UpCase(Touche)),15);
-    If(Position < 7)Then Inc(Position);
-   End
-    else
-   If(Touche > #31)Then Write(^G);
-  Until (Touche = #27);
+  End;
+  If(Touche>#31)and(Not(Touche in['?','*']))and(Position<8)Then Begin
+   Chaine8 := Copy(Chaine8,1,Position) + UpCase(Touche) + Copy(Chaine8,Position + 1,8);
+   Write1(33+Position*2,12,Ord(UpCase(Touche)),15);
+   If(Position<7)Then Inc(Position);
+  End
+   Else
+  If(Touche>#31)Then Write(^G);
+ Until(Touche=#27);
  Refresh;
 End;
 
@@ -1130,7 +1436,7 @@ Begin
   Changement:=1;
  End
   Else
- If(Nombre[Cote] = 0)And(Attribt[Cote,PositionX[Cote]+1] < 16)Then Begin
+ If(Nombre[Cote]=0)And(Attribt[Cote,PositionX[Cote]+1]<16)Then Begin
   Box(11,12,68,14,$4F);
   FrameEmpty(10,11,69,15,$4F);
   WriteCenter(12,'Es-tu certain de vouloir effacer :',$4F);
@@ -1156,8 +1462,7 @@ Begin
   Str(Nombre[Cote],PathTem);
   WriteCenter(11,'Etes-vous certain de vouloir',$4E);
   WriteCenter(12,'effacer '+PathTem+' fichier(s)',$4E);
-  {CrossNextGeneration;}
-  Touche := ReadKey;
+  Touche:=ReadKey;
   If(KeyPressed)Then Touche := ReadKey;
   If(Touche in ['O','o','Y','y',#13])Then Begin
    For I:=0 to NombreFichierX[Cote]-1 do Begin
@@ -1203,39 +1508,42 @@ Var
  Touche:Char;
  Quitte:Boolean;
 Begin
+ CursorOff;
  FrameFull(10,9,70,16,$70);
  WriteCenter(12,'Etes-vous certain de vouloir quitter ?',$70);
  WriteCenter(14,'Oui  Non',$70);
  WriteXY(35,14,' Oui ',$30);
  Touche:=ReadKey;
  If(KeyPressed)Then Touche := ReadKey;
- If(Touche in [#13,'Y','y','o','O'])Then Quitte := True
-				     Else Quitte := False;
+ If(Touche in [#13,'Y','y','o','O'])Then Quitte:=True
+                                    Else Quitte:=False;
  If(KeyPressed)Then Touche:=ReadKey;
+ CursorOn;
  If(Quitte)Then Done
            Else Refresh;
 End;
 
 Procedure CopyFile(Source,Target:String);
-Var Source_File : File;
-    Target_File : File;
-    Num_Read    : Word;
-    Num_Write   : Word;
-    Buffer	: Array[0..32767] of Char;
+Var
+ Source_File:File;
+ Target_File:File;
+ Num_Read:Word;
+ Num_Write:Word;
+ Buffer:Array[0..{$IFDEF FPC}32767{$ELSE}2047{$ENDIF}] of Char;
 Begin
  FrameFull(10,8,69,16,63);
  WriteCenter(11,'Copie fichier '+Source,62);
  WriteCenter(12,'Ö',62);
  WriteCenter(13,Target+Source,62);
- Assign(Source_File,Source);
- Reset(Source_File,1);
- If(IOResult <> 0)Then Exit;
+ {$I-}Assign(Source_File,Source);
+ Reset(Source_File,1);{$I+}
+ If(IOResult<>0)Then Exit;
  {If(Pos('\',Target[Length(target)])<>1)Then Target := Target + '\';}
- Assign(Target_File,Target + Source);
- Rewrite(Target_File,1);
+ {$I-}Assign(Target_File,Target + Source);
+ Rewrite(Target_File,1);{$I+}
  If(IOResult<>0)Then Exit;
  Repeat
-  BlockRead(Source_File,Buffer,32768,Num_Read);
+  BlockRead(Source_File,Buffer,SizeOf(Buffer),Num_Read);
   BlockWrite(Target_File,Buffer,Num_Read,Num_Write);
   If(Num_Read<>Num_Write)Then
   Begin
@@ -1251,11 +1559,12 @@ Begin
 End;
 
 Procedure CopyFunc;
-Var Source  : PathStr;
-    Target  : PathStr;
-    Boucle  : Word;
-    Direct  : Boolean;
-    Erreur  : Byte;
+Var
+ Source:PathStr;
+ Target:PathStr;
+ Boucle:Word;
+ Direct:Boolean;
+ Erreur:Byte;
 Begin
  If(PanelType[0] in [4])and(PanelType[1] in [4])Then Begin
   Direct := True;
@@ -1350,12 +1659,12 @@ Begin
     WriteLn;
     WriteLn(PathTem,'>',Nom[Cote,PositionX[Cote]+1]);
     WriteLn;
-    WriteLn('Indication du Repertoire');
-    For I:=0 to 39 do Write('-');
+    WriteLn('Indication du RÇpertoire');
+    Write(DuplicateString('-',40));
     WriteLn;
     UnPackTime(Temps[Cote,PositionX[Cote]+1],Date_Time);
     WriteLn('Date   : ',Date_Time.Year:4,'-',
-    		        Date_Time.Month:2,'-',
+                        Date_Time.Month:2,'-',
 			Date_Time.Day:2);
     WriteLn('Heure  : ',Date_Time.Hour:2,':',
 		        Date_Time.Min:2,':',
@@ -1370,12 +1679,12 @@ Begin
      End;
      Exec(ChaineTemporaire,'/C'+PathTem+Nom[Cote,PositionX[Cote]+1]);
      If(DosError=8)Then Begin
-      WriteLn('Erreur : MÇmoire insuffisante!');
+      WriteLn('Erreur : MÇmoire insuffisante !');
       TestExit;
      End
       else
      Case DosExitCode of
-      1 : WriteLn('Interrompu par Ctrl + C');
+      1 : WriteLn('Interrompu par Ctrl+C');
       2 : WriteLn('Erreur de PÇriphÇrique');
       3 : WriteLn('Terminaison en mode rÇsidant');
      End;
@@ -1388,7 +1697,7 @@ Begin
       $00 : Begin
     	     Case DosExitCode of
 	      0 : Write('Operation Reussit');
-	      1 : Write('Interrompu par Ctrl + C');
+	      1 : Write('Interrompu par Ctrl+C');
 	      2 : Write('Erreur de PÇriphÇrique');
 	      3 : Write('Terminaison en mode rÇsidant');
 	     End;
@@ -1426,6 +1735,7 @@ Begin
 End;
 
 Procedure Init;Begin
+ DoubleFrame:=True;
  TextMode(C80);
  If(WhereX>1)Then WriteLn;
  WriteLn('North Commandeur  - Clone Norton Commander');
@@ -1451,7 +1761,7 @@ Procedure Init;Begin
  GetDir(0,PanelPath[0]);
  If PanelPath[0]=''Then Begin
   WriteLn('Erreur : RÇpertoire incorrect');
-  WriteLn('Impossible de lancer l''execution du NC');
+  WriteLn('Impossible de lancer l''exÇcution du NC');
   Write(^G);
   Halt;
  End;
@@ -1581,7 +1891,7 @@ Begin
        12:TypeTri[0]:=4;
        13:Refresh;
        14:DialogNotImplement;
-       15:Change(0);
+       15:ChangeDrive(0);
       End;
       Break;
      End;
@@ -1625,7 +1935,7 @@ Begin
        12:TypeTri[1]:=4;
        13:Refresh;
        14:DialogNotImplement;
-       15:Change(1);
+       15:ChangeDrive(1);
       End;
       Break;
      End;
@@ -1700,8 +2010,8 @@ Begin
     #66:DeleteFunc; { F8 }
     #67:PullDnMenu; { F9 }
     #71:If(PanelType[Cote]=4)Then Begin { Home }
-     PositionX[Cote] := 0;
-     YPos[Cote]      := 0;
+     PositionX[Cote]:=0;
+     YPos[Cote]:=0;
      UpdateBoard;
      SelectFileBar;
     End;
@@ -1710,7 +2020,7 @@ Begin
       If(PositionX[Cote]>0)Then Begin
        UnselectFileBar;
        Dec(PositionX[Cote]);
-       Numerique := 40 * Cote;
+       Numerique:=40*Cote;
        If(YPos[0]=0)And(Cote=0)Then Begin
         MoveWindow(Numerique+1,2,Numerique+38,2+SideLength[Cote],27,1);
         ShowLine(0,PositionX[0],0,False,True);
@@ -1738,15 +2048,15 @@ Begin
      End;
      UpdateBoard;
      SelectFileBar;
-    End;
+    End; { Down }
     #80:Begin
      If PanelType[Cote]=4 Then Begin
 20:   If(PositionX[Cote]<NombreFichierX[Cote]-1)Then Begin
        UnselectFileBar;
        Inc(PositionX[Cote]);
        If(YPos[Cote]=SideLength[Cote])Then Begin
-        Numerique := 40 * Cote;
-        MoveWindow(Numerique+1,3,Numerique+38,2+SideLength[Cote],27,-1);
+        Numerique:=40*Cote;
+        MoveWindow(Numerique+1,2,Numerique+38,2+SideLength[Cote],27,-1);
         SelectFileBar;
        End
         Else
@@ -1772,22 +2082,25 @@ Begin
     End;
     #102:SetOffFunctionKeyBar;
     #103:SetOnFunctionKeyBar;
-    #104:Begin
+    #104:Begin { Alt+F1 }
      Cote:=0;
-     Change(0);
+     ChangeDrive(0);
     End;
-    #105:Begin
+    #105:Begin { Alt+F2 }
      Cote:=1;
-     Change(1);
+     ChangeDrive(1);
     End;
    End;
-   If(K = #68)Then K:=#27 else K:=#00;
+   If(K=#68)Then K:=#27
+            Else K:=#00;
   End;
   Case K of
    #9:If(PanelType[Cote xor 1]=4)and(Not PanelDisable[Cote xor 1])Then Begin
     UnselectFileBar;
+    UnshowPanelPath;
     Cote:=Cote xor 1;
     SelectFileBar;
+    ShowPanelPath;
    End;
    ^B:ToggleFunctionKeyBar;
    ^L:ToggleStatusPanel;
@@ -1815,21 +2128,74 @@ BEGIN
    SetUseACP(False);
   {$ENDIF}
  {$ENDIF}
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain Else
+  If(StrToUpper(Copy(TmpLanguage,1,2))='SQ')or
+    (StrToUpper(Copy(TmpLanguage,1,3))='ALB')Then Language:=_Albanian;
+ End;
  ShowASCII128:=False;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('NC : Cette commande permet de lancer le gestionnaire de fichiers.');
+  Case Language of
+   _Germany:Begin
+    WriteLn('NC: Dieser Befehl startet den Dateimanager.');
+    WriteLn;
+    WriteLn('Syntax: NC [/ASCII128]');
+    WriteLn;
+    WriteLn(' /ASCII128   Mit diesem Parameter kînnen nur 128 Zeichen ',
+                          'im KompatibilitÑtsmodus gestartet werden.');
+    WriteLn(' --version   Mit diesem Parameter kînnen Sie die Version ',
+                          'des Befehls anfordern.');
+    Halt;
+   End;
+   _English:Begin
+    WriteLn('NC: This command launches the file manager.');
+    WriteLn;
+    WriteLn('Syntax: NC [/ASCII128]');
+    WriteLn;
+    WriteLn(' /ASCII128    This parameter allows 128 characters only ',
+                           'to be launched in compatibility mode.');
+    WriteLn('--version     This parameter allows you to request the ',
+                           'version of the command');
+    Halt;
+   End;
+   Else Begin
+    WriteLn('NC : Cette commande permet de lancer le gestionnaire de fichiers.');
+    WriteLn;
+    WriteLn('Syntaxe : NC [/ASCII128]');
+    WriteLn;
+    WriteLn(' /ASCII128   Ce paramätre permet de lancer en mode compatibilite ',
+                          '128 caractäres seulement.');
+    WriteLn(' --version   Ce paramätre permet de demander la version de la commande');
+    Halt;
+   End;
+  End;
+ End
+  Else
+ If ParamStr(1)='--version'Then Begin
+  WriteLn('NC ',Version,' - Clone Pascal de Norton Commander - North Commander');
+  WriteLn('Licence MIT');
   WriteLn;
-  WriteLn('Syntaxe : NC [/ASCII128]');
-  WriteLn;
-  WriteLn(' /ASCII128   Ce parametre permet de lancer en mode compatibilite 128 caracteres seulement.');
+  WriteLn('êcrit par Sylvain Maltais');
   Halt;
- End;
- If ParamCount>0Then For I:=1 to ParamCount do Begin
-  If StrToUpper(ParamStr(I))='/ASCII128'Then ShowASCII128:=True
-   Else
-  Begin
-   WriteLn('Parametre inconnu : ',ParamStr(I));
-   Halt;
+ End
+  Else
+ If ParamCount>0Then Begin
+  For I:=1 to ParamCount do Begin
+   If StrToUpper(ParamStr(I))='/ASCII128'Then ShowASCII128:=True
+    Else
+   Begin
+    Case Language of
+     _English:WriteLn('Unknown parameter : ',ParamStr(I));
+     Else WriteLn('Paramätre inconnu : ',ParamStr(I));
+    End;
+    Halt;
+   End;
   End;
  End;
  Init;
