@@ -11,7 +11,7 @@ Program NorthCommander;
 Uses Crt,Dos;
 
 Const
- Version='1.0.1';
+ Version='1.0.2';
  MinCote=0;
  MaxCote=1;
  MaxFiles={$IFDEF FPC}4095{$ELSE}511{$ENDIF};
@@ -186,6 +186,18 @@ Begin
  DuplicateString:=S;
 End;
 
+Function Replace(Source,Old,New:String):String;
+Var
+ P:LongInt;
+Begin
+ While Pos(Old,Source)<>0 do Begin
+  P:=Pos(Old,Source);
+  Delete(Source,P,Length(Old));
+  Insert(New,Source,P);
+ End;
+ Replace:=Source;
+End;
+
 Function RTrim(s:String):String;
 Var
  i:Integer;
@@ -249,6 +261,28 @@ Begin
  Erase(F);
  {$I+}
  DeleteFile:=IoResult;
+End;
+
+Function GetCurrPath:String;Begin
+ GetCurrPath:=PanelPath[Cote];
+End;
+
+Function GetCurrName:String;
+Var
+ PathTem:String;
+Begin
+ PathTem:=PanelPath[Cote];
+ If PathTem[Length(PathTem)]<>'\'Then PathTem:=PanelPath[Cote]+'\';
+ GetCurrName:=PathTem+Trim(Path2Name(Nom[Cote,PositionX[Cote]+1])) +
+                      Path2Ext(Nom[Cote,PositionX[Cote]+1]);
+End;
+
+Function GetCurrFileName:String;Begin
+ GetCurrFileName:=Nom[Cote,PositionX[Cote]+1];
+End;
+
+Function GetCurrExt:String;Begin
+ GetCurrExt:=Path2Ext(Nom[Cote,PositionX[Cote]+1]);
 End;
 
 Procedure Box(X1,Y1,X2,Y2,Couleur:Byte);Begin
@@ -708,10 +742,10 @@ Procedure ShowPanelPath;Begin
  PanelTitlePath(Cote,True);
 End;
 
-Procedure RefreshPanel;
+Procedure RefreshPanel(Side:Byte);
 Var
  DirInfo:Text;
- I,J,ParseSide:Byte;
+ J,ParseSide:Byte;
  ChrVert:Char;
  II:Word;
  DirSize:LongInt;
@@ -719,126 +753,140 @@ Var
 Begin
  If(ShowASCII128)Then ChrVert:='|'
                  Else ChrVert:=#179;
+ If(PanelDisable[Side])Then Begin
+  Box(40*Side,0,40*Side+39,20,7);
+ End
+  Else
+ Case PanelType[Side]of
+  4:Begin
+   FrameEmpty(40*Side,0,40*Side+39,5+SideLength[Side],$1B);
+   WriteXY(40*Side+1,1,'   Nom   Ext'+ChrVert+' Taille '+ChrVert+
+         '   Date   '+ChrVert+'Heure',30);
+   If(PanelPath[Side,Length(PanelPath[Side])]<>'\')Then PathTem:=PanelPath[Side]+'\'
+                                                   Else PathTem:=PanelPath[Side];
+   ReadFiles(PathTem+'*.*',$FFFF,Side);
+   For J:=0 to SideLength[Cote] do ShowLine(J,J,Side,False,True);
+   PanelTitlePath(Side,Cote=Side);
+   If NombreFichierX[Side]<=SideLength[Side]Then Box(40*Side+1,NombreFichierX[Side]+2,40*Side+38,SideLength[Side]+2,31);
+   GotoXY(40*Side+2,21);
+   TextBackground(Blue);
+   TextColor(LightCyan);
+   If(ShowASCII128)Then Write(DuplicateString('-',38))
+    Else
+   Begin
+    Write(DuplicateString(#196,12),#193);
+    Write(DuplicateString(#196,8),#193);
+    Write(DuplicateString(#196,10),#193);
+    Write(DuplicateString(#196,5));
+   End;
+  End;
+  2:Begin
+   ParseSide:=(Side+1)and 1;
+   DirSize:=0;
+   Box(40*Side+1,0,40*Side+38,21,$1B);
+   FrameEmpty(40*Side,0,40*Side+39,22,$1B);
+   WriteXY(40*Side+6,1,'North Commander, Version '+Version,$1B);
+   WriteXY(40*Side+8,2,'Clone de Norton Commander',$1B);
+   WriteXY(40*Side+1,3,DuplicateString(#196,38),$1B);
+   GotoXY(40*Side+2,5);
+   TextColor(Yellow);
+   Write(RAMSize*1024:13);
+   TextColor(LightCyan);
+   Write(' octets de m‚moire');
+   GotoXY(40*Side+2,6);
+   TextColor(Yellow);
+   Write(640*1024:9);
+   TextColor(LightCyan);
+   Write(' octets de m‚moire de libre');
+   GotoXY(40*Side+2,7);
+   TextColor(Yellow);
+   Write(DiskSize(Ord(PanelPath[ParseSide,1])-64));
+   TextColor(LightCyan);
+   Write(' octets total sur le disque ');
+   TextColor(Yellow);
+   Write(PanelPath[ParseSide,1],':');
+   GotoXY(40*Side+2,8);
+   Write(DiskFree(Ord(PanelPath[ParseSide,1])-64));
+   TextColor(LightCyan);
+   Write(' octets libre sur le disque ');
+   TextColor(Yellow);
+   Write(PanelPath[ParseSide,1],':');
+   GotoXY(40*Side+2,9);
+   Write(NombreFichierX[ParseSide]);
+   TextColor(LightCyan);
+   Write(' fichiers utilisant ');
+   TextColor(Yellow);
+   For II:=0 to NombreFichierX[ParseSide]-1 do Begin
+    Inc(DirSize,Taille[ParseSide,II]);
+   End;
+   Write(DirSize);
+   TextColor(LightCyan);
+   Write(' octets dans ');
+   GotoXY(40*Side+2,10);
+   If Length(PanelPath[ParseSide])<38 Then Write(' ':(38-Length(PanelPath[ParseSide]))shr 1);
+   Write(PanelPath[ParseSide]);
+   GotoXY(40*Side+2,11);
+   Write(DuplicateString(#196,38));
+   GotoXY(40*Side+2,12);
+   TextColor(LightCyan);
+   Write('tiquette de volume : ');
+   TextColor(Yellow);
+   Write(Volume(PanelPath[ParseSide,1]));
+   TextColor(LightCyan);
+   GotoXY(40*Side+2,13);
+   Write(DuplicateString(#196,38));
+   DirInfoName:=PanelPath[ParseSide];
+   If DirInfoName<>''Then Begin
+    If DirInfoName[Length(DirInfoName)]<>'\'Then DirInfoName:=DirInfoName+'\';
+   End;
+   DirInfoName:=DirInfoName+'DIRINFO';
+   {$I-}Assign(DirInfo,DirInfoName);
+   Reset(DirInfo);{$I+}
+   If IOResult=0 Then Begin
+    II:=0;
+    While Not EOF(DirInfo)do Begin
+     ReadLn(DirInfo,CurrLine);
+     GotoXY(40*I+2,14+II);
+     Write(Copy(CurrLine,1,38));
+     Inc(II);
+     If II>9 Then Break;
+    End;
+    Close(DirInfo);
+   End
+    Else
+   Begin
+    GotoXY(40*Side+4,15);
+    Case Language of
+     _English:Begin
+      Write('No ''dirinfo'' file in this directory');
+     End;
+     Else Begin
+      Write('Aucun fichier ''dirinfo'' dans ');
+      GotoXY(40*Side+4,16);
+      Write('ce r‚pertoire');
+     End;
+    End;
+   End;
+  End;
+ End;
+End;
+
+Procedure RefreshPanels;
+Var
+ I:Byte;
+Begin
  For I:=0 to 1 do Begin
   If(PanelDisable[I])Then Begin
    Box(40*I,0,40*I+39,20,7);
   End
    Else
   Case PanelType[I]of
-   4:Begin
-    FrameEmpty(40*I,0,40*I+39,5+SideLength[I],$1B);
-    WriteXY(40*I+1,1,'   Nom   Ext'+ChrVert+' Taille '+ChrVert+
-          '   Date   '+ChrVert+'Heure',30);
-    If(PanelPath[I,Length(PanelPath[I])]<>'\')Then PathTem:=PanelPath[I]+'\'
-                                              Else PathTem:=PanelPath[I];
-    ReadFiles(PathTem+'*.*',$FFFF,I);
-    For J:=0 to SideLength[Cote] do ShowLine(J,J,I,False,True);
-    PanelTitlePath(I,Cote=I);
-    If NombreFichierX[I]<=SideLength[I]Then Box(40*I+1,NombreFichierX[I]+2,40*I+38,SideLength[I]+2,31);
-    GotoXY(40*I+2,21);
-    TextBackground(Blue);
-    TextColor(LightCyan);
-    If(ShowASCII128)Then Write(DuplicateString('-',38))
-     Else
-    Begin
-     Write(DuplicateString(#196,12),#193);
-     Write(DuplicateString(#196,8),#193);
-     Write(DuplicateString(#196,10),#193);
-     Write(DuplicateString(#196,5));
-    End;
-   End;
+   4:RefreshPanel(I);
   End;
  End;
  For I:=0 to 1 do Begin
   Case PanelType[I]of
-   2:Begin
-    ParseSide:=(I+1)and 1;
-    DirSize:=0;
-    Box(40*I+1,0,40*I+38,21,$1B);
-    FrameEmpty(40*I,0,40*I+39,22,$1B);
-    WriteXY(40*I+6,1,'North Commander, Version '+Version,$1B);
-    WriteXY(40*I+8,2,'Clone de Norton Commander',$1B);
-    WriteXY(40*I+1,3,DuplicateString(#196,38),$1B);
-    GotoXY(40*I+2,5);
-    TextColor(Yellow);
-    Write(RAMSize*1024:13);
-    TextColor(LightCyan);
-    Write(' octets de m‚moire');
-    GotoXY(40*I+2,6);
-    TextColor(Yellow);
-    Write(640*1024:9);
-    TextColor(LightCyan);
-    Write(' octets de m‚moire de libre');
-    GotoXY(40*I+2,7);
-    TextColor(Yellow);
-    Write(DiskSize(Ord(PanelPath[ParseSide,1])-64));
-    TextColor(LightCyan);
-    Write(' octets total sur le disque ');
-    TextColor(Yellow);
-    Write(PanelPath[ParseSide,1],':');
-    GotoXY(40*I+2,8);
-    Write(DiskFree(Ord(PanelPath[ParseSide,1])-64));
-    TextColor(LightCyan);
-    Write(' octets libre sur le disque ');
-    TextColor(Yellow);
-    Write(PanelPath[ParseSide,1],':');
-    GotoXY(40*I+2,9);
-    Write(NombreFichierX[ParseSide]);
-    TextColor(LightCyan);
-    Write(' fichiers utilisant ');
-    TextColor(Yellow);
-    For II:=0 to NombreFichierX[ParseSide]-1 do Begin
-     Inc(DirSize,Taille[ParseSide,II]);
-    End;
-    Write(DirSize);
-    TextColor(LightCyan);
-    Write(' octets dans ');
-    GotoXY(40*I+2,10);
-    If Length(PanelPath[ParseSide])<38 Then Write(' ':(38-Length(PanelPath[ParseSide]))shr 1);
-    Write(PanelPath[ParseSide]);
-    GotoXY(40*I+2,11);
-    Write(DuplicateString(#196,38));
-    GotoXY(40*I+2,12);
-    TextColor(LightCyan);
-    Write('tiquette de volume : ');
-    TextColor(Yellow);
-    Write(Volume(PanelPath[ParseSide,1]));
-    TextColor(LightCyan);
-    GotoXY(40*I+2,13);
-    Write(DuplicateString(#196,38));
-    DirInfoName:=PanelPath[ParseSide];
-    If DirInfoName<>''Then Begin
-     If DirInfoName[Length(DirInfoName)]<>'\'Then DirInfoName:=DirInfoName+'\';
-    End;
-    DirInfoName:=DirInfoName+'DIRINFO';
-    {$I-}Assign(DirInfo,DirInfoName);
-    Reset(DirInfo);{$I+}
-    If IOResult=0 Then Begin
-     II:=0;
-     While Not EOF(DirInfo)do Begin
-      ReadLn(DirInfo,CurrLine);
-      GotoXY(40*I+2,14+II);
-      Write(Copy(CurrLine,1,38));
-      Inc(II);
-      If II>9 Then Break;
-     End;
-     Close(DirInfo);
-    End
-     Else
-    Begin
-     GotoXY(40*I+4,15);
-     Case Language of
-      _English:Begin
-       Write('No ''dirinfo'' file in this directory');
-      End;
-      Else Begin
-       Write('Aucun fichier ''dirinfo'' dans ');
-       GotoXY(40*I+4,16);
-       Write('ce r‚pertoire');
-      End;
-     End;
-    End;
-   End;
+   2:RefreshPanel(I);
   End;
  End;
 End;
@@ -902,7 +950,7 @@ Procedure Refresh;
 Var
  I:Byte;
 Begin
- RefreshPanel;
+ RefreshPanels;
  For I:=0 to 1 do ShowPanelStatusBar(I);
  Nombre[0]:=0;
  Nombre[1]:=0;
@@ -990,16 +1038,6 @@ Begin
  Until OK=1;
  CursorOn;
  Refresh;
-End;
-
-Function GetCurrName:String;
-Var
- PathTem:String;
-Begin
- PathTem:=PanelPath[Cote];
- If PathTem[Length(PathTem)]<>'\'Then PathTem:=PanelPath[Cote]+'\';
- GetCurrName:=PathTem+Trim(Path2Name(Nom[Cote,PositionX[Cote]+1])) +
-                      Path2Ext(Nom[Cote,PositionX[Cote]+1]);
 End;
 
 Procedure DialogNotImplement;Begin
@@ -1439,7 +1477,7 @@ Begin
  If(Nombre[Cote]=0)And(Attribt[Cote,PositionX[Cote]+1]<16)Then Begin
   Box(11,12,68,14,$4F);
   FrameEmpty(10,11,69,15,$4F);
-  WriteCenter(12,'Es-tu certain de vouloir effacer :',$4F);
+  WriteCenter(12,'Etes-vous certain de vouloir effacer :',$4F);
   WriteCenter(13,Nom[Cote,PositionX[Cote]+1],$4F);
   WriteCenter(14,'Presse <ESC> pour retourner',$4E);
   Repeat
@@ -1479,6 +1517,10 @@ Begin
   End;
  End;
  Refresh;
+End;
+
+Procedure RereadPanel;Begin
+ RefreshPanel(Cote);
 End;
 
 Procedure SwapPanels;
@@ -1596,16 +1638,46 @@ Begin
  If Touche='N'Then Done;
 End;
 
+Function GetCmdByExt(FileName:String;Var Cmd:String):Boolean;
+Var
+ NcExtFile:Text;
+ I:Integer;
+ Ext,CurrLine,CurrExt:String;
+Begin
+ GetCmdByExt:=False;
+ Ext:=StrToUpper(Path2Ext(FileName));
+ {$I-}Assign(NcExtFile,'NC.EXT');
+ Reset(NcExtFile);{$I+}
+ If IOResult=0 Then Begin
+  While Not EOF(NcExtFile)do Begin
+   ReadLn(NcExtFile,CurrLine);
+   CurrExt:='.';
+   For I:=1 to Length(CurrLine)do Begin
+    If CurrLine[I]=':'Then Break
+                      Else CurrExt:=CurrExt+CurrLine[I];
+   End;
+   If(StrToUpper(CurrExt)=Ext)Then Begin
+    Cmd:=Trim(Copy(CurrLine,I+1,255));
+    Cmd:=Replace(Cmd,'!.!',FileName);
+    Cmd:=Replace(Cmd,'.!',Ext);
+    GetCmdByExt:=True;
+   End;
+  End;
+  Close(NcExtFile);
+ End;
+End;
+
 Procedure EnterExecute;
 Label 90;
 Var
  Touche:Char;
  I:Integer;
+ Cmd:String;
 Begin
  TextColor(7);
  TextBackGround(0);
  If CurrCommand<>''Then Begin
-  PathTem := PanelPath[Cote];
+  PathTem:=PanelPath[Cote];
   If PanelPath[Cote,Length(PanelPath[Cote])]<>'\'Then PathTem:=PanelPath[Cote]+'\';
   Dec(YP);
   GotoXY(1,1+YP);
@@ -1694,14 +1766,12 @@ Begin
      WriteLn;
      If(DosError>0)Then Write('Erreur ',DosError:4,' : ');
      Case DosError of
-      $00 : Begin
-    	     Case DosExitCode of
-	      0 : Write('Operation Reussit');
-	      1 : Write('Interrompu par Ctrl+C');
-	      2 : Write('Erreur de P‚riph‚rique');
-	      3 : Write('Terminaison en mode r‚sidant');
-	     End;
-	    End;
+      $00:Case DosExitCode of
+       0 : Write('Operation Reussit');
+       1 : Write('Interrompu par Ctrl+C');
+       2 : Write('Erreur de P‚riph‚rique');
+       3 : Write('Terminaison en mode r‚sidant');
+      End;
       $02 : WriteLn('Fichier non-trouv‚');
       $08 : WriteLn('Pas assez de m‚moire');
       $0A : WriteLn('Environnement invalide');
@@ -1715,14 +1785,18 @@ Begin
       WriteLn('Erreur : Inconnue');
      End;
     End
-     else
+     Else
+    If GetCmdByExt(GetCurrName,Cmd)Then Begin
+     Exec(GetEnv('COMSPEC'),'/C '+Cmd);
+    End
+     Else
     WriteLn('Erreur : Extension incorrect');
 90 :WriteLn;
     WriteLn('Presse une touche pour retourner au North Commander...');
     {    XP:=WhereX;
     YP:=WhereY;}
     Touche:=ReadKey;
-    If(KeyPressed)Then Touche := ReadKey;
+    If(KeyPressed)Then Touche:=ReadKey;
     Touche:=#00;
     TextMode(C80);
     ShowKeyFunc;
@@ -1793,12 +1867,12 @@ End;
 Procedure ToggleStatusPanel;Begin
  If PanelType[Cote xor 1]=4 Then PanelType[Cote xor 1]:=2
                             Else PanelType[Cote xor 1]:=4;
- RefreshPanel;
+ RefreshPanels;
 End;
 
 Procedure ToggleInactivePanel;Begin
  PanelDisable[Cote xor 1]:=Not PanelDisable[Cote xor 1];
- RefreshPanel;
+ RefreshPanels;
 End;
 
 Procedure TogglePanel;Begin
@@ -1811,7 +1885,7 @@ Procedure TogglePanel;Begin
   PanelDisable[Cote]:=False;
   PanelDisable[Cote xor 1]:=False;
  End;
- RefreshPanel;
+ RefreshPanels;
 End;
 
 Procedure AffichageMenu(Position:Byte);
@@ -1948,7 +2022,7 @@ Begin
     SelectItemMenu(PosMenu,PosItem);
    End;
    #75,#115:Begin
-    RefreshPanel;
+    RefreshPanels;
     ShowPullDnMenu;
     WriteChoice(2+PosMenu*10,0,MainMenuChoice[PosMenu],62,48);
     If PosMenu=0Then PosMenu:=High(MainMenuChoice)
@@ -1959,7 +2033,7 @@ Begin
     SelectItemMenu(PosMenu,PosItem);
    End;
    #77,#116:Begin
-    RefreshPanel;
+    RefreshPanels;
     ShowPullDnMenu;
     WriteChoice(2+PosMenu*10,0,MainMenuChoice[PosMenu],62,48);
     PosMenu:=(PosMenu+1) mod 5;
@@ -1975,7 +2049,7 @@ Begin
    End;
   End;
  Until K=#27;
- RefreshPanel;
+ RefreshPanels;
 End;
 
 Procedure UnselectFileBar;Begin
@@ -2107,6 +2181,7 @@ Begin
    ^M:EnterExecute;
    ^O:TogglePanel;
    ^P:ToggleInactivePanel;
+   ^R:RereadPanel;
    ^U:SwapPanels;
    #27:CertainQuitter;
   End;
