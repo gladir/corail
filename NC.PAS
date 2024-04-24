@@ -11,10 +11,11 @@ Program NorthCommander;
 Uses Crt,Dos;
 
 Const
- Version='1.0.2';
+ Version='1.0.3';
  MinCote=0;
  MaxCote=1;
  MaxFiles={$IFDEF FPC}4095{$ELSE}511{$ENDIF};
+ MaxHistory=100;
 
  PanelHeightSize=17;
  LengthMenu:Array[0..4] of Byte = (9,16,26,30,9);
@@ -93,6 +94,7 @@ Type
  String64=String[64];
  Binaire=0..1;
  StrName=String[12];
+ StrPointer=^String;
 
 Var
  Language:(_Albanian,_French,_English,_Germany,_Italian,_Spain);
@@ -111,6 +113,7 @@ Var
  PositionCur:0..79;
  XP,YP,Xa,Ya,PosMenu,Cote,Vg,Menu:Byte;
  PositionBar:0..PanelHeightSize;
+ Terminated:Boolean;
  KeyBar:Boolean;
  CurrCommand:PathStr;
  Date_Time:DateTime;
@@ -118,15 +121,15 @@ Var
  Numerique:Word;
  XS,YS:Word;
  BS:Word;
-
-Var
- Nom              : Array[MinCote..MaxCote,0..MaxFiles] of StrName;
- Temps            : Array[MinCote..MaxCote,0..MaxFiles] of LongInt;
- Taille           : Array[MinCote..MaxCote,0..MaxFiles] of LongInt;
- Attribt          : Array[MinCote..MaxCote,0..MaxFiles] of Byte;
- Accepte          : Array[MinCote..MaxCote,0..MaxFiles] of 0..1;
- NombreFichierX   : Array[MinCote..MaxCote] of 0..MaxFiles;
- TypeTri          : Array[MinCote..MaxCote] of 0..4;
+ History:Array[1..MaxHistory] of StrPointer;
+ NumberHistory,CurrHistory:Integer;
+ Nom:Array[MinCote..MaxCote,0..MaxFiles] of StrName;
+ Temps:Array[MinCote..MaxCote,0..MaxFiles] of LongInt;
+ Taille:Array[MinCote..MaxCote,0..MaxFiles] of LongInt;
+ Attribt:Array[MinCote..MaxCote,0..MaxFiles] of Byte;
+ Accepte:Array[MinCote..MaxCote,0..MaxFiles] of 0..1;
+ NombreFichierX:Array[MinCote..MaxCote] of 0..MaxFiles;
+ TypeTri:Array[MinCote..MaxCote] of 0..4;
 
 {$IFNDEF FPC}
  Procedure CursorOff;
@@ -283,6 +286,39 @@ End;
 
 Function GetCurrExt:String;Begin
  GetCurrExt:=Path2Ext(Nom[Cote,PositionX[Cote]+1]);
+End;
+
+Function AddHistory(S:String):Boolean;
+Var
+ I:Word;
+ P:StrPointer;
+Begin
+ If NumberHistory>=MaxHistory Then Begin
+  FreeMem(History[1],Length(History[1]^)+1);
+  For I:=1 to MaxHistory-1 do History[I]:=History[I+1];
+  GetMem(P,Length(S)+1);
+  P^:=S;
+  History[MaxHistory]:=P;
+  AddHistory:=True;
+  Exit;
+ End
+  Else
+ Begin
+  Inc(NumberHistory);
+  GetMem(P,Length(S)+1);
+  P^:=S;
+  History[NumberHistory]:=P;
+  AddHistory:=True;
+ End;
+End;
+
+Procedure FreeHistory;
+Var
+ I:Word;
+Begin
+ For I:=1 to NumberHistory do FreeMem(History[I],Length(History[I]^)+1);
+ FillChar(History,SizeOf(History),0);
+ NumberHistory:=0;
 End;
 
 Procedure Box(X1,Y1,X2,Y2,Couleur:Byte);Begin
@@ -877,7 +913,7 @@ Var
 Begin
  For I:=0 to 1 do Begin
   If(PanelDisable[I])Then Begin
-   Box(40*I,0,40*I+39,20,7);
+   Box(40*I,0,40*I+39,22,7);
   End
    Else
   Case PanelType[I]of
@@ -885,7 +921,7 @@ Begin
   End;
  End;
  For I:=0 to 1 do Begin
-  Case PanelType[I]of
+  If Not(PanelDisable[I])Then Case PanelType[I]of
    2:RefreshPanel(I);
   End;
  End;
@@ -1545,11 +1581,12 @@ Procedure Done;Begin
  Halt;
 End;
 
-Procedure CertainQuitter;
+Function CertainQuitter:Boolean;
 Var
  Touche:Char;
  Quitte:Boolean;
 Begin
+ CertainQuitter:=False;
  CursorOff;
  FrameFull(10,9,70,16,$70);
  WriteCenter(12,'Etes-vous certain de vouloir quitter ?',$70);
@@ -1561,7 +1598,7 @@ Begin
                                     Else Quitte:=False;
  If(KeyPressed)Then Touche:=ReadKey;
  CursorOn;
- If(Quitte)Then Done
+ If(Quitte)Then CertainQuitter:=True
            Else Refresh;
 End;
 
@@ -1677,6 +1714,8 @@ Begin
  TextColor(7);
  TextBackGround(0);
  If CurrCommand<>''Then Begin
+  AddHistory(CurrCommand);
+  CurrHistory:=NumberHistory;
   PathTem:=PanelPath[Cote];
   If PanelPath[Cote,Length(PanelPath[Cote])]<>'\'Then PathTem:=PanelPath[Cote]+'\';
   Dec(YP);
@@ -1809,6 +1848,9 @@ Begin
 End;
 
 Procedure Init;Begin
+ FillChar(History,SizeOf(History),0);
+ NumberHistory:=0;
+ CurrHistory:=0;
  DoubleFrame:=True;
  TextMode(C80);
  If(WhereX>1)Then WriteLn;
@@ -1979,8 +2021,8 @@ Begin
        5:RenMovFunc;
        6:MkDirFunc;
        7:DeleteFunc;
-       8..10:DialogNotImplement;
-       11:CertainQuitter;
+       8..12:DialogNotImplement;
+       13:If(CertainQuitter)Then Terminated:=True;
       End;
       Break;
      End;
@@ -2053,13 +2095,23 @@ Begin
 End;
 
 Procedure UnselectFileBar;Begin
+ If(PanelDisable[Cote])Then Exit;
  ShowLine(YPos[Cote],PositionX[Cote],Cote,False,True);
 End;
 
 Procedure SelectFileBar;Begin
+ If(PanelDisable[Cote])Then Exit;
  ShowLine(YPos[Cote],PositionX[Cote],Cote,True,True);
  GotoXY(Length(PanelPath[Cote])+1+PositionCur+1,23+1);
  ShowPanelStatusBar(Cote);
+End;
+
+Procedure ShowCommand;Begin
+ GotoXY(Length(PanelPath[Cote])+2,23+1);
+ TextBackground(Black);
+ TextColor(LightGray);
+ Write(CurrCommand);
+ ClrEol;
 End;
 
 Procedure Run;
@@ -2067,6 +2119,7 @@ Label 20;
 Var
  K:Char;
 Begin
+ Terminated:=False;
  Repeat
   If(Menu=0)and(PanelType[Cote]=4)Then SelectFileBar;
   GotoXY(Length(PanelPath[Cote])+1+PositionCur+1,23+1);
@@ -2083,13 +2136,16 @@ Begin
     #65:MkDirFunc;  { F7 }
     #66:DeleteFunc; { F8 }
     #67:PullDnMenu; { F9 }
+    #68:Begin
+     If(CertainQuitter)Then Terminated:=True;
+    End;
     #71:If(PanelType[Cote]=4)Then Begin { Home }
      PositionX[Cote]:=0;
      YPos[Cote]:=0;
      UpdateBoard;
      SelectFileBar;
     End;
-    #72:Begin { Up }
+    #72:If Not(PanelDisable[Cote])Then Begin { Up }
      If(PanelType[Cote]=4)Then Begin
       If(PositionX[Cote]>0)Then Begin
        UnselectFileBar;
@@ -2122,8 +2178,8 @@ Begin
      End;
      UpdateBoard;
      SelectFileBar;
-    End; { Down }
-    #80:Begin
+    End;
+    #80:If Not(PanelDisable[Cote])Then Begin { Down }
      If PanelType[Cote]=4 Then Begin
 20:   If(PositionX[Cote]<NombreFichierX[Cote]-1)Then Begin
        UnselectFileBar;
@@ -2165,36 +2221,59 @@ Begin
      ChangeDrive(1);
     End;
    End;
-   If(K=#68)Then K:=#27
-            Else K:=#00;
-  End;
-  Case K of
-   #9:If(PanelType[Cote xor 1]=4)and(Not PanelDisable[Cote xor 1])Then Begin
-    UnselectFileBar;
-    UnshowPanelPath;
-    Cote:=Cote xor 1;
-    SelectFileBar;
-    ShowPanelPath;
+  End
+   Else
+  Begin
+   Case K of
+    #8:Begin
+     If Length(CurrCommand)>0 Then Begin
+      Delete(CurrCommand,Length(CurrCommand),1);
+      Dec(PositionCur);
+     End;
+     ShowCommand;
+    End;
+    #9:If(PanelType[Cote xor 1]=4)and(Not PanelDisable[Cote xor 1])Then Begin
+     UnselectFileBar;
+     UnshowPanelPath;
+     Cote:=Cote xor 1;
+     SelectFileBar;
+     ShowPanelPath;
+    End;
+    ^B:ToggleFunctionKeyBar;
+    ^E:If NumberHistory>0 Then Begin
+     CurrCommand:=History[CurrHistory]^;
+     If CurrHistory>1 Then Dec(CurrHistory);
+     ShowCommand;
+     PositionCur:=Length(CurrCommand);
+    End;
+    ^L:ToggleStatusPanel;
+    ^M:EnterExecute;
+    ^O:TogglePanel;
+    ^P:ToggleInactivePanel;
+    ^R:RereadPanel;
+    ^U:SwapPanels;
+    ^X:If NumberHistory>0 Then Begin
+     CurrCommand:=History[CurrHistory]^;
+     If CurrHistory<NumberHistory Then Inc(CurrHistory);
+     ShowCommand;
+     PositionCur:=Length(CurrCommand);
+    End;
+    ^Y,#27:Begin { Ctrl+Y ou Esc }
+     CurrCommand:='';
+     PositionCur:=0;
+     ShowCommand;
+     End;
    End;
-   ^B:ToggleFunctionKeyBar;
-   ^L:ToggleStatusPanel;
-   ^M:EnterExecute;
-   ^O:TogglePanel;
-   ^P:ToggleInactivePanel;
-   ^R:RereadPanel;
-   ^U:SwapPanels;
-   #27:CertainQuitter;
+   If(K>#31)And(PositionCur<79)Then Begin
+    CurrCommand:=CurrCommand+K;
+    GotoXY(Length(PanelPath[Cote])+1+PositionCur+1,23+1);
+    TextBackground(Black);
+    TextColor(LightGray);
+    Write(K);
+    Inc(PositionCur);
+   End;
   End;
-  If(K>#31)And(PositionCur<79)Then Begin
-   K:=UpCase(K);
-   CurrCommand:=CurrCommand+K;
-   GotoXY(Length(PanelPath[Cote])+1+PositionCur+1,23+1);
-   TextBackground(Black);
-   TextColor(LightGray);
-   Write(K);
-   Inc(PositionCur);
-  End;
- Until K=#27;
+ Until Terminated;
 End;
 
 BEGIN
