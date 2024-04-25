@@ -11,7 +11,7 @@ Program NorthCommander;
 Uses Crt,Dos;
 
 Const
- Version='1.0.5';
+ Version='1.0.6';
  MinCote=0;
  MaxCote=1;
  MaxFiles={$IFDEF FPC}4095{$ELSE}511{$ENDIF};
@@ -1024,6 +1024,10 @@ Begin
      WriteXY(40*Side+2,2,'    Name    '+ChrVert+'  Size  '+ChrVert+
                          '   Date   '+ChrVert+' Time',30);
     End;
+    _Germany:Begin
+     WriteXY(40*Side+2,2,'    Name    '+ChrVert+'  Grî·e '+ChrVert+
+                         '   Datum  '+ChrVert+' Zeit',30);
+    End;
     Else Begin
      WriteXY(40*Side+2,2,'   Nom   Ext'+ChrVert+' Taille '+ChrVert+
                          '   Date   '+ChrVert+'Heure',30);
@@ -1166,6 +1170,9 @@ Const
  FunctionKeyValueEnglish:Array[0..9]of String[7]=(
   'Help','Menu','View','Edit','Copy','RenMov','Mkdir','Delete','PullDn','Quit'
  );
+ FunctionKeyValueGerman:Array[0..9]of String[7]=(
+  'Hilfe','MenÅ','Anz.','Bearb.','Kopie','UmbBew','MkDir','Lôsche','Funkt.','Quit'
+ );
 Var
  I:Byte;
 Begin
@@ -1183,6 +1190,7 @@ Begin
   GotoXY(I*8+2,25);
   Case Language of
    _English:Write(PadRight(FunctionKeyValueEnglish[I],6));
+   _Germany:Write(PadRight(FunctionKeyValueGerman[I],6));
    Else Write(PadRight(FunctionKeyValue[I],6));
   End;
  End;
@@ -1195,6 +1203,7 @@ Begin
  GotoXY(74,25);
  Case Language of
   _English:Write(FunctionKeyValueEnglish[9]);
+  _Germany:Write(FunctionKeyValueGerman[9]);
   Else Write(FunctionKeyValue[9]);
  End;
  ClrEol;
@@ -1654,12 +1663,14 @@ Begin
  S:='';
  FrameFull(3,6,76,11,$70);
  Case Language of
-  _English:WriteCenter(7,'Make directory',$70);
-  Else WriteCenter(7,'CrÇation d''un rÇpertoire',$70);
+  _English:WriteCenter(7,' Make directory ',$70);
+  _Germany:WriteCenter(7,' Verzeichnis erstellen ',$70);
+  Else WriteCenter(7,' CrÇation d''un rÇpertoire ',$70);
  End;
  GotoXY(7,8);
  Case Language of
   _English:Write('Create the directory');
+  _Germany:Write('Erstellen des Verzeichnisses');
   Else Write('CrÇer le rÇpertoire');
  End;
  TextColor(Black);
@@ -1696,11 +1707,27 @@ Begin
  Changement:=0;
  If(Nombre[Cote]=0)And(Attribt[Cote,PositionX[Cote]+1] = 16)Then Begin
   FrameFull(10,11,70,17,$70);
-  WriteCenter(12,' Efface ',$70);
-  WriteCenter(13,'Etes-vous certain de vouloir effacer le rÇpertoire',$70);
+  Case Language of
+   _English:Begin
+    WriteCenter(12,' Delete ',$70);
+    WriteCenter(13,'Do you wish to delete the directory',$70);
+   End;
+   _Germany:Begin
+    WriteCenter(12,' Lîschen ',$70);
+    WriteCenter(13,'Wollen Sie das Verzeichnis lîschen:',$70);
+   End;
+   Else Begin
+    WriteCenter(12,' Efface ',$70);
+    WriteCenter(13,'Etes-vous certain de vouloir effacer le rÇpertoire',$70);
+   End;
+  End;
   WriteCenter(14,'"'+GetCurrFileName+'"',$70);
   Repeat
-   K:=ReadHorizontalCenterButton(15,'Supprimer|Annuler');
+   Case Language of
+    _English:K:=ReadHorizontalCenterButton(15,'Delete|Cancel');
+    _Germany:K:=ReadHorizontalCenterButton(15,'Lîschen|Abbrechen');
+    Else K:=ReadHorizontalCenterButton(15,'Supprimer|Annuler');
+   End;
    If K=kbEsc Then K:=1;
   Until K<=1;
   If K=0 Then Begin
@@ -1712,11 +1739,27 @@ Begin
   Else
  If(Nombre[Cote]=0)And(Attribt[Cote,PositionX[Cote]+1]<16)Then Begin
   FrameFull(15,11,65,17,$70);
-  WriteCenter(12,' Efface ',$70);
-  WriteCenter(13,'Etes-vous certain de vouloir effacer',$70);
+  Case Language of
+   _English:Begin
+    WriteCenter(12,' Delete ',$70);
+    WriteCenter(13,'Do you wish to delete',$70);
+   End;
+   _Germany:Begin
+    WriteCenter(12,' Lîschen ',$70);
+    WriteCenter(13,'Wollen Sie lîschen?',$70);
+   End;
+   Else Begin
+    WriteCenter(12,' Efface ',$70);
+    WriteCenter(13,'Etes-vous certain de vouloir effacer',$70);
+   End;
+  End;
   WriteCenter(14,GetCurrFileName,$70);
   Repeat
-   K:=ReadHorizontalCenterButton(15,'Supprimer|Annuler');
+   Case Language of
+    _English:K:=ReadHorizontalCenterButton(15,'Delete|Cancel');
+    _Germany:K:=ReadHorizontalCenterButton(15,'Lîschen|Abbrechen');
+    Else K:=ReadHorizontalCenterButton(15,'Supprimer|Annuler');
+   End;
    If K=kbEsc Then K:=1;
   Until K<=1;
   If K=0 Then Begin
@@ -1727,10 +1770,26 @@ Begin
  Begin
   FrameFull(10,11,70,16,$70);
   Str(Nombre[Cote],PathTem);
-  WriteCenter(12,' Efface ',$70);
-  WriteCenter(13,'Etes-vous certain de vouloir effacer '+PathTem+' fichier(s)',$70);
+  Case Language of
+   _English:Begin
+    WriteCenter(12,' Delete ',$70);
+    WriteCenter(13,'You have selected '+PathTem+' files.',$70);
+   End;
+   _Germany:Begin
+    WriteCenter(12,' Lîschen ',$70);
+    WriteCenter(13,'Sie haben '+PathTem+' Dateien ausgewÑhlt.',$70);
+   End;
+   Else Begin
+    WriteCenter(12,' Efface ',$70);
+    WriteCenter(13,'Etes-vous certain de vouloir effacer '+PathTem+' fichier(s)',$70);
+   End;
+  End;
   Repeat
-   K:=ReadHorizontalCenterButton(14,'Supprimer|Annuler');
+   Case Language of
+    _English:K:=ReadHorizontalCenterButton(14,'Delete|Cancel');
+    _Germany:K:=ReadHorizontalCenterButton(14,'Lîschen|Abbrechen');
+    Else K:=ReadHorizontalCenterButton(14,'Supprimer|Annuler');
+   End;
    If K=kbEsc Then K:=1;
   Until K<=1;
   If K=0 Then Begin
@@ -1748,6 +1807,30 @@ Begin
   End;
  End;
  Refresh;
+End;
+
+Function CertainQuitter:Boolean;
+Var
+ K:Word;
+Begin
+ CertainQuitter:=False;
+ FrameFull(11,10,71,15,$70);
+ WriteCenter(11,' Le North Commander ',$70);
+ Case Language of
+  _English:WriteCenter(12,'Do you want to quit the North Commander?',$70);
+  _Germany:WriteCenter(12,'Wollen Sie den North Commander beenden?',$70);
+  Else WriteCenter(12,'Etes-vous certain de vouloir quitter ?',$70);
+ End;
+ Repeat
+  Case Language of
+   _English:K:=ReadHorizontalCenterButton(13,'Yes|No');
+   _Germany:K:=ReadHorizontalCenterButton(13,'Ja|Nein');
+   Else K:=ReadHorizontalCenterButton(13,'Oui|Non');
+  End;
+  If(K=kbEsc)Then K:=1;
+ Until K<2;
+ If K=0 Then CertainQuitter:=True
+        Else Refresh;
 End;
 
 Procedure RereadPanel;Begin
@@ -1774,24 +1857,6 @@ Procedure Done;Begin
  TextBackground(Black);
  ClrScr;
  Halt;
-End;
-
-Function CertainQuitter:Boolean;
-Var
- Touche:Char;
-{ Quitte:Boolean;}
- K:Word;
-Begin
- CertainQuitter:=False;
- FrameFull(11,10,71,15,$70);
- WriteCenter(11,' Le North Commander ',$70);
- WriteCenter(12,'Etes-vous certain de vouloir quitter ?',$70);
- Repeat
-  K:=ReadHorizontalCenterButton(13,'Oui|Non');
-  If(K=kbEsc)Then K:=1;
- Until K<2;
- If K=0 Then CertainQuitter:=True
-        Else Refresh;
 End;
 
 Procedure CopyFile(Source,Target:String);
@@ -2166,6 +2231,113 @@ Begin
  For I:=0 to High(MainMenuChoice) do WriteChoice(3+I*10,1,MainMenuChoice[I],62,48);
 End;
 
+Procedure UnselectFileBar;Begin
+ If(PanelDisable[Cote])Then Exit;
+ ShowLine(YPos[Cote],PositionX[Cote],Cote,False,True);
+End;
+
+Procedure SelectFileBar;Begin
+ If(PanelDisable[Cote])Then Exit;
+ ShowLine(YPos[Cote],PositionX[Cote],Cote,True,True);
+ GotoXY(Length(PanelPath[Cote])+1+PositionCur+1,23+1);
+ ShowPanelStatusBar(Cote);
+End;
+
+Procedure ShowCommand;Begin
+ GotoXY(Length(PanelPath[Cote])+2,23+1);
+ TextBackground(Black);
+ TextColor(LightGray);
+ Write(CurrCommand);
+ ClrEol;
+End;
+
+Function DialogHistory:String;
+Var
+ K:Char;
+ I:Byte;
+ P,Y:LongInt;
+
+ Procedure ShowItem;Begin
+  TextColor(7);
+  TextBackground(Black);
+  GotoXY(24,4+Y);
+  Write(PadRight(Copy(History[P]^,1,34),34));
+  GotoXY(24,4+Y);
+ End;
+
+ Procedure HideItem;Begin
+  TextColor(0);
+  TextBackground(Cyan);
+  GotoXY(24,4+Y);
+  Write(PadRight(Copy(History[P]^,1,34),34));
+ End;
+
+ Procedure RefreshList;
+ Var
+  J:Byte;
+ Begin
+  TextColor(0);
+  TextBackground(Cyan);
+  For J:=1 to 19 do Begin
+   GotoXY(24,3+J);
+   Write(PadRight(Copy(History[P-Y+J-1]^,1,34),34));
+  End;
+ End;
+
+Begin
+ P:=1;Y:=0;
+ DialogHistory:='';
+ If NumberHistory<20 Then Begin
+  Box(19,2,61,NumberHistory+5,$3F);
+  FrameEmpty(22,3,58,NumberHistory+4,$3F);
+ End
+  Else
+ Begin
+  Box(19,2,61,23,$3F);
+  FrameEmpty(22,3,58,22,$3F);
+ End;
+ Case Language of
+  _English:WriteCenter(3,' History ',$3F);
+  Else WriteCenter(3,' Historique ',$3F);
+ End;
+ For I:=1 to NumberHistory do Begin
+  If I>=20 Then Break;
+  GotoXY(24,3+I);
+  Write(History[I]^);
+ End;
+ ShowItem;
+ Repeat
+  K:=ReadKey;
+  Case K of
+   #0:Case ReadKey of
+    #72:If P>1 Then Begin { Up }
+     HideItem;
+     Dec(P);
+     If Y>0 Then Dec(Y)
+            Else RefreshList;
+     ShowItem;
+    End;
+    #80:If P<NumberHistory Then Begin { Down }
+     HideItem;
+     Inc(P);
+     If Y<18 Then Inc(Y)
+             Else RefreshList;
+     ShowItem;
+    End;
+   End;
+   #13:Begin
+    DialogHistory:=History[P]^;
+    Refresh;
+    CurrCommand:=History[P]^;
+    PositionCur:=Length(CurrCommand);
+    ShowCommand;
+    Exit;
+   End;
+  End;
+ Until K=#27;
+ Refresh;
+End;
+
 Procedure PullDnMenu;
 Var
  K:Char;
@@ -2223,7 +2395,10 @@ Begin
       Break;
      End;
      3:Begin { Commands }
-      DialogNotImplement;
+      Case PosItem of
+       2:DialogHistory;
+       Else DialogNotImplement;
+      End;
       Break;
      End;
      4:Begin { Right }
@@ -2284,26 +2459,6 @@ Begin
   End;
  Until K=#27;
  RefreshPanels;
-End;
-
-Procedure UnselectFileBar;Begin
- If(PanelDisable[Cote])Then Exit;
- ShowLine(YPos[Cote],PositionX[Cote],Cote,False,True);
-End;
-
-Procedure SelectFileBar;Begin
- If(PanelDisable[Cote])Then Exit;
- ShowLine(YPos[Cote],PositionX[Cote],Cote,True,True);
- GotoXY(Length(PanelPath[Cote])+1+PositionCur+1,23+1);
- ShowPanelStatusBar(Cote);
-End;
-
-Procedure ShowCommand;Begin
- GotoXY(Length(PanelPath[Cote])+2,23+1);
- TextBackground(Black);
- TextColor(LightGray);
- Write(CurrCommand);
- ClrEol;
 End;
 
 Procedure Run;
@@ -2412,6 +2567,7 @@ Begin
      Cote:=1;
      ChangeDrive(1);
     End;
+    #111:DialogHistory; { Alt+F8 }
    End;
   End
    Else
