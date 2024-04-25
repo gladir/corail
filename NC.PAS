@@ -11,7 +11,7 @@ Program NorthCommander;
 Uses Crt,Dos;
 
 Const
- Version='1.0.4';
+ Version='1.0.5';
  MinCote=0;
  MaxCote=1;
  MaxFiles={$IFDEF FPC}4095{$ELSE}511{$ENDIF};
@@ -516,6 +516,10 @@ Begin
    #13:Begin
     ReadLine:=kbEnter;
    End;
+   #27:Begin
+    ReadLine:=kbEsc;
+    Exit;
+   End;
    Else S:=S+K;
   End;
   If S[Length(S)]=#13Then Begin
@@ -525,6 +529,12 @@ Begin
  Until K=#13;
  GotoXY(X,Y);
  WriteLn(S);
+End;
+
+Function ReadLineInBox(X1,Y1,X2,Y2:Byte;Var S:String):Word;Begin
+ Window(X1,Y1,X2,Y2);
+ ReadLineInBox:=ReadLine(S);
+ Window(1,1,80,25);
 End;
 
 Procedure SetDialogTextColor;Begin
@@ -1009,8 +1019,16 @@ Begin
  Case PanelType[Side]of
   4:Begin
    FrameEmpty(1+40*Side,1,40*Side+40,6+SideLength[Side],$1B);
-   WriteXY(40*Side+2,2,'   Nom   Ext'+ChrVert+' Taille '+ChrVert+
-         '   Date   '+ChrVert+'Heure',30);
+   Case Language of
+    _English:Begin
+     WriteXY(40*Side+2,2,'    Name    '+ChrVert+'  Size  '+ChrVert+
+                         '   Date   '+ChrVert+' Time',30);
+    End;
+    Else Begin
+     WriteXY(40*Side+2,2,'   Nom   Ext'+ChrVert+' Taille '+ChrVert+
+                         '   Date   '+ChrVert+'Heure',30);
+    End;
+   End;
    If(PanelPath[Side,Length(PanelPath[Side])]<>'\')Then PathTem:=PanelPath[Side]+'\'
                                                    Else PathTem:=PanelPath[Side];
    ReadFiles(PathTem+'*.*',$FFFF,Side);
@@ -1628,91 +1646,52 @@ End;
 
 Procedure MkDirFunc;
 Var
+ S:String;
+ K:Word;
  Touche:Char;
- Chaine8:PathStr;
- Position:Byte;
  Erreur:Word;
- Tableau:Pointer;
- Changement:Byte;
 Begin
- Changement:=0;
- FrameFull(9,6,72,19,63);
- WriteCenter(9,'Cr‚ation d''un r‚pertoire',62);
- WriteXY(13,11,'Nom du r‚pertoire a cr‚er :',62);
- Write1(32,13,91,63);
- Write1(50,13,93,63);
- For Position := 0 to 7 do Begin
-  Write1(34+Position*2,13,32,15);
-  Write1(34+Position*2,14,196,63);
+ S:='';
+ FrameFull(3,6,76,11,$70);
+ Case Language of
+  _English:WriteCenter(7,'Make directory',$70);
+  Else WriteCenter(7,'Cr‚ation d''un r‚pertoire',$70);
  End;
- WriteXY(13,16,'Longueur :',63);
- WriteXY(40,16,'Disque :',63);
- WriteXY(49,16,Copy(PanelPath[Cote],1,1),62);
- Position := 0;
- Erreur   := 0;
- Chaine8  := '';
- PathTem  := '';
+ GotoXY(7,8);
+ Case Language of
+  _English:Write('Create the directory');
+  Else Write('Cr‚er le r‚pertoire');
+ End;
+ TextColor(Black);
+ TextBackground(LightCyan);
  Repeat
-  Str(Position+1,PathTem);
-  WriteXY(23,16,PathTem,62);
-  GotoXY(34+Position*2,13);
-  Touche:=ReadKey;
-  If(KeyPressed)Then Begin
+  K:=ReadLineInBox(7,9,72,9,S);
+ Until(K=kbEsc)or(K=kbEnter);
+ If(K=kbEnter)Then Begin
+  PathTem:=PanelPath[Cote];
+  If(PathTem[Length(PathTem)]<>'\')Then PathTem:=PathTem+'\';
+  PathTem:=PathTem+S;
+  {$I-}MkDir(PathTem);
+  Erreur:=IoResult;{$I+}
+  If(Erreur<>0)Then Begin
+   Box(12,13,69,15,$4F);
+   FrameEmpty(11,12,70,16,$4F);
+   WriteCenter(13,'Erreur : De r‚pertoire',$4F);
+   WriteCenter(14,'Impossible de cr‚e le r‚pertoire',$4F);
+   WriteCenter(15,'Presse une touche pour retourner',$4E);
+   Write(^G);
    Touche:=ReadKey;
-   Case Touche of
-    #71:Position:=0;
-    #75:Position:=(Position - 1) and 7;
-    #77:Position:=(Position + 1) and 7;
-   End;
-   Touche:=#00;
+   If(KeyPressed)Then Touche:=ReadKey;
   End;
-  Case Touche of
-   #08:Begin
-    If(Position>0)Then Begin
-     Dec(Position);
-     Chaine8[Position]:=#32;
-     Write1(34+Position*2,13,32,15);
-    End;
-   End;
-   #13:Begin
-    PathTem:=PanelPath[Cote];
-    If(PathTem[Length(PathTem)]<>'\')Then PathTem:=PathTem+'\';
-    PathTem:=PathTem+Chaine8+#00;
-    {$I-}MkDir(PathTem);
-    Erreur:=IoResult;{$I+}
-    If(Erreur<>0)Then Begin
-     Box(12,13,69,15,$4F);
-     FrameEmpty(11,12,70,16,$4F);
-     WriteCenter(13,'Erreur : De r‚pertoire',$4F);
-     WriteCenter(14,'Impossible de cr‚e le r‚pertoire',$4F);
-     WriteCenter(15,'Presse une touche pour retourner',$4E);
-     Write(^G);
-     Touche:=ReadKey;
-     If(KeyPressed)Then Touche := ReadKey;
-    End
-     Else
-    Changement:=1;
-    Touche:=#27;
-   End;
-  End;
-  If(Touche>#31)and(Not(Touche in['?','*']))and(Position<8)Then Begin
-   Chaine8 := Copy(Chaine8,1,Position) + UpCase(Touche) + Copy(Chaine8,Position + 1,8);
-   Write1(34+Position*2,13,Ord(UpCase(Touche)),15);
-   If(Position<7)Then Inc(Position);
-  End
-   Else
-  If(Touche>#31)Then Write(^G);
- Until(Touche=#27);
+ End;
  Refresh;
 End;
 
 Procedure DeleteFunc;
 Var
  K:Word;
- Touche:Char;
  I:Integer;
  Changement:Byte;
- Vd:String;
 Begin
  Changement:=0;
  If(Nombre[Cote]=0)And(Attribt[Cote,PositionX[Cote]+1] = 16)Then Begin
