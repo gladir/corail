@@ -11,7 +11,7 @@ Program NorthCommander;
 Uses Crt,Dos;
 
 Const
- Version='1.0.7';
+ Version='1.0.8';
  MinCote=0;
  MaxCote=1;
  MaxFiles={$IFDEF FPC}4095{$ELSE}511{$ENDIF};
@@ -1049,6 +1049,10 @@ Begin
      WriteXY(40*Side+2,2,'    Nome    '+ChrVert+'  Dim.  '+ChrVert+
                          '   Data   '+ChrVert+' Ora ',30);
     End;
+    _Spain:Begin
+     WriteXY(40*Side+2,2,'    Nombre  '+ChrVert+'  Tama§o'+ChrVert+
+                         '    Fecha '+ChrVert+' Hora',30);
+    End;
     Else Begin
      WriteXY(40*Side+2,2,'   Nom   Ext'+ChrVert+' Taille '+ChrVert+
                          '   Date   '+ChrVert+'Heure',30);
@@ -1195,7 +1199,10 @@ Const
   'Hilfe','MenÅ','Anz.','Bearb.','Kopie','UmbBew','MkDir','Lôsche','Funkt.','Quit'
  );
  FunctionKeyValueItalian:Array[0..9]of String[7]=(
-  'Guida','Menu','Vista','Modif','Copia','RinSpo','CreDirr','Cancel','Tendin','Esci'
+  'Guida','Menu','Vista','Modif','Copia','RinSpo','CreDir','Cancel','Tendin','Esci'
+ );
+ FunctionKeyValueSpain:Array[0..9]of String[7]=(
+  'Ayuda','Men£','Ver','Editar','Copiar','RenMov','Hacdir','Borrar','BarMen','Salir'
  );
 Var
  I:Byte;
@@ -1216,6 +1223,7 @@ Begin
    _English:Write(PadRight(FunctionKeyValueEnglish[I],6));
    _Germany:Write(PadRight(FunctionKeyValueGerman[I],6));
    _Italian:Write(PadRight(FunctionKeyValueItalian[I],6));
+   _Spain:Write(PadRight(FunctionKeyValueSpain[I],6));
    Else Write(PadRight(FunctionKeyValue[I],6));
   End;
  End;
@@ -1230,6 +1238,7 @@ Begin
   _English:Write(FunctionKeyValueEnglish[9]);
   _Germany:Write(FunctionKeyValueGerman[9]);
   _Italian:Write(FunctionKeyValueItalian[9]);
+  _Spain:Write(FunctionKeyValueSpain[9]);
   Else Write(FunctionKeyValue[9]);
  End;
  ClrEol;
@@ -1518,7 +1527,13 @@ Begin
    X2:=40+(WidthBox shr 1);
    Y2:=12+(HeightBox shr 1);
    FrameChoice(X1,Y1,X2,Y2);
-   WriteCenter(Y1,'Menu utilisateur',63);
+   Case Language of
+    _English:WriteCenter(Y1,'User Menu',63);
+    _Germany:WriteCenter(Y1,'BenutzermenÅ',63);
+    _Italian:WriteCenter(Y1,'Menu utente (principale)',63);
+    _Spain:WriteCenter(Y1,'Men£ usuario (Principal)',63);
+    Else WriteCenter(Y1,'Menu utilisateur',63);
+   End;
    For I:=0 to NumMenu-1 do Begin
     GotoXY(X1+2,Y1+2+I);
     Write(Menu[I].Letter);
@@ -1759,6 +1774,7 @@ Begin
   _English:WriteCenter(7,' Copy ',$70);
   _Germany:WriteCenter(7,' Kopieren ',$70);
   _Italian:WriteCenter(7,' Copia ',$70);
+  _Spain:WriteCenter(7,' Copiar ',$70);
   Else WriteCenter(7,' Copie ',$70);
  End;
  GotoXY(7,8);
@@ -1767,6 +1783,7 @@ Begin
    _English:Write('Copy "',GetCurrFileName,'" to ');
    _Germany:Write('Kopieren von "',GetCurrFileName,'" nach ');
    _Italian:Write('Copia "',GetCurrFileName,'" in ');
+   _Spain:Write('Copiar "',GetCurrFileName,'" in ');
    Else Write('Copie "',GetCurrFileName,'" Ö ');
   End;
  End
@@ -1776,6 +1793,7 @@ Begin
    _English:Write('Copy ',Nombre[Cote],' files to ');
    _Germany:Write('Kopieren von ',Nombre[Cote],' Dateien nach ');
    _Italian:Write('Copia ',Nombre[Cote],' file in ');
+   _Spain:Write('Copiar ',Nombre[Cote],' archivos y en ');
    Else Write('Copie ',Nombre[Cote],' fichiers Ö ');
   End;
  End;
@@ -1784,6 +1802,7 @@ Begin
   _English:ShowHorizontalCenterButton(11,'Copy|Cancel');
   _Germany:ShowHorizontalCenterButton(11,'Kopieren|Abbruch');
   _Italian:ShowHorizontalCenterButton(11,'Copia|Annulla');
+  _Spain:ShowHorizontalCenterButton(11,'Copiar|Cancelar');
   Else ShowHorizontalCenterButton(11,'Copie|Annule');
  End;
  Repeat
@@ -1800,6 +1819,7 @@ Begin
    _English:K:=ReadHorizontalCenterButton(11,'Copy|Cancel');
    _Germany:K:=ReadHorizontalCenterButton(11,'Kopieren|Abbruch');
    _Italian:K:=ReadHorizontalCenterButton(11,'Copia|Annulla');
+   _Spain:K:=ReadHorizontalCenterButton(11,'Copiar|Cancelar');
    Else K:=ReadHorizontalCenterButton(11,'Copie|Annule');
   End;
   If(K=1)or(K=kbEsc)Then Begin
@@ -1853,6 +1873,7 @@ Begin
   _English:WriteCenter(7,' Rename ',$70);
   _Germany:WriteCenter(7,' Umbenennen ',$70);
   _Italian:WriteCenter(7,' Rinomina ',$70);
+  _Spain:WriteCenter(7,' Renombrar ',$70);
   Else WriteCenter(7,' Renomme ',$70);
  End;
  GotoXY(7,8);
@@ -1861,6 +1882,7 @@ Begin
    _English:Write('Rename or move "',GetCurrFileName,'" to ');
    _Germany:Write('Umbenennen oder Bewegen "',GetCurrFileName,'" nach ');
    _Italian:Write('Rinomina o sposta "',GetCurrFileName,'" in ');
+   _Spain:Write('Renombrar o mover "',GetCurrFileName,'" en ');
    Else Write('Renomme ou dÇplace "',GetCurrFileName,'" Ö ');
   End;
  End
@@ -1870,14 +1892,16 @@ Begin
    _English:Write('Rename or move ',Nombre[Cote],' files to ');
    _Germany:Write('Umbenennen oder Bewegen von ',Nombre[Cote],' Dateien nach ');
    _Italian:Write('Rinomina o sposta ',Nombre[Cote],' file in ');
+   _Spain:Write('Renombrar o mover ',Nombre[Cote],' archivos en ');
    Else Write('Renomme ou dÇplace ',Nombre[Cote],' fichiers Ö ');
   End;
  End;
  Ok:=False;
  Case Language of
   _English:ShowHorizontalCenterButton(11,'Move|Cancel');
-  _Italian:ShowHorizontalCenterButton(11,'RinSpo|Annulla');
   _Germany:ShowHorizontalCenterButton(11,'Bewegen|Abbrechen');
+  _Italian:ShowHorizontalCenterButton(11,'RinSpo|Annulla');
+  _Spain:ShowHorizontalCenterButton(11,'Ren/Mv|Cancelar');
   Else Begin
    If(RenameDialog)Then ShowHorizontalCenterButton(11,'Renomme|Annule')
                    Else ShowHorizontalCenterButton(11,'DÇplace|Annule');
@@ -1897,6 +1921,7 @@ Begin
    _English:K:=ReadHorizontalCenterButton(11,'Move|Cancel');
    _Germany:K:=ReadHorizontalCenterButton(11,'Bewegen|Abbrechen');
    _Italian:K:=ReadHorizontalCenterButton(11,'RinSpo|Annulla');
+   _Spain:K:=ReadHorizontalCenterButton(11,'Ren/Mv|Cancelar');
    Else Begin
     If(RenameDialog)Then K:=ReadHorizontalCenterButton(11,'Renomme|Annule')
                     Else K:=ReadHorizontalCenterButton(11,'DÇplace|Annule');
@@ -1946,6 +1971,7 @@ Begin
   _English:WriteCenter(7,' Make directory ',$70);
   _Germany:WriteCenter(7,' Verzeichnis erstellen ',$70);
   _Italian:WriteCenter(7,' Crea directory ',$70);
+  _Spain:WriteCenter(7,' Crear directorio ',$70);
   Else WriteCenter(7,' CrÇation d''un rÇpertoire ',$70);
  End;
  GotoXY(7,8);
@@ -1953,6 +1979,7 @@ Begin
   _English:Write('Create the directory');
   _Germany:Write('Erstellen des Verzeichnisses');
   _Italian:Write('Creare la directory');
+  _Spain:Write('Crear el directorio');
   Else Write('CrÇer le rÇpertoire');
  End;
  TextColor(Black);
@@ -2002,6 +2029,10 @@ Begin
     WriteCenter(12,' Cancella ',$70);
     WriteCenter(13,'Cancellare la directory',$70);
    End;
+   _Spain:Begin
+    WriteCenter(12,' Borrar ',$70);
+    WriteCenter(13,'Desea eliminar el directorio',$70);
+   End;
    Else Begin
     WriteCenter(12,' Efface ',$70);
     WriteCenter(13,'Etes-vous certain de vouloir effacer le rÇpertoire',$70);
@@ -2013,6 +2044,7 @@ Begin
     _English:K:=ReadHorizontalCenterButton(15,'Delete|Cancel');
     _Germany:K:=ReadHorizontalCenterButton(15,'Lîschen|Abbrechen');
     _Italian:K:=ReadHorizontalCenterButton(15,'Cancella|Annulla');
+    _Spain:K:=ReadHorizontalCenterButton(15,'Borrar|Cancelar');
     Else K:=ReadHorizontalCenterButton(15,'Supprimer|Annuler');
    End;
    If K=kbEsc Then K:=1;
@@ -2039,6 +2071,10 @@ Begin
     WriteCenter(12,' Cancella ',$70);
     WriteCenter(13,'Cancellare',$70);
    End;
+   _Spain:Begin
+    WriteCenter(12,' Borrar ',$70);
+    WriteCenter(13,'Desea borrar',$70);
+   End;
    Else Begin
     WriteCenter(12,' Efface ',$70);
     WriteCenter(13,'Etes-vous certain de vouloir effacer',$70);
@@ -2050,6 +2086,7 @@ Begin
     _English:K:=ReadHorizontalCenterButton(15,'Delete|Cancel');
     _Germany:K:=ReadHorizontalCenterButton(15,'Lîschen|Abbrechen');
     _Italian:K:=ReadHorizontalCenterButton(15,'Cancella|Annulla');
+    _Spain:K:=ReadHorizontalCenterButton(15,'Borrar|Cancelar');
     Else K:=ReadHorizontalCenterButton(15,'Supprimer|Annuler');
    End;
    If K=kbEsc Then K:=1;
@@ -2075,6 +2112,10 @@ Begin
     WriteCenter(12,' Cancella ',$70);
     WriteCenter(13,'E'' stato selezionato '+PathTem+' file.',$70);
    End;
+   _Spain:Begin
+    WriteCenter(12,' Borrar ',$70);
+    WriteCenter(13,'Ha seleccionado '+PathTem+' archivos.',$70);
+   End;
    Else Begin
     WriteCenter(12,' Efface ',$70);
     WriteCenter(13,'Etes-vous certain de vouloir effacer '+PathTem+' fichier(s)',$70);
@@ -2085,6 +2126,7 @@ Begin
     _English:K:=ReadHorizontalCenterButton(14,'Delete|Cancel');
     _Germany:K:=ReadHorizontalCenterButton(14,'Lîschen|Abbrechen');
     _Italian:K:=ReadHorizontalCenterButton(14,'Cancella|Annulla');
+    _Spain:K:=ReadHorizontalCenterButton(14,'Borrar|Cancelar');
     Else K:=ReadHorizontalCenterButton(14,'Supprimer|Annuler');
    End;
    If K=kbEsc Then K:=1;
@@ -2117,6 +2159,7 @@ Begin
   _English:WriteCenter(12,'Do you want to quit the North Commander?',$70);
   _Germany:WriteCenter(12,'Wollen Sie den North Commander beenden?',$70);
   _Italian:WriteCenter(12,'Uscire da North Commander?',$70);
+  _Spain:WriteCenter(12,'Desea salir del Comandante North?',$70);
   Else WriteCenter(12,'Etes-vous certain de vouloir quitter ?',$70);
  End;
  Repeat
@@ -2124,6 +2167,7 @@ Begin
    _English:K:=ReadHorizontalCenterButton(13,'Yes|No');
    _Germany:K:=ReadHorizontalCenterButton(13,'Ja|Nein');
    _Italian:K:=ReadHorizontalCenterButton(13,'S°|No');
+   _Spain:K:=ReadHorizontalCenterButton(13,'S°|No');
    Else K:=ReadHorizontalCenterButton(13,'Oui|Non');
   End;
   If(K=kbEsc)Then K:=1;
@@ -2198,6 +2242,12 @@ Begin
  End;
 End;
 
+Procedure ChangeParentDir;Begin
+ Delete(PanelPath[Cote],Length(PanelPath[Cote]),1);
+ While PanelPath[Cote,Length(PanelPath[Cote])]<>'\'do Delete(PanelPath[Cote],Length(PanelPath[Cote]),1);
+ If(Length(PanelPath[Cote])<>3)Then Delete(PanelPath[Cote],Length(PanelPath[Cote]),1);
+End;
+
 Procedure EnterExecute;
 Label 90;
 Var
@@ -2243,11 +2293,7 @@ Begin
   else
  If(PanelType[Cote]=4)Then Begin
   If(Attribt[Cote,PositionX[Cote]+1]=16)Then Begin
-   If(Nom[Cote,PositionX[Cote]+1]='..')Then Begin
-    Delete(PanelPath[Cote],Length(PanelPath[Cote]),1);
-    While PanelPath[Cote,Length(PanelPath[Cote])]<>'\'do Delete(PanelPath[Cote],Length(PanelPath[Cote]),1);
-    If(Length(PanelPath[Cote])<>3)Then Delete(PanelPath[Cote],Length(PanelPath[Cote]),1);
-   End
+   If(Nom[Cote,PositionX[Cote]+1]='..')Then ChangeParentDir
     else
    Begin
     If Not(PanelPath[Cote,Length(PanelPath[Cote])]='\')Then PanelPath[Cote]:=PanelPath[Cote]+'\';
@@ -2827,6 +2873,12 @@ Begin
     End;
     #111:DialogHistory; { Alt+F8 }
     #112:EGALn; { Alt+F9 }
+    #132:Begin { Ctrl+PgUp }
+     ChangeParentDir;
+     PositionX[Cote]:=0;
+     YPos[Cote]:=0;
+     RefreshPanel(Cote);
+    End;
    End;
   End
    Else
@@ -2869,7 +2921,13 @@ Begin
      CurrCommand:='';
      PositionCur:=0;
      ShowCommand;
-     End;
+    End;
+    #28:Begin { Ctrl+\ }
+     PanelPath[Cote]:=PanelPath[Cote][1]+':\';
+     PositionX[Cote]:=0;
+     YPos[Cote]:=0;
+     RefreshPanel(Cote);
+    End;
    End;
    If(K>#31)And(PositionCur<79)Then Begin
     CurrCommand:=CurrCommand+K;
