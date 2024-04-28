@@ -11,7 +11,7 @@ Program NorthCommander;
 Uses Crt,Dos;
 
 Const
- Version='1.0.8';
+ Version='1.0.9';
  MinCote=0;
  MaxCote=1;
  MaxFiles={$IFDEF FPC}4095{$ELSE}511{$ENDIF};
@@ -107,7 +107,7 @@ Type
  StrPointer=^String;
 
 Var
- Language:(_Albanian,_French,_English,_Germany,_Italian,_Spain);
+ Language:(_Albanian,_Danish,_French,_English,_Germany,_Italian,_Spain,_Swedish);
  TmpLanguage:String;
  EGAMode,DoubleFrame:Boolean;
  MaxScreenLine:Byte;
@@ -133,6 +133,7 @@ Var
  Numerique:Word;
  XS,YS:Word;
  BS:Word;
+ Err:Word;
  History:Array[1..MaxHistory] of StrPointer;
  NumberHistory,CurrHistory:Integer;
  Nom:Array[MinCote..MaxCote,0..MaxFiles] of StrName;
@@ -924,15 +925,15 @@ Begin
  End;
 End;
 
-Function Hex2(Byt:Byte):String2;Begin
- Hex2:=HexData[Byt shr 4]+HexData[Byt and 15];
+Function ByteHex2Str(Byt:Byte):String2;Begin
+ ByteHex2Str:=HexData[Byt shr 4]+HexData[Byt and 15];
 End;
 
-Function Hex(Byt:Integer):String4;Begin
- Hex:=HexData[(Byt Shr 12)and 15]+
-      HexData[(Byt Shr 8)and 15]+
-      HexData[(Byt Shr 4)and 15]+
-      HexData[Byt and 15];
+Function HexWord2Str(Byt:Word):String4;Begin
+ HexWord2Str:=HexData[(Byt Shr 12)and 15]+
+              HexData[(Byt Shr 8)and 15]+
+              HexData[(Byt Shr 4)and 15]+
+              HexData[Byt and 15];
 End;
 
 Procedure ShowPrompt;Begin
@@ -1037,6 +1038,10 @@ Begin
   4:Begin
    FrameEmpty(1+40*Side,1,40*Side+40,6+SideLength[Side],$1B);
    Case Language of
+    _Danish:Begin
+     WriteXY(40*Side+2,2,'    Navn    '+ChrVert+'Storrels'+ChrVert+
+                         '   Dato   '+ChrVert+' Tid ',30);
+    End;
     _English:Begin
      WriteXY(40*Side+2,2,'    Name    '+ChrVert+'  Size  '+ChrVert+
                          '   Date   '+ChrVert+' Time',30);
@@ -1052,6 +1057,10 @@ Begin
     _Spain:Begin
      WriteXY(40*Side+2,2,'    Nombre  '+ChrVert+'  Tama¤o'+ChrVert+
                          '    Fecha '+ChrVert+' Hora',30);
+    End;
+    _Swedish:Begin
+     WriteXY(40*Side+2,2,'    Namn    '+ChrVert+' Storlek'+ChrVert+
+                         '    Datum '+ChrVert+' Tid ',30);
     End;
     Else Begin
      WriteXY(40*Side+2,2,'   Nom   Ext'+ChrVert+' Taille '+ChrVert+
@@ -1192,6 +1201,9 @@ Const
  FunctionKeyValue:Array[0..9]of String[7]=(
   'Aide','Menu','Affich','Editer','Copier','RenDep','CreRep','Suppr.','Menu','Sortie'
  );
+ FunctionKeyValueDanish:Array[0..9]of String[7]=(
+  'Hj'#145'lp','B-Menu','Vis','Redig','Kopier','Omdob','NytKat','Slet','Menuer','Afslut'
+ );
  FunctionKeyValueEnglish:Array[0..9]of String[7]=(
   'Help','Menu','View','Edit','Copy','RenMov','Mkdir','Delete','PullDn','Quit'
  );
@@ -1203,6 +1215,9 @@ Const
  );
  FunctionKeyValueSpain:Array[0..9]of String[7]=(
   'Ayuda','Men£','Ver','Editar','Copiar','RenMov','Hacdir','Borrar','BarMen','Salir'
+ );
+ FunctionKeyValueSwedish:Array[0..9]of String[7]=(
+  'Hj„lp','Meny','Visa','Editor','Kopia','D”pFly','NyKat','Radera','Menyer','Sluta'
  );
 Var
  I:Byte;
@@ -1220,10 +1235,12 @@ Begin
  For I:=0 to 8 do Begin
   GotoXY(I*8+2,MaxScreenLine);
   Case Language of
+   _Danish:Write(PadRight(FunctionKeyValueDanish[I],6));
    _English:Write(PadRight(FunctionKeyValueEnglish[I],6));
    _Germany:Write(PadRight(FunctionKeyValueGerman[I],6));
    _Italian:Write(PadRight(FunctionKeyValueItalian[I],6));
    _Spain:Write(PadRight(FunctionKeyValueSpain[I],6));
+   _Swedish:Write(PadRight(FunctionKeyValueSwedish[I],6));
    Else Write(PadRight(FunctionKeyValue[I],6));
   End;
  End;
@@ -1235,10 +1252,12 @@ Begin
  TextColor(Black);
  GotoXY(74,MaxScreenLine);
  Case Language of
+  _Danish:Write(FunctionKeyValueDanish[9]);
   _English:Write(FunctionKeyValueEnglish[9]);
   _Germany:Write(FunctionKeyValueGerman[9]);
   _Italian:Write(FunctionKeyValueItalian[9]);
   _Spain:Write(FunctionKeyValueSpain[9]);
+  _Swedish:Write(FunctionKeyValueSwedish[9]);
   Else Write(FunctionKeyValue[9]);
  End;
  ClrEol;
@@ -1528,10 +1547,12 @@ Begin
    Y2:=12+(HeightBox shr 1);
    FrameChoice(X1,Y1,X2,Y2);
    Case Language of
+    _Danish:WriteCenter(Y1,'Brugermenu',63);
     _English:WriteCenter(Y1,'User Menu',63);
     _Germany:WriteCenter(Y1,'Benutzermen',63);
     _Italian:WriteCenter(Y1,'Menu utente (principale)',63);
     _Spain:WriteCenter(Y1,'Men£ usuario (Principal)',63);
+    _Swedish:WriteCenter(Y1,'Egen meny (Huvudmeny)',63);
     Else WriteCenter(Y1,'Menu utilisateur',63);
    End;
    For I:=0 to NumMenu-1 do Begin
@@ -1594,10 +1615,11 @@ End;
 
 Procedure ViewFunc;
 Var
+ ModeView:(_ASCII,_HEX);
  Finish:Boolean;
  FileView:File;
  ByteReaded:Word;
- I,CurrLinePos:Integer;
+ I,CurrLinePos:LongInt;
  FileName:String;
  Buffer:Array[0..2048]of Byte;
  LastPos,CurrPos,LenBuf:LongInt;
@@ -1605,24 +1627,32 @@ Var
  Procedure ViewFrameASCII;
  Const
   FunctionKeyValue:Array[0..9]of String[7]=(
-   '','','','','','','','','','Sortir'
+   '','','','Hex','','','','','','Sortir'
+  );
+  FunctionKeyValueDanish:Array[0..9]of String[7]=(
+   '','','','Hex','','','','','','Afslut'
   );
  Var
    I:Byte;
    Pour:Byte;
  Begin
   If FileSize(FileView)=0Then Pour:=0
-                         Else Pour:=Trunc((CurrPos / FileSize(FileView))*100);
+                         Else Pour:=Trunc((CurrPos/FileSize(FileView))*100);
   GotoXY(1,1);
   TextBackground(Cyan);
   TextColor(Black);
   Write(FileName);
   ClrEol;
+  GotoXY(56,1);
+  Write(FileSize(FileView),' octets');
   GotoXY(Lo(WindMax)-3,1);
   Write(Pour:3,'%');
   For I:=0 to 8 do Begin
    GotoXY(I*7+1+2,MaxScreenLine);
-   Write(PadRight(FunctionKeyValue[I],6));
+   Case Language of
+    _Danish:Write(PadRight(FunctionKeyValueDanish[I],6));
+    Else Write(PadRight(FunctionKeyValue[I],6));
+   End;
   End;
   GotoXY(67,MaxScreenLine);
   Write(FunctionKeyValue[9]);
@@ -1687,7 +1717,78 @@ Var
   ViewASCII:=PosInBuffer;
  End;
 
+ Procedure ViewFrameHex;
+ Const
+  FunctionKeyValue:Array[0..9]of String[7]=(
+   '','','','ASCII','','','','','','Sortir'
+  );
+ Var
+   I:Byte;
+   Pour:Byte;
+ Begin
+  If FileSize(FileView)=0Then Pour:=0
+                         Else Pour:=Trunc((CurrPos / FileSize(FileView))*100);
+  GotoXY(1,1);
+  TextBackground(Cyan);
+  TextColor(Black);
+  Write(FileName);
+  ClrEol;
+  GotoXY(56,1);
+  Write(FileSize(FileView),' octets');
+  GotoXY(Lo(WindMax)-3,1);
+  Write(Pour:3,'%');
+  For I:=0 to 8 do Begin
+   GotoXY(I*7+1+2,25);
+   Write(PadRight(FunctionKeyValue[I],6));
+  End;
+  GotoXY(67,25);
+  Write(FunctionKeyValue[9]);
+  ClrEol;
+  TextBackground(Black);
+  TextColor(LightGray);
+  For I:=0 to 9 do Begin
+   GotoXY(I*7+1,25);
+   Write('F',I+1);
+  End;
+ End;
+
+ Procedure ViewHex;
+ Var
+  Pour,X,I,J:Byte;
+  PosInBuffer:Word;
+ Begin
+  If FileSize(FileView)=0Then Pour:=0
+                         Else Pour:=Trunc((CurrPos / FileSize(FileView))*100);
+  GotoXY(Lo(WindMax)-3,1);
+  TextBackground(Cyan);
+  TextColor(Black);
+  Write(Pour:3,'%');
+  TextBackground(Blue);
+  TextColor(LightCyan);
+  For J:=0 to 22 do Begin
+   GotoXY(1,J+2);
+   Write(Copy(ByteHex2Str(Word((CurrPos+J*16) shr 16)),2,1));
+   Write(HexWord2Str(Word(CurrPos+J*16)),'  ');
+   For I:=0 to 15 do Begin
+    If(I>0)and(I and 3=0)Then Write(#179' ');
+    PosInBuffer:=(J shl 4)+I;
+    X:=Buffer[PosInBuffer];
+    If PosInBuffer>=ByteReaded Then Write('   ')
+                               Else Write(ByteHex2Str(X),' ');
+   End;
+   Write('  ');
+   For I:=0 to 15 do Begin
+    PosInBuffer:=(J shl 4)+I;
+    X:=Buffer[PosInBuffer];
+    If PosInBuffer>=ByteReaded Then Write(' ') Else
+    If X in[10,13]Then Write(' ')
+                  Else Write(Char(X));
+   End;
+  End;
+ End;
+
 Begin
+ ModeView:=_ASCII;
  FileName:=GetCurrName;
  {$I-}Assign(FileView,FileName);
  Reset(FileView,1);{$I+}
@@ -1702,19 +1803,46 @@ Begin
  End;
  CurrPos:=0;
  ClrScr;
- ViewFrameASCII;
+ Case(ModeView)of
+  _Hex:ViewFrameHex;
+  Else ViewFrameASCII;
+ End;
  Finish:=False;
  CursorOff;
  Repeat
   FillChar(Buffer,SizeOf(Buffer),0);
-  Seek(fileView,CurrPos);
-  BlockRead(FileView,Buffer,2048,ByteReaded);
-  ByteReaded:=ViewASCII;
+  Case(ModeView)of
+   _Hex:Begin
+    Seek(fileView,CurrPos);
+    BlockRead(FileView,Buffer,16*23,ByteReaded);
+    ViewHex;
+   End;
+   Else Begin
+    Seek(fileView,CurrPos);
+    BlockRead(FileView,Buffer,2048,ByteReaded);
+    ByteReaded:=ViewASCII;
+   End;
+  End;
   Case ReadKey Of
    #0:Case ReadKey of
     #1:Finish:=True;
+    #62:If(ModeView=_ASCII)Then Begin { F4 }
+     ClrScr;
+     ViewFrameHex;
+     ModeView:=_Hex;
+    End
+     Else
+    Begin
+     ClrScr;
+     ViewFrameASCII;
+     ModeView:=_ASCII;
+    End;
     #68:Finish:=True; { F10 }
-    #73:Begin {PageUp}
+    #73:If(ModeView=_Hex)Then Begin {PageUp}
+     If CurrPos>0 Then Dec(CurrPos,16*23);
+    End
+     Else
+    Begin
      FillChar(Buffer,SizeOf(Buffer),0);
      LenBuf:=2048;
      CurrLinePos:=0;
@@ -1739,7 +1867,11 @@ Begin
      CurrPos:=LastPos+I;
      If I>1Then Inc(CurrPos);
     End;
-    #81:Begin {PageDown}
+    #81:If(ModeView=_Hex)Then Begin {PageDown}
+      If CurrPos+16*23<FileSize(FileView)Then Inc(CurrPos,16*23);
+    End
+     Else
+    Begin
      If CurrPos+ByteReaded<=FileSize(FileView)Then Inc(CurrPos,ByteReaded);
     End;
    End;
@@ -1771,38 +1903,46 @@ Begin
  Target:='';
  FrameFull(3,6,76,13,$70);
  Case Language of
+  _Danish:WriteCenter(7,' Kopier ',$70);
   _English:WriteCenter(7,' Copy ',$70);
   _Germany:WriteCenter(7,' Kopieren ',$70);
   _Italian:WriteCenter(7,' Copia ',$70);
   _Spain:WriteCenter(7,' Copiar ',$70);
+  _Swedish:WriteCenter(7,' Kopiera ',$70);
   Else WriteCenter(7,' Copie ',$70);
  End;
  GotoXY(7,8);
  If(Nombre[Cote]=0)Then Begin
   Case Language of
+   _Danish:Write('Kopier "',GetCurrFileName,'" til ');
    _English:Write('Copy "',GetCurrFileName,'" to ');
    _Germany:Write('Kopieren von "',GetCurrFileName,'" nach ');
    _Italian:Write('Copia "',GetCurrFileName,'" in ');
    _Spain:Write('Copiar "',GetCurrFileName,'" in ');
+   _Swedish:Write('Kopiera "',GetCurrFileName,'" till ');
    Else Write('Copie "',GetCurrFileName,'" … ');
   End;
  End
   Else
  Begin
   Case Language of
+   _Danish:Write('Kopierer ',Nombre[Cote],' filer til ');
    _English:Write('Copy ',Nombre[Cote],' files to ');
    _Germany:Write('Kopieren von ',Nombre[Cote],' Dateien nach ');
    _Italian:Write('Copia ',Nombre[Cote],' file in ');
    _Spain:Write('Copiar ',Nombre[Cote],' archivos y en ');
+   _Swedish:Write('Kopiera ',Nombre[Cote],' filer till ');
    Else Write('Copie ',Nombre[Cote],' fichiers … ');
   End;
  End;
  Ok:=False;
  Case Language of
+  _Danish:ShowHorizontalCenterButton(11,'Kopi‚r|Afbryd');
   _English:ShowHorizontalCenterButton(11,'Copy|Cancel');
   _Germany:ShowHorizontalCenterButton(11,'Kopieren|Abbruch');
   _Italian:ShowHorizontalCenterButton(11,'Copia|Annulla');
   _Spain:ShowHorizontalCenterButton(11,'Copiar|Cancelar');
+  _Swedish:ShowHorizontalCenterButton(11,'Kopiera|Avbryt');
   Else ShowHorizontalCenterButton(11,'Copie|Annule');
  End;
  Repeat
@@ -1816,10 +1956,12 @@ Begin
    End;
   Until(K=kbTab)or(K=kbEnter);
   Case Language of
+   _Danish:K:=ReadHorizontalCenterButton(11,'Kopi‚r|Afbryd');
    _English:K:=ReadHorizontalCenterButton(11,'Copy|Cancel');
    _Germany:K:=ReadHorizontalCenterButton(11,'Kopieren|Abbruch');
    _Italian:K:=ReadHorizontalCenterButton(11,'Copia|Annulla');
    _Spain:K:=ReadHorizontalCenterButton(11,'Copiar|Cancelar');
+   _Swedish:K:=ReadHorizontalCenterButton(11,'Kopiera|Avbryt');
    Else K:=ReadHorizontalCenterButton(11,'Copie|Annule');
   End;
   If(K=1)or(K=kbEsc)Then Begin
@@ -1870,38 +2012,46 @@ Begin
  End;
  FrameFull(3,6,76,13,$70);
  Case Language of
+  _Danish:WriteCenter(7,' Omdob ',$70);
   _English:WriteCenter(7,' Rename ',$70);
   _Germany:WriteCenter(7,' Umbenennen ',$70);
   _Italian:WriteCenter(7,' Rinomina ',$70);
   _Spain:WriteCenter(7,' Renombrar ',$70);
+  _Swedish:WriteCenter(7,' D”p om ',$70);
   Else WriteCenter(7,' Renomme ',$70);
  End;
  GotoXY(7,8);
  If(Nombre[Cote]=0)Then Begin
   Case Language of
+   _Danish:Write('Ombdob eller flyt "',GetCurrFileName,'" til ');
    _English:Write('Rename or move "',GetCurrFileName,'" to ');
    _Germany:Write('Umbenennen oder Bewegen "',GetCurrFileName,'" nach ');
    _Italian:Write('Rinomina o sposta "',GetCurrFileName,'" in ');
    _Spain:Write('Renombrar o mover "',GetCurrFileName,'" en ');
+   _Swedish:Write('D”p om eller flytta "',GetCurrFileName,'" till ');
    Else Write('Renomme ou d‚place "',GetCurrFileName,'" … ');
   End;
  End
   Else
  Begin
   Case Language of
+   _Danish:Write('Omdob eller flyt ',Nombre[Cote],' filer til ');
    _English:Write('Rename or move ',Nombre[Cote],' files to ');
    _Germany:Write('Umbenennen oder Bewegen von ',Nombre[Cote],' Dateien nach ');
    _Italian:Write('Rinomina o sposta ',Nombre[Cote],' file in ');
    _Spain:Write('Renombrar o mover ',Nombre[Cote],' archivos en ');
+   _Swedish:Write('D”p omn eller flytta ',Nombre[Cote],' filer till ');
    Else Write('Renomme ou d‚place ',Nombre[Cote],' fichiers … ');
   End;
  End;
  Ok:=False;
  Case Language of
+  _Danish:ShowHorizontalCenterButton(11,'Flyt|Afbryd');
   _English:ShowHorizontalCenterButton(11,'Move|Cancel');
   _Germany:ShowHorizontalCenterButton(11,'Bewegen|Abbrechen');
   _Italian:ShowHorizontalCenterButton(11,'RinSpo|Annulla');
   _Spain:ShowHorizontalCenterButton(11,'Ren/Mv|Cancelar');
+  _Swedish:ShowHorizontalCenterButton(11,'D”p om|Avbryt');
   Else Begin
    If(RenameDialog)Then ShowHorizontalCenterButton(11,'Renomme|Annule')
                    Else ShowHorizontalCenterButton(11,'D‚place|Annule');
@@ -1918,10 +2068,12 @@ Begin
    End;
   Until(K=kbTab)or(K=kbEnter);
   Case Language of
+   _Danish:K:=ReadHorizontalCenterButton(11,'Flyt|Afbryd');
    _English:K:=ReadHorizontalCenterButton(11,'Move|Cancel');
    _Germany:K:=ReadHorizontalCenterButton(11,'Bewegen|Abbrechen');
    _Italian:K:=ReadHorizontalCenterButton(11,'RinSpo|Annulla');
    _Spain:K:=ReadHorizontalCenterButton(11,'Ren/Mv|Cancelar');
+   _Swedish:K:=ReadHorizontalCenterButton(11,'D”p om|Avbryt');
    Else Begin
     If(RenameDialog)Then K:=ReadHorizontalCenterButton(11,'Renomme|Annule')
                     Else K:=ReadHorizontalCenterButton(11,'D‚place|Annule');
@@ -1968,18 +2120,22 @@ Begin
  S:='';
  FrameFull(3,6,76,11,$70);
  Case Language of
+  _Danish:WriteCenter(7,' Opret katalog ',$70);
   _English:WriteCenter(7,' Make directory ',$70);
   _Germany:WriteCenter(7,' Verzeichnis erstellen ',$70);
   _Italian:WriteCenter(7,' Crea directory ',$70);
   _Spain:WriteCenter(7,' Crear directorio ',$70);
+  _Swedish:WriteCenter(7,' Skapa katalog ',$70);
   Else WriteCenter(7,' Cr‚ation d''un r‚pertoire ',$70);
  End;
  GotoXY(7,8);
  Case Language of
+  _Danish:Write('Opret katalog');
   _English:Write('Create the directory');
   _Germany:Write('Erstellen des Verzeichnisses');
   _Italian:Write('Creare la directory');
   _Spain:Write('Crear el directorio');
+  _Swedish:Write('Skapa katalogen');
   Else Write('Cr‚er le r‚pertoire');
  End;
  TextColor(Black);
@@ -2017,6 +2173,10 @@ Begin
  If(Nombre[Cote]=0)And(Attribt[Cote,PositionX[Cote]+1] = 16)Then Begin
   FrameFull(10,11,70,17,$70);
   Case Language of
+   _Danish:Begin
+    WriteCenter(12,' Slet ',$70);
+    WriteCenter(13,'Vil du slette kataloget',$70);
+   End;
    _English:Begin
     WriteCenter(12,' Delete ',$70);
     WriteCenter(13,'Do you wish to delete the directory',$70);
@@ -2033,6 +2193,10 @@ Begin
     WriteCenter(12,' Borrar ',$70);
     WriteCenter(13,'Desea eliminar el directorio',$70);
    End;
+   _Swedish:Begin
+    WriteCenter(12,' Radera ',$70);
+    WriteCenter(13,'Vill du radera katalogen',$70);
+   End;
    Else Begin
     WriteCenter(12,' Efface ',$70);
     WriteCenter(13,'Etes-vous certain de vouloir effacer le r‚pertoire',$70);
@@ -2041,10 +2205,12 @@ Begin
   WriteCenter(14,'"'+GetCurrFileName+'"',$70);
   Repeat
    Case Language of
+    _Danish:K:=ReadHorizontalCenterButton(15,'Slet|Afbryd');
     _English:K:=ReadHorizontalCenterButton(15,'Delete|Cancel');
     _Germany:K:=ReadHorizontalCenterButton(15,'L”schen|Abbrechen');
     _Italian:K:=ReadHorizontalCenterButton(15,'Cancella|Annulla');
     _Spain:K:=ReadHorizontalCenterButton(15,'Borrar|Cancelar');
+    _Swedish:K:=ReadHorizontalCenterButton(15,'Radera|Avbryt');
     Else K:=ReadHorizontalCenterButton(15,'Supprimer|Annuler');
    End;
    If K=kbEsc Then K:=1;
@@ -2059,6 +2225,10 @@ Begin
  If(Nombre[Cote]=0)And(Attribt[Cote,PositionX[Cote]+1]<16)Then Begin
   FrameFull(15,11,65,17,$70);
   Case Language of
+   _Danish:Begin
+    WriteCenter(12,' Slet ',$70);
+    WriteCenter(13,'Vil du slette',$70);
+   End;
    _English:Begin
     WriteCenter(12,' Delete ',$70);
     WriteCenter(13,'Do you wish to delete',$70);
@@ -2075,6 +2245,10 @@ Begin
     WriteCenter(12,' Borrar ',$70);
     WriteCenter(13,'Desea borrar',$70);
    End;
+   _Swedish:Begin
+    WriteCenter(12,' Radera ',$70);
+    WriteCenter(13,'Vill du radera',$70);
+   End;
    Else Begin
     WriteCenter(12,' Efface ',$70);
     WriteCenter(13,'Etes-vous certain de vouloir effacer',$70);
@@ -2083,10 +2257,12 @@ Begin
   WriteCenter(14,GetCurrFileName,$70);
   Repeat
    Case Language of
+    _Danish:K:=ReadHorizontalCenterButton(15,'Slet|Afbryd');
     _English:K:=ReadHorizontalCenterButton(15,'Delete|Cancel');
     _Germany:K:=ReadHorizontalCenterButton(15,'L”schen|Abbrechen');
     _Italian:K:=ReadHorizontalCenterButton(15,'Cancella|Annulla');
     _Spain:K:=ReadHorizontalCenterButton(15,'Borrar|Cancelar');
+    _Swedish:K:=ReadHorizontalCenterButton(15,'Radera|Avbryt');
     Else K:=ReadHorizontalCenterButton(15,'Supprimer|Annuler');
    End;
    If K=kbEsc Then K:=1;
@@ -2100,6 +2276,10 @@ Begin
   FrameFull(10,11,70,16,$70);
   Str(Nombre[Cote],PathTem);
   Case Language of
+   _Danish:Begin
+    WriteCenter(12,' Slet ',$70);
+    WriteCenter(13,'Du har valgt '+PathTem+' filer.',$70);
+   End;
    _English:Begin
     WriteCenter(12,' Delete ',$70);
     WriteCenter(13,'You have selected '+PathTem+' files.',$70);
@@ -2116,6 +2296,10 @@ Begin
     WriteCenter(12,' Borrar ',$70);
     WriteCenter(13,'Ha seleccionado '+PathTem+' archivos.',$70);
    End;
+   _Swedish:Begin
+    WriteCenter(12,' Radera ',$70);
+    WriteCenter(13,'Du har markerat '+PathTem+' filer.',$70);
+   End;
    Else Begin
     WriteCenter(12,' Efface ',$70);
     WriteCenter(13,'Etes-vous certain de vouloir effacer '+PathTem+' fichier(s)',$70);
@@ -2123,10 +2307,12 @@ Begin
   End;
   Repeat
    Case Language of
+    _Danish:K:=ReadHorizontalCenterButton(14,'Slet|Afbryd');
     _English:K:=ReadHorizontalCenterButton(14,'Delete|Cancel');
     _Germany:K:=ReadHorizontalCenterButton(14,'L”schen|Abbrechen');
     _Italian:K:=ReadHorizontalCenterButton(14,'Cancella|Annulla');
     _Spain:K:=ReadHorizontalCenterButton(14,'Borrar|Cancelar');
+    _Swedish:K:=ReadHorizontalCenterButton(14,'Radera|Avbryt');
     Else K:=ReadHorizontalCenterButton(14,'Supprimer|Annuler');
    End;
    If K=kbEsc Then K:=1;
@@ -2148,31 +2334,35 @@ Begin
  Refresh;
 End;
 
-Function CertainQuitter:Boolean;
+Function Quit:Boolean;
 Var
  K:Word;
 Begin
- CertainQuitter:=False;
+ Quit:=False;
  FrameFull(11,10,71,15,$70);
  WriteCenter(11,' Le North Commander ',$70);
  Case Language of
+  _Danish:WriteCenter(12,'Vil du afslutte North Commander?',$70);
   _English:WriteCenter(12,'Do you want to quit the North Commander?',$70);
   _Germany:WriteCenter(12,'Wollen Sie den North Commander beenden?',$70);
   _Italian:WriteCenter(12,'Uscire da North Commander?',$70);
   _Spain:WriteCenter(12,'Desea salir del Comandante North?',$70);
+  _Swedish:WriteCenter(12,'Vill du avsluta North Commander?',$70);
   Else WriteCenter(12,'Etes-vous certain de vouloir quitter ?',$70);
  End;
  Repeat
   Case Language of
+   _Danish:K:=ReadHorizontalCenterButton(13,'Ja|Nej');
    _English:K:=ReadHorizontalCenterButton(13,'Yes|No');
    _Germany:K:=ReadHorizontalCenterButton(13,'Ja|Nein');
    _Italian:K:=ReadHorizontalCenterButton(13,'S¡|No');
    _Spain:K:=ReadHorizontalCenterButton(13,'S¡|No');
+   _Swedish:K:=ReadHorizontalCenterButton(13,'Ja|Nej');
    Else K:=ReadHorizontalCenterButton(13,'Oui|Non');
   End;
   If(K=kbEsc)Then K:=1;
  Until K<2;
- If K=0 Then CertainQuitter:=True
+ If K=0 Then Quit:=True
         Else Refresh;
 End;
 
@@ -2395,6 +2585,8 @@ Procedure Init;Begin
  NumberHistory:=0;
  CurrHistory:=0;
  DoubleFrame:=True;
+ SideLength[0]:=MaxScreenLine-8;
+ SideLength[1]:=MaxScreenLine-8;
  TextMode(C80);
  If(WhereX>1)Then WriteLn;
  WriteLn('North Commandeur  - Clone Norton Commander');
@@ -2584,6 +2776,11 @@ Begin
  End;
  Case Language of
   _English:WriteCenter(3,' History ',$3F);
+  _Danish:WriteCenter(3,' Historik ',$3F);
+  _Germany:WriteCenter(3,' Kommandostpael ',$3F);
+  _Italian:WriteCenter(3,' Cronologia ',$3F);
+  _Spain:WriteCenter(3,' Hist¢rico ',$3F);
+  _Swedish:WriteCenter(3,' Kommandominne ',$3F);
   Else WriteCenter(3,' Historique ',$3F);
  End;
  For I:=1 to NumberHistory do Begin
@@ -2672,7 +2869,7 @@ Begin
        6:MkDirFunc;
        7:DeleteFunc;
        8..12:DialogNotImplement;
-       13:If(CertainQuitter)Then Terminated:=True;
+       13:If(Quit)Then Terminated:=True;
       End;
       Break;
      End;
@@ -2787,8 +2984,8 @@ Begin
     #65:MkDirFunc;  { F7 }
     #66:DeleteFunc; { F8 }
     #67:PullDnMenu; { F9 }
-    #68:Begin
-     If(CertainQuitter)Then Terminated:=True;
+    #68:Begin { F10 }
+     If(Quit)Then Terminated:=True;
     End;
     #71:If(PanelType[Cote]=4)Then Begin { Home }
      PositionX[Cote]:=0;
@@ -2797,7 +2994,7 @@ Begin
      SelectFileBar;
     End;
     #72:If Not(PanelDisable[Cote])Then Begin { Up }
-     If(PanelType[Cote]=4)Then Begin
+     If(PanelType[Cote]=PanelFile)Then Begin
       If(PositionX[Cote]>0)Then Begin
        UnselectFileBar;
        Dec(PositionX[Cote]);
@@ -2818,6 +3015,21 @@ Begin
       End;
      End;
     End;
+    #73:Begin { PgUp }
+     If(PanelType[Cote]=PanelFile)Then Begin
+      If(PositionX[Cote]>SideLength[Cote])Then Begin
+       Dec(PositionX[Cote],SideLength[Cote]);
+       If YPos[Cote]>PositionX[Cote]Then YPos[Cote]:=0;
+      End
+       Else
+      Begin
+       PositionX[Cote]:=0;
+       YPos[Cote]:=0;
+      End;
+      UpdateBoard;
+      SelectFileBar;
+     End;
+    End;
     #79:If PanelType[Cote]=4 Then Begin { End }
      PositionX[Cote]:=NombreFichierX[Cote]-1;
      If NombreFichierX[Cote]<SideLength[Cote]Then Begin
@@ -2831,7 +3043,7 @@ Begin
      SelectFileBar;
     End;
     #80:If Not(PanelDisable[Cote])Then Begin { Down }
-     If PanelType[Cote]=4 Then Begin
+     If PanelType[Cote]=PanelFile Then Begin
 20:   If(PositionX[Cote]<NombreFichierX[Cote]-1)Then Begin
        UnselectFileBar;
        Inc(PositionX[Cote]);
@@ -2845,7 +3057,27 @@ Begin
       End;
      End;
     End;
-    #82:Begin
+    #81:Begin { PgDn }
+     If PanelType[Cote]=PanelFile Then Begin
+      If(PositionX[Cote]<NombreFichierX[Cote]-SideLength[Cote])Then Begin
+       Inc(PositionX[Cote],SideLength[Cote]);
+      End
+       Else
+      Begin
+       PositionX[Cote]:=NombreFichierX[Cote]-1;
+       If NombreFichierX[Cote]<SideLength[Cote]Then Begin
+        YPos[Cote]:=NombreFichierX[Cote]-1;
+       End
+        Else
+       Begin
+        YPos[Cote]:=SideLength[Cote];
+       End;
+      End;
+      UpdateBoard;
+      SelectFileBar;
+     End;
+    End;
+    #82:Begin { Insert }
      If(Attribt[Cote,PositionX[Cote]+1]<16)and(PanelType[Cote]=4)Then Begin
       If(Accepte[Cote,PositionX[Cote]+1]=0)Then Begin
        Accepte[Cote,PositionX[Cote]+1]:=1;
@@ -2861,8 +3093,8 @@ Begin
       Goto 20;
      End;
     End;
-    #102:SetOffFunctionKeyBar;
-    #103:SetOnFunctionKeyBar;
+    #102:SetOffFunctionKeyBar; { Ctrl+F9 }
+    #103:SetOnFunctionKeyBar; { Ctrl+F10 }
     #104:Begin { Alt+F1 }
      Cote:=0;
      ChangeDrive(0);
@@ -2952,8 +3184,10 @@ BEGIN
  If TmpLanguage<>''Then Begin
   If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
   If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='DK'Then Language:=_Danish Else
   If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
   If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SE'Then Language:=_Swedish Else
   If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain Else
   If(StrToUpper(Copy(TmpLanguage,1,2))='SQ')or
     (StrToUpper(Copy(TmpLanguage,1,3))='ALB')Then Language:=_Albanian;
@@ -2966,7 +3200,7 @@ BEGIN
    _Germany:Begin
     WriteLn('NC: Dieser Befehl startet den Dateimanager.');
     WriteLn;
-    WriteLn('Syntax: NC [/ASCII128]');
+    WriteLn('Syntax: NC [/ASCII128] [/LINES:lignes] [--version]');
     WriteLn;
     WriteLn(' /ASCII128   Mit diesem Parameter k”nnen nur 128 Zeichen ',
                           'im Kompatibilit„tsmodus gestartet werden.');
@@ -2977,7 +3211,7 @@ BEGIN
    _English:Begin
     WriteLn('NC: This command launches the file manager.');
     WriteLn;
-    WriteLn('Syntax: NC [/ASCII128]');
+    WriteLn('Syntax: NC [/ASCII128] [/LINES:lignes] [--version]');
     WriteLn;
     WriteLn(' /ASCII128    This parameter allows 128 characters only ',
                            'to be launched in compatibility mode.');
@@ -2988,17 +3222,18 @@ BEGIN
    _Italian:Begin
     WriteLn('NC: Questo comando avvia il file manager.');
     WriteLn;
-    WriteLn('Sintassi: NC [/ASCII128]');
+    WriteLn('Sintassi: NC [/ASCII128] [/LINES:lignes] [--version]');
     Halt;
    End;
    Else Begin
     WriteLn('NC : Cette commande permet de lancer le gestionnaire de fichiers.');
     WriteLn;
-    WriteLn('Syntaxe : NC [/ASCII128]');
+    WriteLn('Syntaxe : NC [/ASCII128] [/LINES:lignes] [--version]');
     WriteLn;
-    WriteLn(' /ASCII128   Ce paramŠtre permet de lancer en mode compatibilite ',
-                          '128 caractŠres seulement.');
-    WriteLn(' --version   Ce paramŠtre permet de demander la version de la commande');
+    WriteLn(' /ASCII128      Ce paramŠtre permet de lancer en mode compatibilit‚');
+    WriteLn('                128 caractŠres seulement.');
+    WriteLn(' /LINES:lignes  Ce paramŠtre force un nombre de lignes d''affichage.');
+    WriteLn(' --version      Ce paramŠtre permet de demander la version de la commande.');
     Halt;
    End;
   End;
@@ -3014,7 +3249,10 @@ BEGIN
   Else
  If ParamCount>0Then Begin
   For I:=1 to ParamCount do Begin
-   If StrToUpper(ParamStr(I))='/ASCII128'Then ShowASCII128:=True
+   If StrToUpper(ParamStr(I))='/ASCII128'Then ShowASCII128:=True Else
+   If(StrToUpper(Copy(ParamStr(I),1,Length('/LINES:')))='/LINES:')Then Begin
+    Val(Copy(ParamStr(I),Length('/LINES:')+1,255),MaxScreenLine,Err);
+   End
     Else
    Begin
     Case Language of
