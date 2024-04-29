@@ -46,6 +46,8 @@ Type
  End;
 
 Var
+ Language:(_Albanian,_Danish,_French,_English,_Germany,_Italian,_Spain,_Swedish);
+ TmpLanguage:String;
  Option:Set of (ShowInstrInComment,InlineForTurboPascal,BinaryFile);
  NoAddrs,Aerr,Symbol,TheEnd,NewFnd,St_first,Displace,WordSize,Wait_Already:Boolean;
  Addr:Integer;
@@ -134,8 +136,8 @@ Procedure Error(II:Integer;S:BigString);Begin
 End;
 
 Procedure GetCh;Begin
- If Chi <= Ord(St[0])Then LCh:=St[Chi]
-                     Else LCh:=Chr(CR);
+ If Chi<=Ord(St[0])Then LCh:=St[Chi]
+                   Else LCh:=Chr(CR);
  UCh:=UpCase(LCh);
  Chi:=Chi+1;
 End;
@@ -154,16 +156,79 @@ Var
 Begin
  Getd:=False;
  S:='';
- While (UCh>='0')and(UCh<='9')do Begin
+ While(UCh>='0')and(UCh<='9')do Begin
   Getd:=True;
-  If Ord(S[0]) < Ssize Then S:=S+UCh;
+  If Ord(S[0])<Ssize Then S:=S+UCh;
   GetCh;
  End;
  If(Getd)Then Begin
   Val(S,V,Code);
   If Code<>0 Then Error(Chi,'Mauvais format de nombre');
  End;
- GetDec := Getd;
+ GetDec:=Getd;
+End;
+
+Function EvalHex(hexStr:String):Integer;
+Var
+ hexVal,i,n:Integer;
+ evalErr:Boolean;
+Begin
+ evalErr:=False;
+ hexVal:=0;
+ For i:=1 TO Length(hexStr)do Begin
+  n:=Pos(Upcase(hexStr[i]),'0123456789ABCDEF');
+  If n=0 Then evalErr:=True
+         Else hexVal:=hexVal*16+n-1;
+ End;
+ If(evalErr)Then Begin
+  hexVal:=0;
+  Error(Chi,'Nombre hexadecimal invalide');
+ END;
+ EvalHex:=hexVal;
+End;
+
+Function GetDecOrHex(Var V:Integer):Boolean;
+Const
+ Ssize=8;
+Var
+ Mode:(_Dec,_Hex);
+ S:String[Ssize];
+ Getd:Boolean;
+ Code:Integer;
+Begin
+ Getd:=False;
+ S:='';
+ Mode:=_Dec;
+ If(UCh in['0'..'9'])Then Begin
+  GetD:=True;
+  If Ord(S[0])<Ssize Then S:=S+UCh;
+  GetCh;
+  While(UCh in['A'..'F', '0'..'9'])do Begin
+   If(UCh in['A'..'F'])Then Mode:=_Hex;
+   Getd:=True;
+   If Ord(S[0])<Ssize Then S:=S+UCh;
+   GetCh;
+  End;
+  If(Mode=_Hex)Then Begin
+   If(UCh<>'H')Then Error(Chi,'Nombre hexad‚cimal sans identificateur ''h''')
+               Else GetCh;
+  End
+   Else
+  If UCh='H'Then Begin
+   Mode:=_Hex;
+   GetCh;
+  End;
+ End;
+ If(Getd)Then Begin
+  If(Mode=_Dec)Then Val(S,V,Code)
+   Else
+  Begin
+   Code:=0;
+   V:=EvalHex(S);
+  End;
+  If Code<>0 Then Error(Chi,'Mauvais format de nombre');
+ End;
+ GetDecOrHex:=Getd;
 End;
 
 Function GetHex(Var H:Integer):Boolean;
@@ -172,11 +237,11 @@ Var
 Begin
  H:=0;
  GetHex:=False;
- While (UCh in ['A'..'F', '0'..'9'])do Begin
+ While(UCh in ['A'..'F', '0'..'9'])do Begin
   GetHex:=True;
   If(UCh>='A')Then Digit:=Ord(UCh)-Ord('A')+10
               Else Digit:=Ord(UCh)-Ord('0');
-  If H and $F000<>0 Then Error(Chi, 'Debordement');
+  If H and $F000<>0 Then Error(Chi,'D‚bordement');
   H:=(H Shl 4)+Digit;
   GetCh;
  End;
@@ -189,28 +254,28 @@ Var
 Begin
  N:=0;
  If UCh='('Then GetCh;
- If (UCh='''')or(UCh = '"')Then Begin
+ If(UCh='''')or(UCh='"')Then Begin
   GetNumber:=True;
   Term:=UCh;
   GetCh;
   Err:=False;
-  While(UCh<>Term) and Not Err do Begin
-   Err := N and $FF00 <> 0;
-   N := (N Shl 8)+Ord(LCh);
+  While(UCh<>Term)and Not Err do Begin
+   Err:=N and $FF00 <> 0;
+   N:=(N Shl 8)+Ord(LCh);
    GetCh;
-   if Err then Error(Chi, 'Debordement');
+   If(Err)Then Error(Chi, 'D‚bordement');
   End;
   GetCh;
  End
   Else
  If UCh='$'Then Begin
   GetCh;
-  If Not GetHex(N)Then Error(Chi, 'Expression de nombre hexadecimal');
+  If Not GetHex(N)Then Error(Chi,'Expression de nombre hexad‚cimal');
   GetNumber:=True;
  End
   Else
- GetNumber:=GetDec(N);
- If UCh = ')'Then GetCh;
+ GetNumber:=GetDecOrHex(N);
+ If UCh=')'Then GetCh;
 End;
 
 Function GetExpr(Var Rslt:Integer):Boolean;
@@ -1658,14 +1723,14 @@ Begin
   SkipSpaces;
   If(Lsid[0]>Chr(0))and(UCh = ':')Then Begin
    Sym:=Identifier;
-   If Register(Dum1,Dum2)Then Error(Chi, 'Nom enregistrer utiliser comme etiquette')
+   If Register(Dum1,Dum2)Then Error(Chi, 'Nom enregistr‚ utiliser comme ‚tiquette')
     Else
    Begin
     GetCh;
     Symname:=Lsid;
     Pl:=Firstlabel;
     While Pl <> Nil do With Pl^ do Begin
-     If Symname = Name Then Error(Chi, 'Etiquette dupliquer');
+     If Symname = Name Then Error(Chi, 'Etiquette dupliqu‚');
      Pl:=Next;
     End;
     New(Pl);
@@ -1748,7 +1813,7 @@ Var
 Begin
  IOerr:=IOResult;
  If(IOerr=2)or(IOerr=3)Then WriteLn('Introuvable ', S) Else
- If IOerr<>0 then WriteLn('Erreur d''entree/sortie ', IOerr);
+ If IOerr<>0 then WriteLn('Erreur d''entr‚e/sortie ', IOerr);
  ChkIOerror:=IOerr;
 End;
 
@@ -1777,18 +1842,57 @@ Var
  SourceName,TargetName:String;
 
 BEGIN
+ Language:=_French;
+ TmpLanguage:=GetEnv('LANGUAGE');
+ If TmpLanguage<>''Then Begin
+  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
+  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='DK'Then Language:=_Danish Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SE'Then Language:=_Swedish Else
+  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain Else
+  If(StrToUpper(Copy(TmpLanguage,1,2))='SQ')or
+    (StrToUpper(Copy(TmpLanguage,1,3))='ALB')Then Language:=_Albanian;
+ End;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('ASM86 : Cette commande permet de compiler de l''assembleur 8086.');
+  Case Language of
+   _English:Begin
+    WriteLn('ASM86 : This command allows you to compile 8086 assembler.');
+    WriteLn;
+    WriteLn('Syntax : ASM86 [source[.A86] [target[.H86]]] [/C] [/INLINE|/TP]');
+    WriteLn;
+    WriteLn('Parameter');
+    WriteLn;
+    WriteLn('    source       Name of the file containing the assembler source');
+    WriteLn('    target       Name of the file containing the machine code in hexadecimal');
+    WriteLn('    /B           Create a binary file (.BIN)');
+    WriteLn('    /C           Commented output of assembly instructions');
+    WriteLn('    /INLINE      Turbo Pascal INLINE instruction output');
+    WriteLn('    /TP          Turbo Pascal INLINE instruction output');
+   End;
+   Else Begin
+    WriteLn('ASM86 : Cette commande permet de compiler de l''assembleur 8086.');
+    WriteLn;
+    WriteLn('Syntaxe : ASM86 [source[.A86] [destination[.H86]]] [/C] [/INLINE|/TP]');
+    WriteLn;
+    WriteLn('ParamŠtres');
+    WriteLn;
+    WriteLn('    source       Nom du fichier contenant le source assembleur');
+    WriteLn('    destination  Nom du fichier contenu le code machine en hexad‚cimal');
+    WriteLn('    /B           Fabrique un fichier binaire (.BIN)');
+    WriteLn('    /C           Sortie en commentaires des instructions assembleurs');
+    WriteLn('    /INLINE      Sortie en instruction INLINE du Turbo Pascal');
+    WriteLn('    /TP          Sortie en instruction INLINE du Turbo Pascal');
+   End;
+  End;
+ End
+  Else
+ If ParamStr(1)='--version'Then Begin
+  WriteLn('ASM86 1.0.1 - Compilateur assembleur 8086');
+  WriteLn('Licence MIT');
   WriteLn;
-  WriteLn('Syntaxe : ASM86 [source[.A86] [destination[.H86]]] [/C] [/INLINE|/TP]');
-  WriteLn;
-  WriteLn('Parametres');
-  WriteLn('    source       Nom du fichier contenant le source assembleur');
-  WriteLn('    destination  Nom du fichier contenu le code machine en hexadecimal');
-  WriteLn('    /B           Fabrique un fichier binaire (.BIN)');
-  WriteLn('    /C           Sortie en commentaires des instructions assembleurs');
-  WriteLn('    /INLINE      Sortie en instruction INLINE du Turbo Pascal');
-  WriteLn('    /TP          Sortie en instruction INLINE du Turbo Pascal');
+  WriteLn('crit par Sylvain Maltais');
  End
   Else
  Begin
@@ -1835,7 +1939,7 @@ BEGIN
     Err:=ChkIOerror(SourceName);
     If Err>1 then Halt(1);
    Until Err=0;
-   Write('Code machine hexadecimal [',Path2DirName(SourceName),'.H86]: ');
+   Write('Code machine hexad‚cimal [',Path2DirName(SourceName),'.H86]: ');
    ReadLn(TargetName);
    If TargetName=''Then TargetName:=Path2DirName(SourceName)+'.H86';
    {DefaultExtension('H86',TargetName,_Name);}
