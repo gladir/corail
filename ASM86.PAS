@@ -1870,6 +1870,7 @@ BEGIN
     WriteLn('    /C           Commented output of assembly instructions');
     WriteLn('    /INLINE      Turbo Pascal INLINE instruction output');
     WriteLn('    /TP          Turbo Pascal INLINE instruction output');
+    WriteLn('    --version    Output version information and exit');
    End;
    Else Begin
     WriteLn('ASM86 : Cette commande permet de compiler de l''assembleur 8086.');
@@ -1884,6 +1885,7 @@ BEGIN
     WriteLn('    /C           Sortie en commentaires des instructions assembleurs');
     WriteLn('    /INLINE      Sortie en instruction INLINE du Turbo Pascal');
     WriteLn('    /TP          Sortie en instruction INLINE du Turbo Pascal');
+    WriteLn('    --version    Demande la version de la commande');
    End;
   End;
  End
