@@ -670,6 +670,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de désassembler un code binaire de microprocesseur 8080 en langage de programmation assembleur 8080.</td>
 		</tr>
 		<tr>
+			<td><b>DIS8086.PAS</b></td>
+			<td>Cette commande permet de désassembler un code binaire de microprocesseur 8086 en langage de programmation assembleur 8086.</td>
+		</tr>
+		<tr>
 			<td><b>DISKCOMP.PAS</b></td>
 			<td>Cette commande permet de comparer des disquettes ou des images.</td>
 		</tr>
