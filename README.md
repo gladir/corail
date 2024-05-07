@@ -666,6 +666,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher la liste des fichiers d'image disque «.ST» du <a href="https://www.gladir.com/LEXIQUE/COMPUTER/atarist.htm">Atari ST</a>.</td>
 		</tr>
 		<tr>
+			<td><b>DIS6809.PAS</b></td>
+			<td>Cette commande permet de désassembler un code binaire de microprocesseur 6809 en langage de programmation assembleur 6809.</td>
+		</tr>
+		<tr>
 			<td><b>DIS8080.PAS</b></td>
 			<td>Cette commande permet de désassembler un code binaire de microprocesseur 8080 en langage de programmation assembleur 8080.</td>
 		</tr>
