@@ -706,6 +706,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher un message encodée en hexadécimal. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/OS9/display.htm">DISPLAY</a> de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
 		</tr>
 		<tr>
+			<td><b>DISZ80.PAS</b></td>
+			<td>Cette commande permet de désassembler un code binaire de microprocesseur Z80 en langage de programmation assembleur Z80.</td>
+		</tr>
+		<tr>
 			<td><b>DIVT.PAS</b></td>
 			<td>Cette commande permet d'afficher les adresses de la tables des interruptions d'un microprocesseur 8086/8088.</td>
 		</tr>
