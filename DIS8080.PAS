@@ -432,7 +432,9 @@ BEGIN
      OPERAND_WORD:Begin
       Value[0]:=GetNext(1);
       Value[1]:=GetNext(1);
-      State[Value[1] shl 8 or Value[0]].needlabel:=1;
+      If(Value[1] shl 8 or Value[0]<High(State))Then State[Value[1] shl 8 or Value[0]].needlabel:=1
+       Else
+      WriteLn('Op‚rateur Word en dehors de l''intervalle');
       Disline:=StrPCopy(Disline+StrLen(disline),ByteHex2Str(value[1])+ByteHex2Str(value[0]));
      End;
     End;
