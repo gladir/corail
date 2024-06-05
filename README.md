@@ -1405,6 +1405,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de stationner les têtes d'un disque dur sur les pistes les plus internes en préparation du déplacement de l'unité d'entraînement. Cette commande est un équivalent de la commande <a href="https://www.gladir.com/OS/TANDY1000MSDOS211/shiptrak.htm">SHIPTRAK</a> du Tandy 1000 MS-DOS 2.11 ou de la commande <a href="https://www.gladir.com/OS/TANDY1000MSDOS32/shiptrak.htm">SHIPTRAK</a> du Tandy 1000 MS-DOS 3.2</td>
 		</tr>
 		<tr>
+			<td><b>SHOWVECT.PAS</b></td>
+			<td>Cette commande permet d'afficher les adresses des vecteurs d'interruptions d'un microprocesseur 8086/8088.</td>
+		</tr>
+		<tr>
 			<td><b>SLEEP.PAS</b></td>
 			<td>Cette commande permet d'attendre le nombre de secondes spécifiés. Cette commande est un équivalent de UNIX et LINUX.</td>
 		</tr>
