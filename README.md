@@ -1406,7 +1406,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>SHOWVECT.PAS</b></td>
-			<td>Cette commande permet d'afficher les addresses des vecteurs d'interruptions d'un microprocesseur 8086/8088.</td>
+			<td>Cette commande permet d'afficher les adresses des vecteurs d'interruptions d'un microprocesseur 8086/8088.</td>
 		</tr>
 		<tr>
 			<td><b>SLEEP.PAS</b></td>
