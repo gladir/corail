@@ -1500,6 +1500,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>TCC2MSG.PAS</b></td>
 			<td>Cette programme permet de capturer les messages TCC et de les retourner a Turbo Pascal.</td>
 		</tr>
+		<tr>
+			<td><b>TD.PAS</b></td>
+			<td>Cette commande permet de lancer l'application Text Draw.</td>
+		</tr>
 	        <tr>
 			<td><b>TEE.PAS</b></td>
 			<td>Cette commande permet d'envoyer l'entrée standard vers la sortie standard. Cette commande est un équivalent de UNIX ou Linux.</td>
