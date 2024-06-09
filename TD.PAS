@@ -290,7 +290,12 @@ Begin
   End;
   Write(' ');
  End;
- Write(' ':3,'Esc=Menu');
+ Write(' ':3,'Esc=Menu',' ':3);
+ TextColor(CurrAttr and $F);
+ TextBackground(CurrAttr shr 4);
+ Write('Couleur');
+ TextColor(LightGray);
+ TextBackground(Black);
  ClrEol;
 End;
 
@@ -643,6 +648,7 @@ Begin
    End;
   End;
  Until Ok;
+ ShowStatusBar;
 End;
 
 Procedure FunctionKeyMenu;
