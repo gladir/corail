@@ -1473,6 +1473,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer le clone du System Info du Norton Utilities.</td>
 		</tr>
 		<tr>
+			<td><b>T-CHAR.PAS</b></td>
+			<td>Cette commande permet d'afficher la table ASCII de la console.</td>
+		</tr>
+		<tr>
 			<td><b>TAIL.PAS</b></td>
 			<td>Cette commande permet d'afficher la fin d'un fichier texte. Cette commande est un équivalent de UNIX ou Linux.</td>
 		</tr>
