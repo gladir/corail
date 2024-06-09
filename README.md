@@ -350,6 +350,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de rendre lisible le formatage d'un fichier de format C.</td>
 		</tr>
 		<tr>
+			<td><b>CC.PAS</b></td>
+			<td>Cette commande permet de lancer le Custom Color.</td>
+		</tr>
+		<tr>
 			<td><b>CHCP.PAS</b></td>
 			<td>Cette commande permet de fixer ou de demander la page de codes.</td>
 		</tr>
