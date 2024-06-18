@@ -1768,6 +1768,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>WHOIS.PAS</b></td>
 			<td>Cette commande permet de rechercher l'organisme associé avec un IP en se basant sur un dictionnaire locale hors ligne.</td>
 		</tr>
+		<tr>
+			<td><b>WIPECMOS.PAS</b></td>
+			<td>Cette commande permet d'effacer le contenu du CMOS.</td>
+		</tr>
 	        <tr>
 			<td><b>WIPEINFO.PAS</b></td>
 			<td>Cette commande permet d'effacer totalement les données et le fichier.</td>
