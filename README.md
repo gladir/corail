@@ -777,6 +777,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>EDLIN.PAS</b></td>
 			<td>Cette commande permet de lancer l'éditeur en ligne de commande.</td>
 		</tr>
+		<tr>
+			<td><b>EM.PAS</b></td>
+			<td>Cette commande permet de lancer l'application Easy Menu.</td>
+		</tr>
 	         <tr>
 			 <td><b>EMSTEST.PAS</b></td>
 			 <td>Cette commande permet de tester la mémoire EMS. Cette commande est un clone de la commande EMSTEST du Turbo Pascal 6.</td>
