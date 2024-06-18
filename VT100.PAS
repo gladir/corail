@@ -87,8 +87,15 @@ Begin
                 Else GotoXY(WhereX+V1,WhereY);
        End;
        'D':Begin
-        If N1=''Then GotoXY(WhereX-1,WhereY)
-                Else GotoXY(WhereX-V1,WhereY);
+        If N1=''Then Begin
+         If WhereX=1 Then GotoXY(80,WhereY)
+                     Else GotoXY(WhereX-1,WhereY);
+        End
+         Else
+        Begin
+         If(V1>WhereX)Then GotoXY(80-V1+WhereX,WhereY)
+                      Else GotoXY(WhereX-V1,WhereY);
+        End;
        End;
        'H':Begin
         If(N1<>'')and(N2<>'')Then Begin
@@ -220,6 +227,7 @@ Begin
     Write(S[I]);
    End;
   End;
+  If I=255 Then Exit;
   Inc(I);
  End;
 End;
@@ -230,9 +238,18 @@ BEGIN
   WriteLn('VT100 : Cette commande permet d''afficher le contenu de terminal VT100.');
   WriteLn;
   WriteLn('Syntaxe : VT100 fichier');
+  WriteLn('          VT100 --version');
   WriteLn;
   WriteLn(' fichier           Nom du fichier a afficher');
+  WriteLn(' --version         Demande la version de la commande');
   WriteLn;
+ End
+  Else
+ If ParamStr(1)='--version'Then Begin
+  WriteLn('VT100 1.1 - VT100-TOOLS ou corail');
+  WriteLn('Licence MIT');
+  WriteLn;
+  WriteLn('crit par Sylvain Maltais');
  End
   Else
  If ParamCount>0Then Begin
