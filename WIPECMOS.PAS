@@ -120,7 +120,7 @@ BEGIN
   End;
   Write('Etes-vous certain de vouloir effacer le contenu de la m‚moire CMOS (O/N) ?');
   If UpCase(ReadKey)in['O','Y']Then Begin
-   For J:=0 to 63 do CMOSWrite(J,ReplaceValue);
+   For J:=0 to CmosSize-1 do CMOSWrite(J,ReplaceValue);
   End;
  End;
 END.
