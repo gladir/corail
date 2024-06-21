@@ -1249,6 +1249,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer un clone du PC Tools original de Central-Point.</td>
 		</tr>
 		<tr>
+			<td><b>PERL.PAS</b></td>
+			<td>Cette commande permet de lancer le langage de programmation Perl.</td>
+		</tr>
+		<tr>
 			<td><b>PHOTORAM.PAS</b>
 			<td>Cette  commande permet de sauvegarder le contenu de la mémoire conventionnelle de 640 Ko et l'envoi dans un fichier.</td>
 		</tr>
