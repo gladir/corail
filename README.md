@@ -1253,7 +1253,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer le langage de programmation Perl.</td>
 		</tr>
 		<tr>
-			<td><b>PHOTORAM.PAS</b>
+			<td><b>PG.PAS</b></td>
+			<td>Cette commande permet de recevoir l'entrée puis l'afrfichage sur un périphérique de sortie un écran 20 lignes à la fois.</td>
+		</tr>
+		<tr>
+			<td><b>PHOTORAM.PAS</b></td>
 			<td>Cette  commande permet de sauvegarder le contenu de la mémoire conventionnelle de 640 Ko et l'envoi dans un fichier.</td>
 		</tr>
 		<tr>
