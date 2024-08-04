@@ -1417,6 +1417,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'imprimer le contenu de l'écran. Cette commande est inspiré du logiciel <a href="https://www.gladir.com/SOFTWARE/KIX/presentation.htm">KIX</a> de Kyan Software pour Apple II.</td>
 		</tr>	
 		<tr>
+			<td><b>SDIFF.PAS</b></td>
+			<td>Cette commande permet de rechercher les différences côte à côte  du programme.</td>
+		</tr>
+		<tr>
 			<td><b>SEARCH.PAS</b></td>
 			<td>Cette commande permet d'afficher les chemins des fichiers spécifiés. ette commande est originaire du <a href="https://www.gladir.com/OS/ZENITHDATASYSTEMSMICROSOFTMSDOS2/search.htm">Zenith Data Systems Microsoft MS-DOS 2</a>.</td>
 		</tr>
