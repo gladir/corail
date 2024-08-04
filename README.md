@@ -1254,7 +1254,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>PG.PAS</b></td>
-			<td>Cette commande permet de recevoir l'entrée puis l'afrfichage sur un périphérique de sortie un écran 20 lignes à la fois.</td>
+			<td>Cette commande permet de recevoir l'entrée puis l'afrfichage sur un périphérique de sortie un écran 20 lignes à la fois. Cette commande est inspiré de UNICOS.</td>
 		</tr>
 		<tr>
 			<td><b>PHOTORAM.PAS</b></td>
