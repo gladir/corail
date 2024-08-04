@@ -1317,6 +1317,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher le répertoire d'exécution. Cette commande est inspiré du <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
 		</tr>
 		<tr>
+			<td><b>PYTHON.PAS</b></td>
+			<td>Cette commande permet de lancer le langage de programmation Python.</td>
+		</tr>
+		<tr>
 			<td><b>QB2BBC.PAS</b></td>
 			<td>Cette commande permet de convertir un code source QBasic ou QuickBasic en BBC BASIC.</td>
 		</tr>
