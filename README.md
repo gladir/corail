@@ -1485,6 +1485,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher des informations sur des fichiers. Cette commande est un équivalent de UNIX et LINUX.</td>
 		</tr>
 		<tr>
+			<td><b>STRINGS.PAS</b></td>
+			<td>Cette commande permet de trouver les chaines de caractères affichable dans un objet ou un fichier binaire.</td>
+		</tr>
+		<tr>
 			<td><b>SUBMIT.PAS</b></td>
 			<td>Cette commande permet d'exécuter un fichier .SUB du système d'exploitation CP/M-86.</td>
 		</tr>
