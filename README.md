@@ -1297,6 +1297,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir une image de format PPM (Portable PixMap) en XBM (X BitMap).</td>
 		</tr>
 		<tr>
+			<td><b>PR.PAS</b></td>
+			<td>Cette commande permet d'afficher un/des fichier(s) pour l'impression.</td> 
+		</tr>
+		<tr>
 			<td><b>PRINT.PAS</b></td>
 			<td>Cette commande permet d'effectuer la gestion des traitements d'impressions du système d'exploitation.</td>
 		</tr>
