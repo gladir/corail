@@ -1537,6 +1537,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher le contenu du fichier dans le sens inverse.</td>
 		</tr>
 		<tr>
+			<td><b>TASKLIST.PAS</b></td>
+			<td>Cette commande permet d'afficher la liste de tous les processus du système d'exploitation.</td>
+		</tr>
+		<tr>
 		        <td><b>TB.PAS</b></td>
 			<td>Cette commande permet de lancer le Turbo Basic.</td>
 		</tr>
