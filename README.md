@@ -545,6 +545,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>CSVQUOTE.PAS</b></td>
 			<td>Cette commande permet d''enlever les sauts de lignes dans les champs entre guillemets d'un CSV.</td>
 		</tr>	
+		<tr>
+			<td><b>CURL.PAS</b></td>
+			<td>Cette commande permet de lire le contenu d'un URL et de le retourner dans la console.</td>
+		</tr>
 	        <tr>
 			<td><b>CUT.PAS</b></td>
 			<td>Cette commande permet de supprimer des sections de chaque ligne des fichiers. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/LINUX/cut.htm">cut</a> de Linux.</td>
