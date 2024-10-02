@@ -1396,6 +1396,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>ROT13C5D.PAS</b></td>
 			<td>Cette commande permet d'effectuer une rotation de 13 lettres de l'alphabet latin et une rotation de 5 chiffres sur les chiffres.</td>
 		</tr>
+		<tr>
+			<td><b>RTF2TXT.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier RTF en format TXT.</td>
+		</tr>
 	        <tr>
 			<td><b>RTMRES.PAS</b></td>
 			<td>Cette commande permet de charger le RTM en mode résident.</td>
