@@ -1145,6 +1145,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de décrypter le MD5 en utilisant la technique <i>bruteforce</i>.</td>
 		</tr>
 		<tr>
+			<td><b>MD5BATCH.PAS</b></td>
+			<td>Cette commande permet de convertir une liste de mots contenu dans un fichier en MD5.</td>
+		</tr>
+		<tr>
 			<td><b>MD5MATCH.PAS</b></td>
 			<td>Cette commande permet de rechercher les clefs existantes MD5 dans une liste de mots.</td>
 		</tr>
