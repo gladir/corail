@@ -1141,6 +1141,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'appliquer un algorithme MD5 sur la chaine de caractères spécifiés.</td>
 		</tr>
 		<tr>
+			<td><b>MD5BRUTE.PAS</b></td>
+			<td>Cette commande permet de décrypter le MD5 en utilisant la technique <i>bruteforce</i>.</td>
+		</tr>
+		<tr>
 			<td><b>MDT.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier CSV ou TSV en une table Markdown.</td>
 		</tr>
