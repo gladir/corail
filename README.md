@@ -423,7 +423,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>COLUMN.PAS</b></td>
-			<td>Cette commadne permet de visualiser proprementg un fichier CSV dans un terminal.</td>
+			<td>Cette commande permet de visualiser proprement un fichier CSV dans un terminal.</td>
 		</tr>
 		<tr>
 			<td><b>COMMAND.PAS</b></td>
