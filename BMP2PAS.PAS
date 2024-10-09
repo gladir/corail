@@ -177,7 +177,7 @@ BEGIN
   WriteLn('BMP2PAS : Cette commande permet de convertir une image BitMap (.BMP) ',
                      'en code source Pascal.');
   WriteLn;
-  WriteLn('Syntaxe : BMP2XBM nomdufichier.BMP');
+  WriteLn('Syntaxe : BMP2PAS nomdufichier.BMP');
   WriteLn;
   WriteLn(' nomdufichier   Ce paramätre permet d''indiquer le nom du fichier ".BMP".');
  End
