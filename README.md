@@ -422,6 +422,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer l'interpréteur BASIC du CoCo 3.</td>
 		</tr>
 		<tr>
+			<td><b>COLUMN.PAS</b></td>
+			<td>Cette commande permet de visualiser proprement un fichier CSV dans un terminal.</td>
+		</tr>
+		<tr>
 			<td><b>COMMAND.PAS</b></td>
 			<td>Logiciel clone d'un <i>COMMAND.COM</i> du système d'exploitation <a href="https://www.gladir.com/OS/DOS/intro.htm"><i>DOS</i></a>.</td>
 		</tr>
