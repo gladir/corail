@@ -1920,6 +1920,7 @@ SET LANGUAGE=EN
 	<li>La commande" CPUTEST.PAS" a été bonifié du paramètre /CYRIX pour permettre la détection du microprocesseur Cyrix.</li>
 	<li>La commande "DIR.PAS" a été bonifié de format de sortie CSV, JSON, HTML, PASCAL, SQL ou XML.</li>
 	<li>La commande "HEXDUMP.PAS" a été bonifié de format de sortie C, CSV, JSON, HTML, PASCAL, SQL ou XML.</li>
+	<li>La commande "TYPE.PAS" a été bonifié du paramètre /GWBASIC.</li>
 </ul>
 
 <h3>Manifeste</h3>
