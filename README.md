@@ -1773,6 +1773,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de visualiser un fichier ASCII.</td>
 		</tr>
 		<tr>
+			<td><b>VIEWBAS.PAS</b></td>
+   			<td>Cette commande permet de visualiser un fichier compressé BASIC.</td>
+		</tr>
+    		<tr>
 			<td><b>VIEWBGX.PAS</b></td>
 			<td>Cette commande permet de visualiser une image en format BGX (le format du <a href="https://www.gladir.com/monster.htm">MonsterBook</a>).</td>
 		</tr>
