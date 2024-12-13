@@ -1169,6 +1169,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher les informations sur la mémoire. Cette commande est un clone de la commande MS-DOS ou PC-DOS.</td>
 		</tr>
 		<tr>
+			<td><b>MIRROR.PAS</b></tr>
+			<td>Cette commande permet de sauvegarder ou de restaurer le secteur de démarrage.</td>
+		</tr>
+		<tr>
 			<td><b>MKEYRATE.PAS</b></td>
 			<td>Cette commande permet de modifier les temps de réponse des claviers AT pour permettre une saisie et un mouvement du curseur plus rapides. Cette commande est un clone de la commande MKEYRATE du Mace Utilities.</td>
 		</tr>	
