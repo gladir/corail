@@ -1289,6 +1289,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette  commande permet de sauvegarder le contenu de la mémoire conventionnelle de 640 Ko et l'envoi dans un fichier.</td>
 		</tr>
 		<tr>
+			<td><b>PIFINFO.PAS</b></td>
+			<td>Cette commande permet d'afficher les informations d'entête PIF de Windows 1.x et 2.x.</td>
+		</tr>
+		<tr>
 			<td><b>POWER.PAS</b></td>
 			<td>Cette commande permet de fixer ou de demander les paramètres d'économiseur d'énergie du système d'exploitation.</td>
 		</tr>
