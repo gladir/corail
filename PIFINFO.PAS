@@ -6,6 +6,8 @@
 
 Program ReadPIF;
 
+{$A-}
+
 Type
  TPIFHDR=Record
   Reserved0:Byte;
