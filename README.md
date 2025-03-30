@@ -1908,6 +1908,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>YES.PAS</b></td>
 			<td>Cette commande permet d'effectuer des répétitions de réponses affirmatives.</td>
 		</tr>
+		<tr>
+			<td><b>ZFORCE.PAS</b></td>
+			<td>Cette commande permet de forcer l'ajout d'extension «.gz» s'il n'existe pas sur tous les fichiers de format «gzip».</td>
+		</tr>
 	</table>
 	
 <h2>Langage humain</h3>
