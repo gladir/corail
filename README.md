@@ -263,7 +263,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>BGX2XBM.PAS</b></td>
-			<td>Cette commande permet de convertir une image BGX en XBM.</td>
+			<td>Cette commande permet de convertir une image <a href="https://www.gladir.com/LEXIQUE/FICHIERS/bgx.htm">BGX</a> en XBM.</td>
 		</tr>
 		<tr>
 			<td><b>BIN2ASM.PAS</b></td>
@@ -1786,7 +1786,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
     		<tr>
 			<td><b>VIEWBGX.PAS</b></td>
-			<td>Cette commande permet de visualiser une image en format BGX (le format du <a href="https://www.gladir.com/monster.htm">MonsterBook</a>).</td>
+			<td>Cette commande permet de visualiser une image en format <a href="https://www.gladir.com/LEXIQUE/FICHIERS/bgx.htm">BGX</a> (le format du <a href="https://www.gladir.com/monster.htm">MonsterBook</a>).</td>
 		</tr>
 		<tr>
 			<td><b>VIEWBMP.PAS</b></td>
@@ -1866,7 +1866,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>XBM2BGX.PAS</b></td>
-			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en format BGX (MonsterBook).</td>
+			<td>Cette commande permet de convertir une image de format XBM (X BitMap) en format <a href="https://www.gladir.com/LEXIQUE/FICHIERS/bgx.htm">BGX</a> (MonsterBook).</td>
 		</tr>
 		<tr>
 			<td><b>XBM2C.PAS</b></td>
