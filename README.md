@@ -62,6 +62,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher les statistiques de temps de connexions d'un utilisateur.</td>
 		</tr>
 		<tr>
+			<td><b>ACCESS.PAS</b></td>
+			<td>Cette commande permet de vérifier si un fichier est disponible pour les actions spécifiés avec les modes de lecture (r), d'écriture (w) ou d'exécution (x).</td>
+		</tr>
+		<tr>
 			<td><b>ADAM.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur SmartBASIC du ADAM.</td>
 		</tr>		
