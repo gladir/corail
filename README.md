@@ -1925,6 +1925,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effectuer des répétitions de réponses affirmatives.</td>
 		</tr>
 		<tr>
+			<td><b>YMODEM.PAS</b></td>
+			<td>Cette commande permet d'envoyer ou de recevoir un fichier en utilisant le protocole YModem.</td>
+		</tr>
+		<tr>
 			<td><b>ZFORCE.PAS</b></td>
 			<td>Cette commande permet de forcer l'ajout d'extension «.gz» s'il n'existe pas sur tous les fichiers de format «gzip».</td>
 		</tr>
