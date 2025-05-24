@@ -426,6 +426,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de sauvegarder le contenu de l'écran console dans le fichier spécifié.</td>
 		</tr>
 		<tr>
+			<td><b>COBOL.PAS</b></td>
+			<td>Cette commande permet de lancer l'interpréteur COBOL.</td>
+		</tr>
+		<tr>
 			<td><b>COCO3.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur BASIC du CoCo 3.</td>
 		</tr>
