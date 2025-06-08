@@ -13,7 +13,7 @@ Uses
 
 Var
  Client:TFPHTTPClient;
- URL,Response:String;
+ URL,Response:AnsiString;
 
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')or
@@ -21,7 +21,18 @@ BEGIN
   WriteLn('CURL : Cette commande permet de lire le contenu d''un URL et ');
   WriteLn('       de le retourner dans la console.');
   WriteLn;
-  WriteLn('Syntaxe : CURL url');
+  WriteLn('Syntaxe : CURL [url] [options]');
+  WriteLn;
+  WriteLn(' url        Ce paramätre permet d''indiquer l''URL Ö lire');
+  WriteLn(' --help     Ce paramätre permet de retourner de l''aide sur cette commande');
+  WriteLn(' --version  Ce paramätre permet de retourner la version de la commande');
+ End
+  Else
+ If ParamStr(1)='--version'Then Begin
+  WriteLn('CURL 0.2 - Clone Pascal de coreutils, linux, unix ou corail');
+  WriteLn('Licence MIT');
+  WriteLn;
+  WriteLn('êcrit par Sylvain Maltais');
  End
   Else
  Begin
@@ -33,10 +44,10 @@ BEGIN
    { CrÇe une instance de TFPHTTPClient }
   Client:=TFPHTTPClient.Create(nil);
   Try
-    { Envoie une requàte GET Ö l'URL donnÇe et stocke la rÇponse }
+    { Envoie une requàte GET Ö l'URL donnÇe et entrepose la rÇponse }
    Response:=Client.SimpleGet(URL);
     { Affiche la rÇponse }
-   Writeln('Response:');
+   {Writeln('Response:');}
    Writeln(Response);
   Except
    On E: Exception do
