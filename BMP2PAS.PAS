@@ -46,11 +46,14 @@ Type
  End;
 
 Var
+ CropPos:(crX1,crY1,crX2,crY2);
  First:Boolean;
  CountByLine:Word;
+ CurrNumber,FileNameSource:String;
  SourceBMP:File;
  Header:HeaderBMP;
  Size,I,J,K,Min,Max,BytesPerLine,ByteReaded:Word;
+ CropX1,CropX2,CropY1,CropY2:Integer;
  Value,CountValue:Integer;
  R,G,B:Byte;
  BIH:BitMapInfoHeader;
@@ -60,6 +63,17 @@ Var
  ImageName:String;
  Palette:Array[0..255]of RGB32;
  Buffer:Array[0..4095]of Byte;
+ Err:Word;
+
+Function StrToUpper(S:String):String;
+Var
+ I:Byte;
+Begin
+ For I:=1 to Length(S)do Begin
+  If S[I] in['a'..'z']Then S[I]:=Chr(Ord(S[I])-32);
+ End;
+ StrToUpper:=S;
+End;
 
 Function ByteHex2Str(value:Byte):String;
 Const
@@ -92,6 +106,17 @@ Begin
  RGBTo16Color:=Kr and$F;
 End;
 
+Function InCropZone:Boolean;Begin
+  If(CropX1<>-1)Then Begin
+    InCropZone:=False;
+    If(I>=CropY1)and(I<=CropY2)and(PixelX>=CropX1)and(PixelX<=CropX2)Then Begin
+     InCropZone:=True;
+    End;
+   End
+  Else
+ InCropZone:=True;
+End;
+
 Procedure AddPixel;
 Var
  RawValue:Byte;
@@ -102,15 +127,17 @@ Begin
     If(First)Then First:=False
      Else
     Begin
-     Write(',');
+     If(InCropZone)Then Write(',');
      Inc(CountByLine);
      If CountByLine>12 Then Begin
       CountByLine:=0;
-      WriteLn;
-      Write('  ');
+      If(InCropZone)Then Begin
+       WriteLn;
+       Write('  ');
+      End;
      End;
     End;
-    Write('$',ByteHex2Str(Value));
+    If(InCropZone)Then Write('$',ByteHex2Str(Value));
    End
     Else
    Begin
@@ -118,15 +145,19 @@ Begin
      If(First)Then First:=False
       Else
      Begin
-      Write(',');
+      If(InCropZone)Then Begin
+       Write(',');
+      End;
       Inc(CountByLine);
       If CountByLine>12 Then Begin
        CountByLine:=0;
-       WriteLn;
-       Write('  ');
+       If(InCropZone)Then Begin
+        WriteLn;
+        Write('  ');
+       End;
       End;
      End;
-     Write('$',ByteHex2Str(Value));
+     If(InCropZone)Then Write('$',ByteHex2Str(Value));
     End;
    End;
    Inc(PixelX,2);
@@ -135,15 +166,17 @@ Begin
    If(First)Then First:=False
     Else
    Begin
-    Write(',');
+    If(InCropZone)Then Write(',');
     Inc(CountByLine);
     If CountByLine>12 Then Begin
      CountByLine:=0;
-     WriteLn;
-     Write('  ');
+     If(InCropZone)Then Begin
+      WriteLn;
+      Write('  ');
+     End;
     End;
    End;
-   Write('$',ByteHex2Str(Value));
+   If(InCropZone)Then Write('$',ByteHex2Str(Value));
    Inc(PixelX);
   End;
   24:Begin
@@ -155,15 +188,17 @@ Begin
      If(First)Then First:=False
       Else
      Begin
-      Write(',');
+      If(InCropZone)Then Write(',');
       Inc(CountByLine,3);
       If CountByLine>12 Then Begin
        CountByLine:=0;
-       WriteLn;
-       Write('  ');
+       If(InCropZone)Then Begin
+        WriteLn;
+        Write('  ');
+       End;
       End;
      End;
-     Write('$',ByteHex2Str(R),',','$',ByteHex2Str(G),',','$',ByteHex2Str(B));
+     If(InCropZone)Then Write('$',ByteHex2Str(R),',','$',ByteHex2Str(G),',','$',ByteHex2Str(B));
      Inc(PixelX)
     End;
    End;
@@ -177,13 +212,63 @@ BEGIN
   WriteLn('BMP2PAS : Cette commande permet de convertir une image BitMap (.BMP) ',
                      'en code source Pascal.');
   WriteLn;
-  WriteLn('Syntaxe : BMP2PAS nomdufichier.BMP');
+  WriteLn('Syntaxe : BMP2PAS nomdufichier.BMP [options]');
   WriteLn;
-  WriteLn(' nomdufichier   Ce paramätre permet d''indiquer le nom du fichier ".BMP".');
+  WriteLn(' nomdufichier       Ce paramätre permet d''indiquer le nom du fichier ".BMP".');
+  WriteLn(' /CROP:x1,y1,x2,y2  Ce paramätre permet de rÇcupÇrer une partie de l''image');
+  WriteLn(' --version          Ce paramätre permet de retourner la version de la commande.');
+ End
+  Else
+ If ParamStr(1)='--version'Then Begin
+  WriteLn('BMP2PAS 1.1 - BMP Ö Pascal de corail et dev-cools');
+  WriteLn('Licence MIT');
+  WriteLn;
+  WriteLn('êcrit par Sylvain Maltais');
  End
   Else
  If ParamCount>0Then Begin
-  {$I-}Assign(SourceBMP,ParamStr(1));
+  FileNameSource:='';
+  CropX1:=-1;
+  CropX2:=-1;
+  CropY1:=-1;
+  CropY2:=-1;
+  For I:=1 to ParamCount do Begin
+   If StrToUpper(Copy(ParamStr(I),1,Length('/CROP:')))='/CROP:'Then Begin
+    CurrNumber:='';
+    CropPos:=crX1;
+    For J:=Length('/CROP:')+1 to Length(ParamStr(I))do Begin
+     If Copy(ParamStr(I),J,1)=','Then Begin
+      Case CropPos of
+       crX1:Begin
+        Val(CurrNumber,CropX1,Err);
+        CropPos:=crY1;
+       End;
+       crY1:Begin
+        Val(CurrNumber,CropY1,Err);
+        CropPos:=crX2;
+       End;
+       crX2:Begin
+        Val(CurrNumber,CropX2,Err);
+        CropPos:=crY2;
+       End;
+       crY2:Begin
+        Val(CurrNumber,CropY2,Err);
+       End;
+      End;
+      CurrNumber:='';
+     End
+      Else
+     CurrNumber:=CurrNumber+Copy(ParamStr(I),J,1);
+    End;
+    If CropPos=crY2 Then Begin
+     Val(CurrNumber,CropY2,Err);
+     CropPos:=crY1;
+    End;
+   End
+    Else
+   FileNameSource:=ParamStr(I);
+  End;
+  {$I-}Assign(SourceBMP,FileNameSource);
   Reset(SourceBMP,1);{$I+}
   If IOResult<>0 Then Begin
    WriteLn('Impossible de lire le fichier d''image');
@@ -227,13 +312,42 @@ BEGIN
   If BIH.biCompression in[bi_RGB]Then Begin
    CountByLine:=0;
    WriteLn('Const');
-   WriteLn(' NumXPixels=',Header.NumXPixels,';');
-   WriteLn(' NumYPixels=',Header.NumYPixels,';');
+   If(CropX1<>-1)and(CropX2<>-1)Then Begin
+    WriteLn(' NumXPixels=',(CropX2-CropX1)+1,';');
+   End
+    Else
+   Begin
+    WriteLn(' NumXPixels=',Header.NumXPixels,';');
+   End;
+   If(CropY1<>-1)and(CropY2<>-1)Then Begin
+    WriteLn(' NumYPixels=',(CropY2-CropY1)+1,';');
+   End
+    Else
+   Begin
+    WriteLn(' NumYPixels=',Header.NumYPixels,';');
+   End;
    WriteLn(' BitsPerPixel=',BIH.biBitCount,';');
    WriteLn(' BytesPerLine=',BytesPerLine,';');
-   WriteLn(' BitmapData:Array[0..',
-          Pred(BytesPerLine*Header.NumYPixels),
-          ']of Byte=(');
+   If(CropX1<>-1)and(CropX2<>-1)Then Begin
+    Case BIH.biBitCount of
+     4:WriteLn(' BitmapData:Array[0..',Pred((Succ(CropX2-CropX1) shr 1)*(Succ(CropY2-CropY1))),
+               ']of Byte=(');
+     8:WriteLn(' BitmapData:Array[0..',Pred(Succ(CropX2-CropX1)*(Succ(CropY2-CropY1))),
+               ']of Byte=(');
+     16:WriteLn(' BitmapData:Array[0..',Pred((Succ(CropX2-CropX1) shl 1)*(Succ(CropY2-CropY1))),
+               ']of Byte=(');
+     24:WriteLn(' BitmapData:Array[0..',Pred((Succ(CropX2-CropX1)*3)*(Succ(CropY2-CropY1))),
+               ']of Byte=(');
+     32:WriteLn(' BitmapData:Array[0..',Pred((Succ(CropX2-CropX1) shr 2)*(Succ(CropY2-CropY1))),
+               ']of Byte=(');
+    End;
+   End
+    Else
+   Begin
+    WriteLn(' BitmapData:Array[0..',
+           Pred(BytesPerLine*Header.NumYPixels),
+           ']of Byte=(');
+   End;
    Write('  ');
    For I:=Header.NumYPixels-1 downto 0 do Begin
     Seek(SourceBMP,StartPos+I*BytesPerLine);
@@ -258,5 +372,3 @@ BEGIN
   Else
  WriteLn('Paramätre requis !');
 END.
-
-
