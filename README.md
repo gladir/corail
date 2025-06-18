@@ -62,6 +62,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher les statistiques de temps de connexions d'un utilisateur.</td>
 		</tr>
 		<tr>
+			<td><b>ACALC.PAS</b></td>
+			<td>Cette commande permet de calculer la valeur d'une expression mathématique.</td>
+		</tr>	
+		<tr>
 			<td><b>ACCESS.PAS</b></td>
 			<td>Cette commande permet de vérifier si un fichier est disponible pour les actions spécifiés avec les modes de lecture (r), d'écriture (w) ou d'exécution (x).</td>
 		</tr>
