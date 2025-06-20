@@ -1,6 +1,6 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2022
-  @website(https://www.gladir.com/corail)
+  @website(https://www.gladir.com/pcdos-0)
   @abstract(Target: Turbo Pascal, Free Pascal)
 }
 
@@ -11,9 +11,7 @@ Uses Strings,Crt,DOS;
 Const
  EditX=2;
  EditY=3;
- EditNumColumns=78;
  EditNumLines=22;
- MaxX=EditNumColumns-1;
 
  MainMenu:Array[0..5]of String[10]=(
   'Fichier','Edition','Recherche','Vue','Options','Aide'
@@ -142,8 +140,9 @@ Const
 Var
  Language:(_French,_English,_Germany,_Italian,_Spain);
  TmpLanguage:String;
- ShowASCII128,OnMenu:Boolean;
+ Use132Column,ShowASCII128,OnMenu:Boolean;
  YMenu,XMenu:Integer;
+ EditNumColumns,MaxX:Integer;
 
 Function MaxAvail:LongInt;Begin
  MaxAvail:=High(LongInt);
@@ -741,7 +740,7 @@ Procedure Box(X1,Y1,X2,Y2,Couleur:Byte);Begin
   TextColor(Couleur and 15);
  {$ENDIF}
  ClrScr;
- Window(1,1,80,25);
+ Window(1,1,EditNumColumns+2,25);
 End;
 
 Procedure FrameEmpty(X1,Y1,X2,Y2,Couleur:Byte);
@@ -794,8 +793,12 @@ Var
  TextFile:Text;
  CurrLine:String;
 Begin
- Assign(TextFile,FileName);
- Reset(TextFile);
+ {$I-}Assign(TextFile,FileName);
+ Reset(TextFile);{$I+}
+ If IOResult<>0 Then Begin
+  WriteLn('Le fichier ',FileName,' est introuvable !');
+  Halt;
+ End;
  While Not EOF(TextFile) do Begin
   ReadLn(TextFile,CurrLine);
   ArrayListAddStr(List,CurrLine);
@@ -1081,7 +1084,7 @@ Begin
  TextBackground(0);
  TextColor(7);
  GotoXY(1,2);
- Write('|',DuplicateString('-',78),'|');
+ Write('|',DuplicateString('-',EditNumColumns),'|');
  ArrayListSetPtr(List,0);
  TextColor(0);
  TextBackground(7);
@@ -1243,7 +1246,7 @@ Begin
   Begin
    Window(EditX,EditY,EditX+EditNumColumns-1,EditY+EditNumLines-1);
    DelLine;
-   Window(1,1,80,25);
+   Window(1,1,EditNumColumns+2,25);
    GotoXY(EditX,EditY+EditNumLines-1);
    CurrLine:=ArrayListGetCurrStr(List);
    Write(Copy(CurrLine,1,EditNumColumns));
@@ -1257,7 +1260,7 @@ Procedure AboutBox;Begin
  Write('A propos de EDIT');
  Box(20,10,60,16,$70);
  GotoXY(30,11);
- Write('MS-DOS Editor Clone');
+ Write('PC-DOS Editor Clone');
  GotoXY(32,12);
  Write('Version 0.0.026');
  GotoXY(31,13);
@@ -1432,7 +1435,7 @@ Begin
       Begin
        Window(EditX,EditY,EditX+EditNumColumns-1,EditY+EditNumLines-1);
        InsLine;
-       Window(1,1,80,25);
+       Window(1,1,EditNumColumns+2,25);
        GotoXY(EditX,EditY);
        CurrLine:=ArrayListGetCurrStr(List);
        Write(Copy(CurrLine,1,EditNumColumns));
@@ -1456,6 +1459,63 @@ Procedure DoneEditor;Begin
  ClrScr;
 End;
 
+{$IFDEF FPC}
+ Procedure SetVideoMode132;Begin
+  WriteLn('Non impl‚ment‚ en Free Pascal');
+  Halt;
+ End;
+{$ELSE}
+ Procedure SetVideoMode132;
+ Const
+  VESA_GET_INFO=$4F00;
+  VESA_SET_MODE=$4F02;
+  VESA_TEXT_132=$0109;  { Mode VESA texte 132x25 }
+ Type
+  TVESAInfo=Record
+   Signature:Array[1..4] of Char;  { 'VESA' }
+   Version:Word;
+   OemString:Pointer;
+   Capabilities:Array[1..4] of Byte;
+   VideoModes:Pointer;
+   MemorySize:Word;
+   Reserved:Array[1..236] of Byte;
+  End;
+ Var
+  Regs:Registers;
+  VESAInfo:TVESAInfo;
+ Begin
+   { V‚rifie si VESA est disponible }
+  FillChar(Regs,SizeOf(Regs),0);
+  FillChar(VESAInfo,SizeOf(VESAInfo),0);
+  VESAInfo.Signature:='VESA';
+  Regs.AX:=VESA_GET_INFO;
+  Regs.ES:=Seg(VESAInfo);
+  Regs.DI:=Ofs(VESAInfo);
+  Intr($10,Regs);
+  If(Regs.AH=0)and(VESAInfo.Signature='VESA')Then Begin
+    { Active le mode 132 colonnes }
+   Regs.AX:=VESA_SET_MODE;
+   Regs.BX:=VESA_TEXT_132;
+   Intr($10,Regs);
+   If Regs.AH=0 Then Begin
+    WindMax:=131;  { 132 colonnes - 1 }
+    LastMode:=3;   { Mode texte }
+   End
+    Else
+   Begin
+    WriteLn('Erreur: Mode 132 colonnes non support‚');
+    Halt;
+   End;
+  End
+   Else
+  Begin
+   WriteLn('Erreur: VESA non support‚');
+   Halt;
+  End;
+ End;
+
+{$ENDIF}
+
 BEGIN
  {$IFDEF FPC}
   {$IFDEF WINDOWS}
@@ -1474,14 +1534,17 @@ BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
   Case Language of
    _Germany:Begin
-    WriteLn('Startet den MS-DOS-Editor, der ASCII-Dateien erzeugt und ver„ndert.');
+    WriteLn('Startet den MS-DOS-Editor, der ASCII-Dateien erzeugt und verï¿½ndert.');
     WriteLn;
     WriteLn('E [[Laufwerk:][Pfad[Dateiname]]')
    End;
    Else Begin
-    WriteLn('E : Cette commande permet d''editer un fichier texte ASCII.');
+    WriteLn('E : Cette commande permet d''‚diter un fichier texte ASCII.');
     WriteLn;
     WriteLn('Syntaxe : E nomdufichier');
+    WriteLn;
+    WriteLn(' /132       Permet d''utiliser un affichage de 132 colonnes');
+    WriteLn(' /ASCII128  Permet d''utiliser des codes ASCII de 7 bits');
    End;
   End;
  End
@@ -1489,15 +1552,26 @@ BEGIN
  Begin
   OnMenu:=False;
   YMenu:=0;XMenu:=1;
-  ShowASCII128:=True;
+  ShowASCII128:=False;
+  Use132Column:=False;
   Modified:=False;
   InsMode:=True;
   P:=0;PX:=0;
   X:=0;Y:=0;
   FileName:='';
+  EditNumColumns:=78;
   For I:=1 to ParamCount do Begin
+   If StrToUpper(ParamStr(I))='/ASCII128'Then ShowASCII128:=True Else
+   If ParamStr(I)='/132'Then Begin
+    Use132Column:=True;
+    SetVideoMode132;
+    Window(1,1,132,25);
+    EditNumColumns:=130;
+   End
+    Else
    FileName:=ParamStr(I);
   End;
+  MaxX:=EditNumColumns-1;
   ArrayListInit(List);
   If FileName<>''Then LoadText(FileName);
   ShowEditor;
