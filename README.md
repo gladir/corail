@@ -886,6 +886,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de rechercher une chaine de caractères dans des fichiers. Cette commande est un équivalent du DOS.</td>
 		</tr>
 		<tr>
+			<td><b>FINGER.PAS</b></td>
+			<td>Cette commande permet d'afficher des informations sur les utilisateurs connectés ou à distance.</td>
+		</tr>	
+		<tr>
 			<td><b>FLEX.PAS</b></td>
 			<td>Cette commande permet de lancer l'interpréteur de commande FLEX. L'interpréteur de commande FLEX etait a l'origine proposé pour des microprocesseurs 6800, comme par exemple les micro-ordinateur CoCo.</td>
 		</tr>	
