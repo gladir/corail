@@ -476,6 +476,200 @@ Begin
  D_Decompress := (not D_Error) and (Count >= OSize);
 End;
 
+{ ============================================================ }{ === ARJ Archive Writer (method 0 stored)               ==== }
+{ ============================================================ }
+
+Function CRC32OfFile(Var F: File; Size: LongInt): LongInt;
+Var
+ Buf: Array[0..4095] of Byte;
+ ToRead: LongInt;
+ Got, I: Integer;
+ CRC: LongInt;
+Begin
+ D_InitCRC;
+ CRC := LongInt($FFFFFFFF);
+ While Size > 0 Do Begin
+  If Size > 4096 Then ToRead := 4096 Else ToRead := Size;
+  BlockRead(F, Buf, ToRead, Got);
+  If Got <= 0 Then Break;
+  For I := 0 To Got - 1 Do
+   CRC := D_UpdateCRC(CRC, Buf[I]);
+  Dec(Size, Got);
+ End;
+ CRC32OfFile := CRC xor LongInt($FFFFFFFF);
+End;
+
+Function CRC32OfBuf(Var Buf; Len: Word): LongInt;
+Var
+ P: ^Byte;
+ I: Word;
+ CRC: LongInt;
+Begin
+ D_InitCRC;
+ CRC := LongInt($FFFFFFFF);
+ P := @Buf;
+ For I := 1 To Len Do Begin
+  CRC := D_UpdateCRC(CRC, P^);
+  Inc(P);
+ End;
+ CRC32OfBuf := CRC xor LongInt($FFFFFFFF);
+End;
+
+Function StripPath(S: String): String;
+Var I: Integer;
+Begin
+ For I := Length(S) DownTo 1 Do
+  If(S[I]='\')or(S[I]='/')or(S[I]=':')Then Begin
+   StripPath := Copy(S, I+1, 255);
+   Exit;
+  End;
+ StripPath := S;
+End;
+
+{ Write little-endian Word to a buffer at position P, advance P }
+Procedure PutW(Var Buf:Array of Byte; Var P:Word; V:Word);
+Begin
+ Buf[P] := V and $FF; Inc(P);
+ Buf[P] := (V shr 8) and $FF; Inc(P);
+End;
+
+Procedure PutB(Var Buf:Array of Byte; Var P:Word; V:Byte);
+Begin
+ Buf[P] := V; Inc(P);
+End;
+
+Procedure PutL(Var Buf:Array of Byte; Var P:Word; V:LongInt);
+Begin
+ Buf[P] := V and $FF; Inc(P);
+ Buf[P] := (V shr 8) and $FF; Inc(P);
+ Buf[P] := (V shr 16) and $FF; Inc(P);
+ Buf[P] := (V shr 24) and $FF; Inc(P);
+End;
+
+Procedure PutStrZ(Var Buf:Array of Byte; Var P:Word; S:String);
+Var I: Integer;
+Begin
+ For I := 1 To Length(S) Do Begin
+  Buf[P] := Ord(S[I]); Inc(P);
+ End;
+ Buf[P] := 0; Inc(P);
+End;
+
+{ Build a basic ARJ header (without the 4-byte HeadID/BHdrSz prefix and
+  without the CRC/ExtHdr trailer) into Buf. Returns length written. }
+Function BuildBasicHeader(Var Buf:Array of Byte; FType:Byte; SVer:Byte;
+                         DosDT:LongInt; CSize, OSize, FileCRC:LongInt;
+                         Name, Comment:String):Word;
+Var P: Word;
+Begin
+ P := 0;
+ PutB(Buf, P, 30);            { FHdrSz }
+ PutB(Buf, P, 11);            { AVNo - archiver version }
+ PutB(Buf, P, 1);             { MAVX - min version to extract }
+ PutB(Buf, P, 0);             { HostOS = MSDOS }
+ PutB(Buf, P, 0);             { Flags }
+ PutB(Buf, P, SVer);          { Method (0 = stored) }
+ PutB(Buf, P, FType);         { File type (0=binary, 2=main hdr) }
+ PutB(Buf, P, 0);             { Reserved }
+ PutL(Buf, P, DosDT);         { Date/time modified }
+ PutL(Buf, P, CSize);         { Compressed size }
+ PutL(Buf, P, OSize);         { Original size }
+ PutL(Buf, P, FileCRC);       { File CRC32 }
+ PutW(Buf, P, 0);             { Filespec position in filename }
+ PutW(Buf, P, 0);             { Length of file access mode }
+ PutW(Buf, P, 0);             { Host data / reserved }
+ PutStrZ(Buf, P, Name);       { Filename }
+ PutStrZ(Buf, P, Comment);    { Comment }
+ BuildBasicHeader := P;
+End;
+
+Procedure WriteArjHeader(Var F: File; FType, SVer:Byte; DosDT:LongInt;
+                         CSize, OSize, FileCRC:LongInt;
+                         Name, Comment:String);
+Var
+ BHBuf: Array[0..511] of Byte;
+ Prefix: Array[0..3] of Byte;
+ Trailer: Array[0..5] of Byte;
+ Len: Word;
+ HCRC: LongInt;
+ P: Word;
+Begin
+ Len := BuildBasicHeader(BHBuf, FType, SVer, DosDT, CSize, OSize, FileCRC,
+                         Name, Comment);
+ P := 0;
+ PutW(Prefix, P, $EA60);      { ARJ signature }
+ PutW(Prefix, P, Len);        { Basic header size }
+ BlockWrite(F, Prefix, 4);
+ BlockWrite(F, BHBuf, Len);
+ HCRC := CRC32OfBuf(BHBuf, Len);
+ P := 0;
+ PutL(Trailer, P, HCRC);      { Basic header CRC }
+ PutW(Trailer, P, 0);         { Extended header size = 0 }
+ BlockWrite(F, Trailer, 6);
+End;
+
+Procedure WriteEndMarker(Var F: File);
+Var
+ EOA: Array[0..3] of Byte;
+ P: Word;
+Begin
+ P := 0;
+ PutW(EOA, P, $EA60);
+ PutW(EOA, P, 0);             { BHdrSz=0 = end-of-archive }
+ BlockWrite(F, EOA, 4);
+End;
+
+{ Find offset of the end-of-archive marker in an existing archive.
+  Returns -1 on error, otherwise the byte offset of the EOA HeadID. }
+Function FindEndOfArchive(Var F: File): LongInt;
+Var
+ Pos, Sz: LongInt;
+ ByRd: Integer;
+ Hdr: Array[0..3] of Byte;
+ BHdrSz: Word;
+ BHData: Array[0..511] of Byte;
+ ExtSz: Word;
+ BasicCSize: LongInt;
+ RawCSize: Array[0..3] of Byte;
+ BasicFType: Byte;
+Begin
+ Pos := 0;
+ Sz := FileSize(F);
+ While Pos < Sz Do Begin
+  Seek(F, Pos);
+  BlockRead(F, Hdr, 4, ByRd);
+  If ByRd < 4 Then Begin FindEndOfArchive := -1; Exit; End;
+  If(Hdr[0]<>$60)or(Hdr[1]<>$EA)Then Begin
+   FindEndOfArchive := -1; Exit;
+  End;
+  BHdrSz := Hdr[2] or (Word(Hdr[3]) shl 8);
+  If BHdrSz = 0 Then Begin
+   FindEndOfArchive := Pos;
+   Exit;
+  End;
+  If BHdrSz > 512 Then Begin FindEndOfArchive := -1; Exit; End;
+  BlockRead(F, BHData, BHdrSz, ByRd);
+  If ByRd < BHdrSz Then Begin FindEndOfArchive := -1; Exit; End;
+  BasicFType := BHData[6];
+  { CSize is at offset 1+1+1+1+1+1+1+1+4 = 12 within the basic header }
+  RawCSize[0] := BHData[12]; RawCSize[1] := BHData[13];
+  RawCSize[2] := BHData[14]; RawCSize[3] := BHData[15];
+  BasicCSize := LongInt(RawCSize[0]) or
+               (LongInt(RawCSize[1]) shl 8) or
+               (LongInt(RawCSize[2]) shl 16) or
+               (LongInt(RawCSize[3]) shl 24);
+  { Skip CRC (4) + ExtHdrSz (2) [+ ExtHdr + extCRC if present] }
+  Seek(F, Pos + 4 + LongInt(BHdrSz) + 4);
+  BlockRead(F, Hdr, 2, ByRd);
+  If ByRd < 2 Then Begin FindEndOfArchive := -1; Exit; End;
+  ExtSz := Hdr[0] or (Word(Hdr[1]) shl 8);
+  Pos := Pos + 4 + LongInt(BHdrSz) + 4 + 2;
+  If ExtSz > 0 Then Inc(Pos, LongInt(ExtSz) + 4);
+  If BasicFType <> 2 Then Inc(Pos, BasicCSize);
+ End;
+ FindEndOfArchive := -1;
+End;
+
 { ============================================================ }
 
 Var
@@ -491,6 +685,19 @@ Var
  ExtractBuf:Array[0..4095]of Byte;
  ResCRC, ExpCRC:LongInt;
  OkExtract:Boolean;
+ ParamIdx:Integer;
+ SrcFile:File;
+ SrcName,StoredName:String;
+ SrcSize,EOAOff:LongInt;
+ SrcCRC:LongInt;
+ SrcDosDT:LongInt;
+ SR:SearchRec;
+ ArchiveExists:Boolean;
+ DowDummy:Word;
+ Method:Byte;
+ SwArg:String;
+ ArcName:String;
+ FirstFileIdx:Integer;
 
 BEGIN
  Language:=_French;
@@ -509,6 +716,8 @@ BEGIN
   WriteLn('Syntaxe : ARJ l archive.arj');
   WriteLn('          ARJ e archive.arj  (extraire les fichiers)');
   WriteLn('          ARJ x archive.arj  (extraire les fichiers)');
+  WriteLn('          ARJ a archive.arj fichier1 [fichier2 ...]  (ajouter des fichiers)');
+  WriteLn('Switch  : -m<N>  M�thode de compression (0=stockage, 1-4=non support�)');
  End
   Else
  If ParamCount>0Then Begin
@@ -720,6 +929,128 @@ BEGIN
     Else WriteLn(NumFiles,' fichier(s) extrait(s)');
    End;
    Close(SourceARJ);
+  End
+   Else
+  If ParamStr(1)='a'Then Begin
+   Method := 0;
+   ArcName := '';
+   FirstFileIdx := 0;
+   { Scan parameters: classify switches (-m<N>, /m<N>) and positionals.
+     First positional = archive name; subsequent positionals = files. }
+   ParamIdx := 2;
+   While ParamStr(ParamIdx) <> '' Do Begin
+    SwArg := ParamStr(ParamIdx);
+    If(Length(SwArg) >= 2)and((SwArg[1]='-')or(SwArg[1]='/'))Then Begin
+     If(Length(SwArg) >= 3)and((SwArg[2]='m')or(SwArg[2]='M'))Then Begin
+      If(SwArg[3] in ['0'..'4'])and(Length(SwArg) = 3)Then Begin
+       Method := Ord(SwArg[3]) - Ord('0');
+       If Method <> 0 Then Begin
+        WriteLn('M�thode de compression ',Method,
+                ' non support�e en �criture (seul -m0 stockage est disponible)');
+        Halt;
+       End;
+      End
+       Else
+      Begin
+       WriteLn('Valeur invalide pour le switch -m : ',SwArg);
+       Halt;
+      End;
+     End
+      Else
+     Begin
+      WriteLn('Switch non reconnu : ',SwArg);
+      Halt;
+     End;
+    End
+     Else
+    Begin
+     If ArcName = '' Then ArcName := SwArg
+     Else If FirstFileIdx = 0 Then FirstFileIdx := ParamIdx;
+    End;
+    Inc(ParamIdx);
+   End;
+   If ArcName = '' Then Begin
+    WriteLn('Nom d''archive ARJ attendu');
+    Halt;
+   End;
+   If FirstFileIdx = 0 Then Begin
+    WriteLn('Au moins un fichier source est requis');
+    Halt;
+   End;
+   Assign(SourceARJ,ArcName);
+   {$I-}Reset(SourceARJ,1);{$I+}
+   ArchiveExists := IoResult = 0;
+   If ArchiveExists Then Begin
+    EOAOff := FindEndOfArchive(SourceARJ);
+    If EOAOff < 0 Then Begin
+     Close(SourceARJ);
+     WriteLn('Archive ARJ corrompue ou non valide : ',ArcName);
+     Halt;
+    End;
+    Seek(SourceARJ, EOAOff);
+    Truncate(SourceARJ);
+   End
+    Else
+   Begin
+    {$I-}Rewrite(SourceARJ,1);{$I+}
+    If IoResult <> 0 Then Begin
+     WriteLn('Impossible de cr�er l''archive : ',ArcName);
+     Halt;
+    End;
+    GetFTime(SourceARJ, SrcDosDT);
+    If SrcDosDT = 0 Then Begin
+     GetDate(DT.Year, DT.Month, DT.Day, DowDummy);
+     GetTime(DT.Hour, DT.Min, DT.Sec, DowDummy);
+     PackTime(DT, SrcDosDT);
+    End;
+    WriteArjHeader(SourceARJ, 2, 0, SrcDosDT, 0, 0, 0,
+                   StripPath(ArcName), '');
+   End;
+   NumFiles := 0;
+   ParamIdx := FirstFileIdx;
+   While ParamStr(ParamIdx) <> '' Do Begin
+    SrcName := ParamStr(ParamIdx);
+    If(SrcName[1]='-')or(SrcName[1]='/')Then Begin
+     Inc(ParamIdx);
+     Continue;
+    End;
+    {$I-}Assign(SrcFile, SrcName);
+    Reset(SrcFile, 1);{$I+}
+    If IoResult <> 0 Then Begin
+     WriteLn('Fichier introuvable : ',SrcName);
+    End
+     Else
+    Begin
+     SrcSize := FileSize(SrcFile);
+     GetFTime(SrcFile, SrcDosDT);
+     SrcCRC := CRC32OfFile(SrcFile, SrcSize);
+     Seek(SrcFile, 0);
+     StoredName := StripPath(SrcName);
+     WriteArjHeader(SourceARJ, 0, Method, SrcDosDT, SrcSize, SrcSize, SrcCRC,
+                    StoredName, '');
+     Remaining := SrcSize;
+     While Remaining > 0 Do Begin
+      If Remaining > 4096 Then ToRead := 4096 Else ToRead := Remaining;
+      BlockRead(SrcFile, ExtractBuf, ToRead, Got);
+      If Got <= 0 Then Break;
+      BlockWrite(SourceARJ, ExtractBuf, Got);
+      Dec(Remaining, Got);
+     End;
+     Close(SrcFile);
+     Case Language of
+      _English:WriteLn('Adding: ',StoredName,' (',SrcSize,' bytes, stored)');
+      Else WriteLn('Ajout : ',StoredName,' (',SrcSize,' octets, stock�)');
+     End;
+     Inc(NumFiles);
+    End;
+    Inc(ParamIdx);
+   End;
+   WriteEndMarker(SourceARJ);
+   Close(SourceARJ);
+   Case Language of
+    _English:WriteLn(NumFiles,' file(s) added');
+    Else WriteLn(NumFiles,' fichier(s) ajout�(s)');
+   End;
   End
    Else
   WriteLn('Param�tre non reconnu');
