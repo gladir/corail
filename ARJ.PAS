@@ -104,23 +104,28 @@ Type
  PByteBuf = ^TByteBuf;
  TWordBuf = Array[0..16383] of Word;
  PWordBuf = ^TWordBuf;
+ TInBuf4K  = Array[0..4095] of Byte;       PInBuf4K  = ^TInBuf4K;
+ TCTab4K   = Array[0..4095] of Word;       PCTab4K   = ^TCTab4K;
+ TBranch   = Array[0..1019] of Word;       PBranch   = ^TBranch;
+ TDictBuf  = Array[0..D_DICSIZ-1] of Byte; PDictBuf  = ^TDictBuf;
+ TCRCTab   = Array[0..255] of LongInt;     PCRCTab   = ^TCRCTab;
 
 Var
  D_BitBuf: Word;
  D_BitCount: Byte;
  D_SubBitBuf: Byte;
- D_InBuf: Array[0..4095] of Byte;
+ D_InBuf: PInBuf4K;
  D_InPos, D_InEnd: Word;
  D_CompLeft: LongInt;
  D_CLen: Array[0..509] of Byte;
  D_PtLen: Array[0..18] of Byte;
- D_CTable: Array[0..4095] of Word;
+ D_CTable: PCTab4K;
  D_PtTable: Array[0..255] of Word;
- D_LeftT, D_RightT: Array[0..1019] of Word;
+ D_LeftT, D_RightT: PBranch;
  D_BlockSize: Word;
- D_Dict: Array[0..D_DICSIZ-1] of Byte;
+ D_Dict: PDictBuf;
  D_DictPos: Word;
- D_CRCTab: Array[0..255] of LongInt;
+ D_CRCTab: PCRCTab;
  D_CRCInited: Boolean;
  D_Error: Boolean;
 
@@ -135,14 +140,14 @@ Begin
   For J:=0 to 7 Do
    If(C and 1)<>0 Then C:=(C shr 1) xor D_CRCPoly
                   Else C:=C shr 1;
-  D_CRCTab[I]:=C;
+  D_CRCTab^[I]:=C;
  End;
  D_CRCInited:=True;
 End;
 
 Function D_UpdateCRC(CRC: LongInt; B: Byte): LongInt;
 Begin
- D_UpdateCRC := (CRC shr 8) xor D_CRCTab[(CRC xor B) and $FF];
+ D_UpdateCRC := (CRC shr 8) xor D_CRCTab^[(CRC xor B) and $FF];
 End;
 
 Procedure D_FillIn;
@@ -155,7 +160,7 @@ Begin
  End;
  Need := 4096;
  If D_CompLeft < Need Then Need := D_CompLeft;
- BlockRead(SourceARJ, D_InBuf, Need, Got);
+ BlockRead(SourceARJ, D_InBuf^, Need, Got);
  D_InPos := 0;
  D_InEnd := Got;
  Dec(D_CompLeft, Got);
@@ -168,7 +173,7 @@ Begin
   D_GetByte := 0;
   Exit;
  End;
- D_GetByte := D_InBuf[D_InPos];
+ D_GetByte := D_InBuf^[D_InPos];
  Inc(D_InPos);
 End;
 
@@ -257,17 +262,17 @@ Begin
    While I <> 0 Do Begin
     Case PMode Of
      0: Tmp := Tbl^[PIdx];
-     1: Tmp := D_LeftT[PIdx];
-    Else Tmp := D_RightT[PIdx];
+     1: Tmp := D_LeftT^[PIdx];
+    Else Tmp := D_RightT^[PIdx];
     End;
     If Tmp = 0 Then Begin
-     D_RightT[Avail] := 0;
-     D_LeftT[Avail] := 0;
+     D_RightT^[Avail] := 0;
+     D_LeftT^[Avail] := 0;
      Tmp := Avail;
      Case PMode Of
       0: Tbl^[PIdx] := Avail;
-      1: D_LeftT[PIdx] := Avail;
-     Else D_RightT[PIdx] := Avail;
+      1: D_LeftT^[PIdx] := Avail;
+     Else D_RightT^[PIdx] := Avail;
      End;
      Inc(Avail);
     End;
@@ -278,8 +283,8 @@ Begin
    End;
    Case PMode Of
     0: Tbl^[PIdx] := Ch;
-    1: D_LeftT[PIdx] := Ch;
-   Else D_RightT[PIdx] := Ch;
+    1: D_LeftT^[PIdx] := Ch;
+   Else D_RightT^[PIdx] := Ch;
    End;
   End;
   Start[Len] := NextCode;
@@ -338,7 +343,7 @@ Begin
  If N = 0 Then Begin
   C := D_GetBits(D_CBIT);
   For I:=0 To D_NC-1 Do D_CLen[I] := 0;
-  For I:=0 To 4095 Do D_CTable[I] := C;
+  For I:=0 To 4095 Do D_CTable^[I] := C;
  End Else Begin
   I := 0;
   While I < N Do Begin
@@ -346,8 +351,8 @@ Begin
    If C >= D_NT Then Begin
     Mask := $80;
     Repeat
-     If(D_BitBuf and Mask)<>0 Then C := D_RightT[C]
-                              Else C := D_LeftT[C];
+     If(D_BitBuf and Mask)<>0 Then C := D_RightT^[C]
+                              Else C := D_LeftT^[C];
      Mask := Mask shr 1;
     Until C < D_NT;
    End;
@@ -370,7 +375,7 @@ Begin
    D_CLen[I] := 0;
    Inc(I);
   End;
-  D_MakeTable(D_NC, 12, PByteBuf(@D_CLen), PWordBuf(@D_CTable));
+  D_MakeTable(D_NC, 12, PByteBuf(@D_CLen), PWordBuf(D_CTable));
  End;
 End;
 
@@ -389,12 +394,12 @@ Begin
   If D_Error Then Begin D_DecodeC:=0; Exit; End;
  End;
  Dec(D_BlockSize);
- J := D_CTable[D_BitBuf shr 4];
+ J := D_CTable^[D_BitBuf shr 4];
  If J >= D_NC Then Begin
   Mask := $08;
   Repeat
-   If(D_BitBuf and Mask)<>0 Then J := D_RightT[J]
-                            Else J := D_LeftT[J];
+   If(D_BitBuf and Mask)<>0 Then J := D_RightT^[J]
+                            Else J := D_LeftT^[J];
    Mask := Mask shr 1;
   Until J < D_NC;
  End;
@@ -411,8 +416,8 @@ Begin
  If J >= D_NP Then Begin
   Mask := $80;
   Repeat
-   If(D_BitBuf and Mask)<>0 Then J := D_RightT[J]
-                            Else J := D_LeftT[J];
+   If(D_BitBuf and Mask)<>0 Then J := D_RightT^[J]
+                            Else J := D_LeftT^[J];
    Mask := Mask shr 1;
   Until J < D_NP;
  End;
@@ -442,11 +447,11 @@ Begin
   C := D_DecodeC;
   If D_Error Then Break;
   If C <= 255 Then Begin
-   D_Dict[D_DictPos] := C;
+   D_Dict^[D_DictPos] := C;
    ResCRC := D_UpdateCRC(ResCRC, C);
    Inc(D_DictPos);
    If D_DictPos >= D_DICSIZ Then Begin
-    BlockWrite(DestFile, D_Dict, D_DICSIZ);
+    BlockWrite(DestFile, D_Dict^, D_DICSIZ);
     D_DictPos := 0;
    End;
    Inc(Count);
@@ -457,13 +462,13 @@ Begin
    If I < 0 Then Inc(I, D_DICSIZ);
    P := I;
    While J > 0 Do Begin
-    D_Dict[D_DictPos] := D_Dict[P];
-    ResCRC := D_UpdateCRC(ResCRC, D_Dict[P]);
+    D_Dict^[D_DictPos] := D_Dict^[P];
+    ResCRC := D_UpdateCRC(ResCRC, D_Dict^[P]);
     Inc(P);
     If P >= D_DICSIZ Then P := 0;
     Inc(D_DictPos);
     If D_DictPos >= D_DICSIZ Then Begin
-     BlockWrite(DestFile, D_Dict, D_DICSIZ);
+     BlockWrite(DestFile, D_Dict^, D_DICSIZ);
      D_DictPos := 0;
     End;
     Dec(J);
@@ -471,7 +476,7 @@ Begin
   End;
  End;
  If(D_DictPos > 0) and (not D_Error) Then
-  BlockWrite(DestFile, D_Dict, D_DictPos);
+  BlockWrite(DestFile, D_Dict^, D_DictPos);
  ResCRC := ResCRC xor LongInt($FFFFFFFF);
  D_Decompress := (not D_Error) and (Count >= OSize);
 End;
@@ -671,6 +676,371 @@ Begin
 End;
 
 { ============================================================ }
+{ === ARJ Method 1 Encoder (literal-only Huffman)         === }
+{ ============================================================ }
+
+Type
+ TOutBuf4K  = Array[0..4095] of Byte;     POutBuf4K  = ^TOutBuf4K;
+ TBlockBuf  = Array[0..7999] of Byte;     PBlockBuf  = ^TBlockBuf;
+ THuffPar   = Array[0..1023] of Integer;  PHuffPar   = ^THuffPar;
+ THuffNF    = Array[0..1023] of LongInt;  PHuffNF    = ^THuffNF;
+
+Var
+ E_BitBuf: Word;
+ E_BitCount: Byte;
+ E_OutBuf: POutBuf4K;
+ E_OutPos: Word;
+ E_BytesWritten: LongInt;
+ E_BlockBuf: PBlockBuf;
+ E_BlockN: Word;
+ E_FreqC: Array[0..D_NC-1] of LongInt;
+ E_FreqT: Array[0..D_NT-1] of LongInt;
+ E_LensC: Array[0..D_NC-1] of Byte;
+ E_LensT: Array[0..D_NT-1] of Byte;
+ E_CodesC: Array[0..D_NC-1] of Word;
+ E_CodesT: Array[0..D_NT-1] of Word;
+ E_HuffParent: PHuffPar;
+ E_HuffNF: PHuffNF;
+
+Procedure E_FlushOut;
+Begin
+ If E_OutPos > 0 Then Begin
+  BlockWrite(SourceARJ, E_OutBuf^, E_OutPos);
+  Inc(E_BytesWritten, E_OutPos);
+  E_OutPos := 0;
+ End;
+End;
+
+Procedure E_PutByte(B: Byte);
+Begin
+ E_OutBuf^[E_OutPos] := B;
+ Inc(E_OutPos);
+ If E_OutPos >= 4096 Then E_FlushOut;
+End;
+
+Procedure E_PutBits(N: Byte; V: Word);
+Begin
+ While N > 0 Do Begin
+  Dec(N);
+  If((V shr N) and 1) = 1 Then
+   E_BitBuf := E_BitBuf or (Word(1) shl (15 - E_BitCount));
+  Inc(E_BitCount);
+  If E_BitCount = 16 Then Begin
+   E_PutByte(Hi(E_BitBuf));
+   E_PutByte(Lo(E_BitBuf));
+   E_BitBuf := 0;
+   E_BitCount := 0;
+  End;
+ End;
+End;
+
+Procedure E_FinishBits;
+Begin
+ If E_BitCount > 0 Then Begin
+  E_PutByte(Hi(E_BitBuf));
+  If E_BitCount > 8 Then E_PutByte(Lo(E_BitBuf));
+  E_BitBuf := 0;
+  E_BitCount := 0;
+ End;
+ E_FlushOut;
+End;
+
+{ Build canonical Huffman lengths from frequencies. NSym <= 510. }
+Procedure E_BuildHuffman(Var Freq:Array of LongInt; NSym:Word;
+                         Var Lens:Array of Byte);
+Var
+ I, J, A, B, M, Active, D: Integer;
+Begin
+ For I := 0 To NSym-1 Do Begin
+  E_HuffNF^[I] := Freq[I];
+  E_HuffParent^[I] := -1;
+  Lens[I] := 0;
+ End;
+ Active := 0;
+ For I := 0 To NSym-1 Do If Freq[I] > 0 Then Inc(Active);
+ If Active = 0 Then Exit;
+ If Active = 1 Then Begin
+  For I := 0 To NSym-1 Do If Freq[I] > 0 Then Lens[I] := 1;
+  Exit;
+ End;
+ M := NSym;
+ While True Do Begin
+  A := -1; B := -1;
+  For I := 0 To M-1 Do
+   If(E_HuffNF^[I] > 0)and(E_HuffParent^[I] = -1)Then Begin
+    If(A = -1)or(E_HuffNF^[I] < E_HuffNF^[A])Then Begin
+     B := A; A := I;
+    End Else If(B = -1)or(E_HuffNF^[I] < E_HuffNF^[B])Then
+     B := I;
+   End;
+  If B = -1 Then Break;
+  E_HuffNF^[M] := E_HuffNF^[A] + E_HuffNF^[B];
+  E_HuffParent^[M] := -1;
+  E_HuffParent^[A] := M;
+  E_HuffParent^[B] := M;
+  Inc(M);
+ End;
+ For I := 0 To NSym-1 Do Begin
+  If Freq[I] = 0 Then Continue;
+  D := 0;
+  J := I;
+  While E_HuffParent^[J] <> -1 Do Begin
+   Inc(D);
+   J := E_HuffParent^[J];
+  End;
+  Lens[I] := D;
+ End;
+End;
+
+Procedure E_CanonicalCodes(Var Lens:Array of Byte; NSym:Word;
+                           Var Codes:Array of Word);
+Var
+ BLCount: Array[0..17] of Word;
+ NextCode: Array[0..17] of Word;
+ I: Integer;
+ Code: LongInt;
+ L: Byte;
+Begin
+ For I := 0 To 17 Do BLCount[I] := 0;
+ For I := 0 To NSym-1 Do Inc(BLCount[Lens[I]]);
+ BLCount[0] := 0;
+ Code := 0;
+ NextCode[0] := 0;
+ For I := 1 To 16 Do Begin
+  Code := (Code + BLCount[I-1]) shl 1;
+  NextCode[I] := Code;
+ End;
+ For I := 0 To NSym-1 Do Begin
+  L := Lens[I];
+  If L > 0 Then Begin
+   Codes[I] := NextCode[L];
+   Inc(NextCode[L]);
+  End Else
+   Codes[I] := 0;
+ End;
+End;
+
+{ Emit one length value (0..16) using the 3-bit + extension encoding
+  used in ARJ for the NT and NP length tables. }
+Procedure E_EmitLen3(L: Byte);
+Var K: Integer;
+Begin
+ If L < 7 Then E_PutBits(3, L)
+ Else Begin
+  E_PutBits(3, 7);
+  For K := 1 To L - 7 Do E_PutBits(1, 1);
+  E_PutBits(1, 0);
+ End;
+End;
+
+{ Write a PT-style length table (NT or NP). NN = alphabet size,
+  NBit = bit-width of N, ISpecial = position to insert 2-bit zero-fill. }
+Procedure E_WritePtLen(Var Lens:Array of Byte; NN:Word; NBit:Byte;
+                       ISpecial:Integer);
+Var
+ I, ZCount, ActiveLast: Integer;
+ N: Word;
+Begin
+ ActiveLast := -1;
+ For I := 0 To NN-1 Do If Lens[I] <> 0 Then ActiveLast := I;
+ N := ActiveLast + 1;
+ If N = 0 Then Begin
+  E_PutBits(NBit, 0);
+  E_PutBits(NBit, 0);
+  Exit;
+ End;
+ E_PutBits(NBit, N);
+ I := 0;
+ While I < N Do Begin
+  E_EmitLen3(Lens[I]);
+  Inc(I);
+  If I = ISpecial Then Begin
+   ZCount := 0;
+   While(I < N)and(Lens[I] = 0)and(ZCount < 3)Do Begin
+    Inc(I);
+    Inc(ZCount);
+   End;
+   E_PutBits(2, ZCount);
+  End;
+ End;
+End;
+
+{ Walk CLen and either count NT symbols (CountOnly=True) or emit them
+  using the previously-built NT Huffman codes (CountOnly=False). }
+Procedure E_ProcessCLen(Var Lens:Array of Byte; NN:Word;
+                        CountOnly:Boolean);
+Var
+ I, J, RunLen, Chunk: Integer;
+Begin
+ I := 0;
+ While I < NN Do Begin
+  If Lens[I] = 0 Then Begin
+   J := I;
+   While(J < NN)and(Lens[J] = 0)Do Inc(J);
+   RunLen := J - I;
+   While RunLen > 0 Do Begin
+    If RunLen >= 20 Then Begin
+     Chunk := RunLen;
+     If Chunk > 531 Then Chunk := 531;
+     If CountOnly Then Inc(E_FreqT[2])
+     Else Begin
+      E_PutBits(E_LensT[2], E_CodesT[2]);
+      E_PutBits(D_CBIT, Chunk - 20);
+     End;
+     Dec(RunLen, Chunk);
+    End Else If RunLen >= 3 Then Begin
+     Chunk := RunLen;
+     If Chunk > 18 Then Chunk := 18;
+     If CountOnly Then Inc(E_FreqT[1])
+     Else Begin
+      E_PutBits(E_LensT[1], E_CodesT[1]);
+      E_PutBits(4, Chunk - 3);
+     End;
+     Dec(RunLen, Chunk);
+    End Else Begin
+     If CountOnly Then Inc(E_FreqT[0])
+     Else E_PutBits(E_LensT[0], E_CodesT[0]);
+     Dec(RunLen);
+    End;
+   End;
+   I := J;
+  End Else Begin
+   If CountOnly Then Inc(E_FreqT[Lens[I] + 2])
+   Else E_PutBits(E_LensT[Lens[I] + 2], E_CodesT[Lens[I] + 2]);
+   Inc(I);
+  End;
+ End;
+End;
+
+Procedure E_WriteCLenHeader(Var Lens:Array of Byte; NN:Word);
+Var
+ I, ActiveLast: Integer;
+ N: Word;
+Begin
+ ActiveLast := -1;
+ For I := 0 To NN-1 Do If Lens[I] <> 0 Then ActiveLast := I;
+ N := ActiveLast + 1;
+ If N = 0 Then Begin
+  E_PutBits(D_CBIT, 0);
+  E_PutBits(D_CBIT, 0);
+  Exit;
+ End;
+ E_PutBits(D_CBIT, N);
+ E_ProcessCLen(Lens, N, False);
+End;
+
+{ Flush the current literal block: emit BlockSize, the three length tables
+  (NT, CLen, NP), then the Huffman-coded literals. }
+Procedure E_FlushBlock;
+Var
+ I, ActiveLast: Integer;
+ N: Word;
+ NPLens: Array[0..D_NP-1] of Byte;
+ OnlySym: Integer;
+ ActiveCount: Integer;
+Begin
+ If E_BlockN = 0 Then Exit;
+ { 1) Frequencies for C alphabet (literals only). }
+ For I := 0 To D_NC-1 Do E_FreqC[I] := 0;
+ For I := 0 To E_BlockN-1 Do Inc(E_FreqC[E_BlockBuf^[I]]);
+ { 2) Build C Huffman tree. }
+ ActiveCount := 0; OnlySym := -1;
+ For I := 0 To D_NC-1 Do If E_FreqC[I] > 0 Then Begin
+  Inc(ActiveCount);
+  OnlySym := I;
+ End;
+ E_BuildHuffman(E_FreqC, D_NC, E_LensC);
+ E_CanonicalCodes(E_LensC, D_NC, E_CodesC);
+ { 3) BlockSize. }
+ E_PutBits(16, E_BlockN);
+ If ActiveCount = 1 Then Begin
+  { Single-symbol block: use special forms throughout. }
+  { NT: special N=0, C=0 }
+  E_PutBits(D_TBIT, 0);
+  E_PutBits(D_TBIT, 0);
+  { CLen: special N=0, C=OnlySym }
+  E_PutBits(D_CBIT, 0);
+  E_PutBits(D_CBIT, OnlySym);
+  { NP: special N=0, C=0 }
+  E_PutBits(D_PBIT, 0);
+  E_PutBits(D_PBIT, 0);
+  { No further bits per symbol: decoder returns the constant via CTable. }
+ End Else Begin
+  { 4) Determine N for CLen and count NT symbol frequencies. }
+  ActiveLast := -1;
+  For I := 0 To D_NC-1 Do If E_LensC[I] <> 0 Then ActiveLast := I;
+  N := ActiveLast + 1;
+  For I := 0 To D_NT-1 Do E_FreqT[I] := 0;
+  E_ProcessCLen(E_LensC, N, True);
+  { 5) Build NT Huffman tree and codes. }
+  E_BuildHuffman(E_FreqT, D_NT, E_LensT);
+  E_CanonicalCodes(E_LensT, D_NT, E_CodesT);
+  { 6) Write NT length table. }
+  E_WritePtLen(E_LensT, D_NT, D_TBIT, 3);
+  { 7) Write CLen using NT tree. }
+  E_WriteCLenHeader(E_LensC, D_NC);
+  { 8) NP length table: all zero (no matches). }
+  For I := 0 To D_NP-1 Do NPLens[I] := 0;
+  E_WritePtLen(NPLens, D_NP, D_PBIT, -1);
+ End;
+ { 9) Emit each literal as its Huffman code. }
+ If ActiveCount > 1 Then
+  For I := 0 To E_BlockN-1 Do
+   E_PutBits(E_LensC[E_BlockBuf^[I]], E_CodesC[E_BlockBuf^[I]]);
+ E_BlockN := 0;
+End;
+
+Procedure E_BeginEncode;
+Begin
+ E_BitBuf := 0;
+ E_BitCount := 0;
+ E_OutPos := 0;
+ E_BytesWritten := 0;
+ E_BlockN := 0;
+End;
+
+Procedure E_AddByte(B: Byte);
+Begin
+ E_BlockBuf^[E_BlockN] := B;
+ Inc(E_BlockN);
+ If E_BlockN >= 8000 Then E_FlushBlock;
+End;
+
+Procedure E_EndEncode;
+Begin
+ If E_BlockN > 0 Then E_FlushBlock;
+ E_FinishBits;
+End;
+
+{ Compress a file using method 1 (literal-only Huffman).
+  Returns the number of compressed bytes written. }
+Function E_CompressFile(Var Src: File; OSize: LongInt;
+                        Var FileCRC: LongInt): LongInt;
+Var
+ Buf: Array[0..4095] of Byte;
+ ToRead: LongInt;
+ Got, I: Integer;
+ CRC: LongInt;
+Begin
+ D_InitCRC;
+ CRC := LongInt($FFFFFFFF);
+ E_BeginEncode;
+ While OSize > 0 Do Begin
+  If OSize > 4096 Then ToRead := 4096 Else ToRead := OSize;
+  BlockRead(Src, Buf, ToRead, Got);
+  If Got <= 0 Then Break;
+  For I := 0 To Got-1 Do Begin
+   CRC := D_UpdateCRC(CRC, Buf[I]);
+   E_AddByte(Buf[I]);
+  End;
+  Dec(OSize, Got);
+ End;
+ E_EndEncode;
+ FileCRC := CRC xor LongInt($FFFFFFFF);
+ E_CompressFile := E_BytesWritten;
+End;
+
+{ ============================================================ }
 
 Var
  Language:(_French,_English,_Germany,_Italian,_Spain);
@@ -698,8 +1068,19 @@ Var
  SwArg:String;
  ArcName:String;
  FirstFileIdx:Integer;
+ HeaderStart, DataEnd, CompressedSize: LongInt;
 
 BEGIN
+ New(D_InBuf);
+ New(D_CTable);
+ New(D_LeftT);
+ New(D_RightT);
+ New(D_Dict);
+ New(D_CRCTab);
+ New(E_OutBuf);
+ New(E_BlockBuf);
+ New(E_HuffParent);
+ New(E_HuffNF);
  Language:=_French;
  TmpLanguage:=GetEnv('LANGUAGE');
  If TmpLanguage<>''Then Begin
@@ -717,7 +1098,7 @@ BEGIN
   WriteLn('          ARJ e archive.arj  (extraire les fichiers)');
   WriteLn('          ARJ x archive.arj  (extraire les fichiers)');
   WriteLn('          ARJ a archive.arj fichier1 [fichier2 ...]  (ajouter des fichiers)');
-  WriteLn('Switch  : -m<N>  M�thode de compression (0=stockage, 1-4=non support�)');
+  WriteLn('Switch  : -m<N>  M�thode de compression (0=stockage, 1=Huffman, 2-4=non support�)');
  End
   Else
  If ParamCount>0Then Begin
@@ -944,9 +1325,9 @@ BEGIN
      If(Length(SwArg) >= 3)and((SwArg[2]='m')or(SwArg[2]='M'))Then Begin
       If(SwArg[3] in ['0'..'4'])and(Length(SwArg) = 3)Then Begin
        Method := Ord(SwArg[3]) - Ord('0');
-       If Method <> 0 Then Begin
+       If Method > 1 Then Begin
         WriteLn('M�thode de compression ',Method,
-                ' non support�e en �criture (seul -m0 stockage est disponible)');
+                ' non support�e en �criture (utilisez -m0 ou -m1)');
         Halt;
        End;
       End
@@ -1023,24 +1404,46 @@ BEGIN
     Begin
      SrcSize := FileSize(SrcFile);
      GetFTime(SrcFile, SrcDosDT);
-     SrcCRC := CRC32OfFile(SrcFile, SrcSize);
-     Seek(SrcFile, 0);
      StoredName := StripPath(SrcName);
-     WriteArjHeader(SourceARJ, 0, Method, SrcDosDT, SrcSize, SrcSize, SrcCRC,
-                    StoredName, '');
-     Remaining := SrcSize;
-     While Remaining > 0 Do Begin
-      If Remaining > 4096 Then ToRead := 4096 Else ToRead := Remaining;
-      BlockRead(SrcFile, ExtractBuf, ToRead, Got);
-      If Got <= 0 Then Break;
-      BlockWrite(SourceARJ, ExtractBuf, Got);
-      Dec(Remaining, Got);
+     If Method = 0 Then Begin
+      SrcCRC := CRC32OfFile(SrcFile, SrcSize);
+      Seek(SrcFile, 0);
+      WriteArjHeader(SourceARJ, 0, 0, SrcDosDT, SrcSize, SrcSize, SrcCRC,
+                     StoredName, '');
+      Remaining := SrcSize;
+      While Remaining > 0 Do Begin
+       If Remaining > 4096 Then ToRead := 4096 Else ToRead := Remaining;
+       BlockRead(SrcFile, ExtractBuf, ToRead, Got);
+       If Got <= 0 Then Break;
+       BlockWrite(SourceARJ, ExtractBuf, Got);
+       Dec(Remaining, Got);
+      End;
+      Case Language of
+       _English:WriteLn('Adding: ',StoredName,' (',SrcSize,' bytes, stored)');
+       Else WriteLn('Ajout : ',StoredName,' (',SrcSize,' octets, stock�)');
+      End;
+     End
+      Else
+     Begin
+      { Method 1: write header with placeholder, compress, patch CSize. }
+      HeaderStart := FilePos(SourceARJ);
+      WriteArjHeader(SourceARJ, 0, 1, SrcDosDT, 0, SrcSize, 0,
+                     StoredName, '');
+      DataEnd := FilePos(SourceARJ);
+      CompressedSize := E_CompressFile(SrcFile, SrcSize, SrcCRC);
+      DataEnd := FilePos(SourceARJ);
+      Seek(SourceARJ, HeaderStart);
+      WriteArjHeader(SourceARJ, 0, 1, SrcDosDT, CompressedSize, SrcSize,
+                     SrcCRC, StoredName, '');
+      Seek(SourceARJ, DataEnd);
+      Case Language of
+       _English:WriteLn('Adding: ',StoredName,' (',SrcSize,' -> ',
+                        CompressedSize,' bytes, method 1)');
+       Else WriteLn('Ajout : ',StoredName,' (',SrcSize,' -> ',
+                    CompressedSize,' octets, m�thode 1)');
+      End;
      End;
      Close(SrcFile);
-     Case Language of
-      _English:WriteLn('Adding: ',StoredName,' (',SrcSize,' bytes, stored)');
-      Else WriteLn('Ajout : ',StoredName,' (',SrcSize,' octets, stock�)');
-     End;
      Inc(NumFiles);
     End;
     Inc(ParamIdx);
