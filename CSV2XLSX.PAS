@@ -13,12 +13,16 @@ Uses DOS;
 
 Const
  MaxZipEntries=10;
+ DeflateBufferSize=8192;
+ MaxMatchLength=258;
+ MaxMatchDistance=2048;
 
 Type
  ZipEntry=Record
   Name:String;
   CRC:LongInt;
   Size:LongInt;
+  CompressedSize:LongInt;
   Offset:LongInt;
  End;
 
@@ -28,9 +32,13 @@ Var
  ZipEntries:Array[1..MaxZipEntries]of ZipEntry;
  ZipCount:Integer;
  CurrCRC:LongInt;
- CurrSize:LongInt;
+ CurrSize,CurrCompressedSize:LongInt;
  CurrLine,CurrCell,FileName,TFileName:String;
  CurrColumn,CurrRow:Integer;
+ DeflateBuffer:Array[1..DeflateBufferSize]of Byte;
+ DeflateCount:Integer;
+ BitBuffer:LongInt;
+ BitCount:Integer;
  CRC32Table:Array[0..255]of LongInt;
 
 Function Path2Ext(S:String):String;
@@ -84,10 +92,10 @@ Begin
  BlockWrite(TargetXLSX,B,1);
 End;
 
-Procedure PutWord(W:Integer);
+Procedure PutWord(W:LongInt);
 Begin
  PutByte(Byte(W and $FF));
- PutByte(Byte((W shr 8)and $FF));
+ PutByte(Byte(UShiftRight(W,8)and $FF));
 End;
 
 Procedure PutDWord(L:LongInt);
@@ -109,6 +117,195 @@ Begin
  End;
 End;
 
+Procedure PutDeflateByte(B:Byte);
+Begin
+ BlockWrite(TargetXLSX,B,1);
+ Inc(CurrCompressedSize);
+End;
+
+Function ReverseBits(Code,Bits:Integer):Integer;
+Var
+ I,R:Integer;
+Begin
+ R:=0;
+ For I:=1 to Bits do Begin
+  R:=(R shl 1)or(Code and 1);
+  Code:=Code shr 1;
+ End;
+ ReverseBits:=R;
+End;
+
+Procedure WriteBits(Value,Bits:Integer);
+Begin
+ BitBuffer:=BitBuffer or(LongInt(Value)shl BitCount);
+ Inc(BitCount,Bits);
+ While BitCount>=8 do Begin
+  PutDeflateByte(Byte(BitBuffer and $FF));
+  BitBuffer:=UShiftRight(BitBuffer,8);
+  Dec(BitCount,8);
+ End;
+ If BitCount=0Then BitBuffer:=0
+              Else BitBuffer:=BitBuffer and((1 shl BitCount)-1);
+End;
+
+Procedure FlushBits;
+Begin
+ If BitCount>0Then Begin
+  PutDeflateByte(Byte(BitBuffer and $FF));
+  BitBuffer:=0;
+  BitCount:=0;
+ End;
+End;
+
+Procedure WriteFixedSymbol(Symbol:Integer);
+Var
+ Code,Bits:Integer;
+Begin
+ If Symbol<=143Then Begin
+  Code:=$30+Symbol;
+  Bits:=8;
+ End
+  Else If Symbol<=255Then Begin
+  Code:=$190+(Symbol-144);
+  Bits:=9;
+ End
+  Else If Symbol<=279Then Begin
+  Code:=Symbol-256;
+  Bits:=7;
+ End
+  Else
+ Begin
+  Code:=$C0+(Symbol-280);
+  Bits:=8;
+ End;
+ WriteBits(ReverseBits(Code,Bits),Bits);
+End;
+
+Procedure GetLengthCode(Len:Integer;Var Code,ExtraBits,ExtraValue:Integer);
+Const
+ LengthBase:Array[0..28]of Integer=(
+  3,4,5,6,7,8,9,10,11,13,15,17,19,23,27,31,
+  35,43,51,59,67,83,99,115,131,163,195,227,258);
+ LengthExtra:Array[0..28]of Integer=(
+  0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2,
+  3,3,3,3,4,4,4,4,5,5,5,5,0);
+Var
+ I,MaxLen:Integer;
+Begin
+ For I:=0 to 28 do Begin
+  If LengthExtra[I]=0Then MaxLen:=LengthBase[I]
+                      Else MaxLen:=LengthBase[I]+(1 shl LengthExtra[I])-1;
+  If Len<=MaxLen Then Begin
+   Code:=257+I;
+   ExtraBits:=LengthExtra[I];
+   ExtraValue:=Len-LengthBase[I];
+   Exit;
+  End;
+ End;
+ Code:=285;
+ ExtraBits:=0;
+ ExtraValue:=0;
+End;
+
+Procedure GetDistanceCode(Dist:Integer;Var Code,ExtraBits,ExtraValue:Integer);
+Const
+ DistBase:Array[0..29]of Integer=(
+  1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,
+  193,257,385,513,769,1025,1537,2049,3073,4097,
+  6145,8193,12289,16385,24577);
+ DistExtra:Array[0..29]of Integer=(
+  0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,
+  6,7,7,8,8,9,9,10,10,11,11,12,12,13,13);
+Var
+ I,MaxDist:Integer;
+Begin
+ For I:=0 to 29 do Begin
+  If DistExtra[I]=0Then MaxDist:=DistBase[I]
+                    Else MaxDist:=DistBase[I]+(1 shl DistExtra[I])-1;
+  If Dist<=MaxDist Then Begin
+   Code:=I;
+   ExtraBits:=DistExtra[I];
+   ExtraValue:=Dist-DistBase[I];
+   Exit;
+  End;
+ End;
+ Code:=0;
+ ExtraBits:=0;
+ ExtraValue:=0;
+End;
+
+Procedure WriteLengthDistance(Len,Dist:Integer);
+Var
+ Code,ExtraBits,ExtraValue:Integer;
+Begin
+ GetLengthCode(Len,Code,ExtraBits,ExtraValue);
+ WriteFixedSymbol(Code);
+ If ExtraBits>0Then WriteBits(ExtraValue,ExtraBits);
+ GetDistanceCode(Dist,Code,ExtraBits,ExtraValue);
+ WriteBits(ReverseBits(Code,5),5);
+ If ExtraBits>0Then WriteBits(ExtraValue,ExtraBits);
+End;
+
+Procedure FindMatch(Pos:Integer;Var BestLen,BestDist:Integer);
+Var
+ SearchStart,J,L,MaxLen:Integer;
+Begin
+ BestLen:=0;
+ BestDist:=0;
+ SearchStart:=Pos-MaxMatchDistance;
+ If SearchStart<1 Then SearchStart:=1;
+ MaxLen:=DeflateCount-Pos+1;
+ If MaxLen>MaxMatchLength Then MaxLen:=MaxMatchLength;
+ For J:=Pos-1 downto SearchStart do Begin
+  If DeflateBuffer[J]=DeflateBuffer[Pos] Then Begin
+   L:=0;
+   While(L<MaxLen)and(L<Pos-J)and
+        (DeflateBuffer[J+L]=DeflateBuffer[Pos+L])do Inc(L);
+   If L>BestLen Then Begin
+    BestLen:=L;
+    BestDist:=Pos-J;
+   End;
+  End;
+ End;
+ If BestLen<3 Then Begin
+  BestLen:=0;
+  BestDist:=0;
+ End;
+End;
+
+Procedure FlushDeflateBlock(FinalBlock:Boolean);
+Var
+ Pos,BestLen,BestDist:Integer;
+Begin
+ If(Not FinalBlock)and(DeflateCount=0) Then Exit;
+ If FinalBlock Then WriteBits(1,1)
+               Else WriteBits(0,1);
+ WriteBits(1,2);
+ Pos:=1;
+ While Pos<=DeflateCount do Begin
+  FindMatch(Pos,BestLen,BestDist);
+  If BestLen>0 Then Begin
+   WriteLengthDistance(BestLen,BestDist);
+   Inc(Pos,BestLen);
+  End
+   Else
+  Begin
+   WriteFixedSymbol(DeflateBuffer[Pos]);
+   Inc(Pos);
+  End;
+ End;
+ WriteFixedSymbol(256);
+ DeflateCount:=0;
+ If FinalBlock Then FlushBits;
+End;
+
+Procedure AddDeflateByte(B:Byte);
+Begin
+ If DeflateCount>=DeflateBufferSize Then FlushDeflateBlock(False);
+ Inc(DeflateCount);
+ DeflateBuffer[DeflateCount]:=B;
+End;
+
 Procedure PutZipData(S:String);
 Var
  I:Integer;
@@ -116,8 +313,8 @@ Var
 Begin
  For I:=1 to Length(S)do Begin
   B:=Ord(S[I]);
-  BlockWrite(TargetXLSX,B,1);
   UpdateCRC(B);
+  AddDeflateByte(B);
  End;
 End;
 
@@ -128,11 +325,15 @@ Begin
  ZipEntries[ZipCount].Offset:=FilePos(TargetXLSX);
  CurrCRC:=LongInt($FFFFFFFF);
  CurrSize:=0;
+ CurrCompressedSize:=0;
+ DeflateCount:=0;
+ BitBuffer:=0;
+ BitCount:=0;
 
  PutDWord($04034B50);
  PutWord(20);
  PutWord(0);
- PutWord(0);
+ PutWord(8);
  PutWord(0);
  PutWord(0);
  PutDWord(0);
@@ -147,13 +348,15 @@ Procedure FinishZipEntry;
 Var
  EndOffset:LongInt;
 Begin
+ FlushDeflateBlock(True);
  CurrCRC:=CurrCRC xor LongInt($FFFFFFFF);
  ZipEntries[ZipCount].CRC:=CurrCRC;
  ZipEntries[ZipCount].Size:=CurrSize;
+ ZipEntries[ZipCount].CompressedSize:=CurrCompressedSize;
  EndOffset:=FilePos(TargetXLSX);
  Seek(TargetXLSX,ZipEntries[ZipCount].Offset+14);
  PutDWord(CurrCRC);
- PutDWord(CurrSize);
+ PutDWord(CurrCompressedSize);
  PutDWord(CurrSize);
  Seek(TargetXLSX,EndOffset);
 End;
@@ -169,11 +372,11 @@ Begin
   PutWord(20);
   PutWord(20);
   PutWord(0);
-  PutWord(0);
+  PutWord(8);
   PutWord(0);
   PutWord(0);
   PutDWord(ZipEntries[I].CRC);
-  PutDWord(ZipEntries[I].Size);
+  PutDWord(ZipEntries[I].CompressedSize);
   PutDWord(ZipEntries[I].Size);
   PutWord(Length(ZipEntries[I].Name));
   PutWord(0);
