@@ -43,6 +43,14 @@ Const
  LZMaxChunks=256;
  LZBitModelTotal=2048;
  LZMoveBits=5;
+ TerseTreeSize=4096;
+ TerseCodeSize=257;
+ TerseRecordMark=257;
+ TerseEOF=0;
+ TerseNone=-1;
+ TerseStackSize=2047;
+ DCLMaxBits=13;
+ DCLWindowSize=4096;
 
 Type
  PWindowHalf=^TWindowHalf;
@@ -72,6 +80,21 @@ Type
  TLZLitContext=Array[0..LZLitContextSize-1]of Word;
  PWordArray=^TWordArray;
  TWordArray=Array[0..32759]of Word;
+ PTerseIntArray=^TTerseIntArray;
+ TTerseIntArray=Array[0..TerseTreeSize]of Integer;
+ TTerseTreeRecord=Record
+  Left,Right,Back,NextCount:Integer;
+ End;
+ PTerseTreeArray=^TTerseTreeArray;
+ TTerseTreeArray=Array[0..TerseTreeSize]of TTerseTreeRecord;
+ PTerseStackArray=^TTerseStackArray;
+ TTerseStackArray=Array[0..TerseStackSize]of Integer;
+ PDCLWindow=^TDCLWindow;
+ TDCLWindow=Array[0..DCLWindowSize-1]of Byte;
+ DCLHuffman=Record
+  Count:Array[0..DCLMaxBits]of Integer;
+  Symbol:Array[0..255]of Integer;
+ End;
  BZHuffman=Record
   MinLen,MaxLen:Integer;
   Len:Array[0..BZMaxAlphaSize-1]of Byte;
@@ -118,6 +141,11 @@ Var
  LZLenChoice,LZRepLenChoice:Array[0..1]of Word;
  LZLenLow,LZLenMid,LZRepLenLow,LZRepLenMid:Array[0..LZNumPosStatesMax*8-1]of Word;
  LZLenHigh,LZRepLenHigh:Array[0..LZLenHighSymbols-1]of Word;
+ TerseBitsAvailable,TerseSavedBits:Integer;
+ DCLBitBuf,DCLBitCount,DCLNext:Integer;
+ DCLWin:PDCLWindow;
+ ZipCryptActive:Boolean;
+ ZipKey0,ZipKey1,ZipKey2:LongInt;
 
 Function Path2Ext(S:String):String;
 Var
@@ -142,6 +170,9 @@ Begin
  LowByte:=Byte(L and $FF);
 End;
 
+Function CRC32Value(C:LongInt;B:Byte):LongInt; forward;
+Function ZipDecryptByte(C:Byte):Byte; forward;
+
 Procedure InitCRC32;
 Var
  I,J:Integer;
@@ -159,7 +190,7 @@ End;
 
 Procedure UpdateCRC32(B:Byte);
 Begin
- OutCRC:=UShiftRight(OutCRC,8)xor CRC32Table[LowByte(OutCRC xor B)];
+ OutCRC:=CRC32Value(OutCRC,B);
  Inc(OutSize);
 End;
 
@@ -218,6 +249,11 @@ End;
 Function SameDWord(A,B:LongInt):Boolean;
 Begin
  SameDWord:=Hex8(A)=Hex8(B);
+End;
+
+Function CRC32Value(C:LongInt;B:Byte):LongInt;
+Begin
+ CRC32Value:=UShiftRight(C,8)xor CRC32Table[LowByte(C xor B)];
 End;
 
 Function BaseName(S:String):String;
@@ -341,13 +377,17 @@ Begin
 End;
 
 Function ReadCompByte:Byte;
+Var
+ B:Byte;
 Begin
  If CompLeft<=0 Then Begin
   WriteLn('Flux compresse trop court.');
   Halt(1);
  End;
  Dec(CompLeft);
- ReadCompByte:=ReadZipByte;
+ B:=ReadZipByte;
+ If ZipCryptActive Then B:=ZipDecryptByte(B);
+ ReadCompByte:=B;
 End;
 
 Function ReadWordLE:Integer;
@@ -368,6 +408,41 @@ Begin
  B3:=ReadZipByte;
  B4:=ReadZipByte;
  ReadDWordLE:=B1+256*B2+65536*B3+16777216*B4;
+End;
+
+Procedure ZipCryptUpdate(B:Byte);
+Begin
+ ZipKey0:=CRC32Value(ZipKey0,B);
+ ZipKey1:=ZipKey1+LowByte(ZipKey0);
+ ZipKey1:=ZipKey1*LongInt(134775813)+1;
+ ZipKey2:=CRC32Value(ZipKey2,Byte(UShiftRight(ZipKey1,24)and $FF));
+End;
+
+Function ZipCryptByte:Byte;
+Var
+ T:LongInt;
+Begin
+ T:=(ZipKey2 or 2)and $FFFF;
+ ZipCryptByte:=Byte(UShiftRight(T*(T xor 1),8)and $FF);
+End;
+
+Function ZipDecryptByte(C:Byte):Byte;
+Var
+ P:Byte;
+Begin
+ P:=C xor ZipCryptByte;
+ ZipCryptUpdate(P);
+ ZipDecryptByte:=P;
+End;
+
+Procedure ZipCryptInit(Pwd:String);
+Var
+ I:Integer;
+Begin
+ ZipKey0:=LongInt(305419896);
+ ZipKey1:=LongInt(591751049);
+ ZipKey2:=LongInt(878082192);
+ For I:=1 to Length(Pwd)do ZipCryptUpdate(Byte(Ord(Pwd[I])));
 End;
 
 Function ReadBit:Integer;
@@ -1162,6 +1237,505 @@ Begin
   End;
  End;
  LZFree;
+End;
+
+Function DCLBits(Need:Integer):Integer;
+Var
+ Val:Integer;
+Begin
+ Val:=DCLBitBuf;
+ While DCLBitCount<Need do Begin
+  Val:=Val or(Integer(ReadCompByte)shl DCLBitCount);
+  Inc(DCLBitCount,8);
+ End;
+ DCLBitBuf:=Val shr Need;
+ Dec(DCLBitCount,Need);
+ If Need=0 Then DCLBits:=0
+           Else DCLBits:=Val and((1 shl Need)-1);
+End;
+
+Function DCLDecode(Var H:DCLHuffman):Integer;
+Var
+ Len,Code,First,Cnt,Index:Integer;
+Begin
+ Code:=0;
+ First:=0;
+ Index:=0;
+ For Len:=1 to DCLMaxBits do Begin
+  Code:=Code or(DCLBits(1)xor 1);
+  Cnt:=H.Count[Len];
+  If Code<First+Cnt Then Begin
+   DCLDecode:=H.Symbol[Index+(Code-First)];
+   Exit;
+  End;
+  Inc(Index,Cnt);
+  Inc(First,Cnt);
+  First:=First shl 1;
+  Code:=Code shl 1;
+ End;
+ WriteLn('Code DCL Implode invalide.');
+ Halt(1);
+ DCLDecode:=0;
+End;
+
+Procedure DCLConstruct(Var H:DCLHuffman;Var Rep;RepCount:Integer);
+Type
+ TRep=Array[0..255]of Byte;
+Var
+ R:^TRep;
+ Length:Array[0..255]of Integer;
+ Offs:Array[0..DCLMaxBits]of Integer;
+ I,Len,Left,Symbol,N:Integer;
+Begin
+ R:=@Rep;
+ Symbol:=0;
+ For I:=0 to RepCount-1 do Begin
+  Len:=R^[I];
+  Left:=(Len shr 4)+1;
+  Len:=Len and 15;
+  While Left>0 do Begin
+   Length[Symbol]:=Len;
+   Inc(Symbol);
+   Dec(Left);
+  End;
+ End;
+ N:=Symbol;
+ For Len:=0 to DCLMaxBits do H.Count[Len]:=0;
+ For Symbol:=0 to N-1 do Inc(H.Count[Length[Symbol]]);
+ Left:=1;
+ For Len:=1 to DCLMaxBits do Begin
+  Left:=Left shl 1;
+  Dec(Left,H.Count[Len]);
+  If Left<0 Then Begin
+   WriteLn('Table DCL Implode invalide.');
+   Halt(1);
+  End;
+ End;
+ Offs[1]:=0;
+ For Len:=1 to DCLMaxBits-1 do Offs[Len+1]:=Offs[Len]+H.Count[Len];
+ For Symbol:=0 to N-1 do If Length[Symbol]<>0 Then Begin
+  H.Symbol[Offs[Length[Symbol]]]:=Symbol;
+  Inc(Offs[Length[Symbol]]);
+ End;
+End;
+
+Procedure DCLPutByte(B:Byte);
+Begin
+ PutOutByte(B);
+ DCLWin^[DCLNext]:=B;
+ DCLNext:=(DCLNext+1)and $0FFF;
+End;
+
+Procedure InflateDCLImplode;
+Const
+ LitLen:Array[0..97]of Byte=(
+  11,124,8,7,28,7,188,13,76,4,10,8,12,10,12,10,8,23,8,
+  9,7,6,7,8,7,6,55,8,23,24,12,11,7,9,11,12,6,7,22,5,
+  7,24,6,11,9,6,7,22,7,11,38,7,9,8,25,11,8,11,9,12,
+  8,12,5,38,5,38,5,11,7,5,6,21,6,10,53,8,7,24,10,27,
+  44,253,253,253,252,252,252,13,12,45,12,45,12,61,12,45,
+  44,173);
+ LenLen:Array[0..5]of Byte=(2,35,36,53,38,23);
+ DistLen:Array[0..6]of Byte=(2,20,53,230,247,151,248);
+ Base:Array[0..15]of Integer=(
+  3,2,4,5,6,7,8,9,10,12,16,24,40,72,136,264);
+ Extra:Array[0..15]of Integer=(
+  0,0,0,0,0,0,0,0,1,2,3,4,5,6,7,8);
+Var
+ LitCode,LenCode,DistCode:DCLHuffman;
+ Lit,Dict,Symbol,Len,Dist,CopyBits,I,FromPos:Integer;
+ B:Byte;
+Begin
+ InitWindow(False);
+ If DCLWin=NIL Then GetMem(DCLWin,SizeOf(TDCLWindow));
+ If DCLWin=NIL Then Begin
+  WriteLn('Memoire insuffisante pour DCL Implode.');
+  Halt(1);
+ End;
+ FillChar(DCLWin^,SizeOf(TDCLWindow),0);
+ DCLBitBuf:=0;
+ DCLBitCount:=0;
+ DCLNext:=0;
+ DCLConstruct(LitCode,LitLen,SizeOf(LitLen));
+ DCLConstruct(LenCode,LenLen,SizeOf(LenLen));
+ DCLConstruct(DistCode,DistLen,SizeOf(DistLen));
+ Lit:=DCLBits(8);
+ If Lit>1 Then Begin
+  WriteLn('En-tete DCL Implode invalide.');
+  Halt(1);
+ End;
+ Dict:=DCLBits(8);
+ If(Dict<4)or(Dict>6)Then Begin
+  WriteLn('Dictionnaire DCL Implode invalide.');
+  Halt(1);
+ End;
+ While True do Begin
+  If DCLBits(1)<>0 Then Begin
+   Symbol:=DCLDecode(LenCode);
+   Len:=Base[Symbol]+DCLBits(Extra[Symbol]);
+   If Len=519 Then Break;
+   If Len=2 Then CopyBits:=2 Else CopyBits:=Dict;
+   Dist:=(DCLDecode(DistCode)shl CopyBits)+DCLBits(CopyBits)+1;
+   If Dist>OutSize Then Begin
+    WriteLn('Reference DCL Implode invalide.');
+    Halt(1);
+   End;
+   For I:=1 to Len do Begin
+    FromPos:=(DCLNext-Dist)and $0FFF;
+    B:=DCLWin^[FromPos];
+    DCLPutByte(B);
+   End;
+  End
+   Else
+  Begin
+   If Lit<>0 Then Symbol:=DCLDecode(LitCode)
+             Else Symbol:=DCLBits(8);
+   DCLPutByte(Byte(Symbol));
+  End;
+ End;
+ FreeMem(DCLWin,SizeOf(TDCLWindow));
+ DCLWin:=NIL;
+End;
+
+Function TerseReadByte:Byte;
+Begin
+ TerseReadByte:=ReadCompByte;
+End;
+
+Function TerseReadWordBE:Integer;
+Var
+ B1,B2:Integer;
+Begin
+ B1:=TerseReadByte;
+ B2:=TerseReadByte;
+ TerseReadWordBE:=B1*256+B2;
+End;
+
+Function TerseReadDWordBE:LongInt;
+Var
+ B1,B2,B3,B4:LongInt;
+Begin
+ B1:=TerseReadByte;
+ B2:=TerseReadByte;
+ B3:=TerseReadByte;
+ B4:=TerseReadByte;
+ TerseReadDWordBE:=(((B1*256)+B2)*256+B3)*256+B4;
+End;
+
+Function TerseGetBlok:Integer;
+Var
+ B1,B2:Integer;
+Begin
+ If TerseBitsAvailable=0 Then Begin
+  If CompLeft<=0 Then Begin
+   TerseGetBlok:=TerseEOF;
+   Exit;
+  End;
+  B1:=TerseReadByte;
+  If CompLeft<=0 Then Begin
+   WriteLn('Flux TERSE tronque.');
+   Halt(1);
+  End;
+  B2:=TerseReadByte;
+  TerseSavedBits:=B2 and $0F;
+  TerseBitsAvailable:=4;
+  TerseGetBlok:=(B1 shl 4)or(B2 shr 4);
+ End
+  Else
+ Begin
+  If CompLeft<=0 Then Begin
+   TerseGetBlok:=TerseEOF;
+   Exit;
+  End;
+  B2:=TerseReadByte;
+  TerseBitsAvailable:=0;
+  TerseGetBlok:=(TerseSavedBits shl 8)or B2;
+ End;
+End;
+
+Procedure TersePutChar(X:Integer);
+Begin
+ If(X=0)or(X=TerseRecordMark)Then Exit;
+ If(X<0)or(X>256)Then Begin
+  WriteLn('Caractere TERSE invalide.');
+  Halt(1);
+ End;
+ PutOutByte(Byte(X-1));
+End;
+
+Procedure InflateTersePack;
+Var
+ Father,CharExt,Backward,Forward:PTerseIntArray;
+ H1,H2,X,D,Y,Q,R,E,P,H:Integer;
+Begin
+ GetMem(Father,SizeOf(TTerseIntArray));
+ GetMem(CharExt,SizeOf(TTerseIntArray));
+ GetMem(Backward,SizeOf(TTerseIntArray));
+ GetMem(Forward,SizeOf(TTerseIntArray));
+ If(Father=NIL)or(CharExt=NIL)or(Backward=NIL)or(Forward=NIL)Then Begin
+  WriteLn('Memoire insuffisante pour TERSE PACK.');
+  Halt(1);
+ End;
+ H2:=1+Ord(' ');
+ For H1:=258 to 4095 do Begin
+  Father^[H1]:=H2;
+  CharExt^[H1]:=1+Ord(' ');
+  H2:=H1;
+ End;
+ For H1:=258 to 4094 do Begin
+  Backward^[H1+1]:=H1;
+  Forward^[H1]:=H1+1;
+ End;
+ Backward^[0]:=4095;
+ Forward^[0]:=258;
+ Backward^[258]:=0;
+ Forward^[4095]:=0;
+ X:=0;
+ D:=TerseGetBlok;
+ While D<>TerseEOF do Begin
+  H:=0;
+  Y:=Backward^[0];
+  Q:=Backward^[Y];
+  Backward^[0]:=Q;
+  Forward^[Q]:=0;
+  H:=Y;
+  P:=0;
+  While D>257 do Begin
+   Q:=Forward^[D];
+   R:=Backward^[D];
+   Forward^[R]:=Q;
+   Backward^[Q]:=R;
+   Forward^[D]:=H;
+   Backward^[H]:=D;
+   H:=D;
+   E:=Father^[D];
+   Father^[D]:=P;
+   P:=D;
+   D:=E;
+  End;
+  Q:=Forward^[0];
+  Forward^[Y]:=Q;
+  Backward^[Q]:=Y;
+  Forward^[0]:=H;
+  Backward^[H]:=0;
+  CharExt^[X]:=D;
+  TersePutChar(D);
+  X:=Y;
+  While P<>0 do Begin
+   E:=Father^[P];
+   TersePutChar(CharExt^[P]);
+   Father^[P]:=D;
+   D:=P;
+   P:=E;
+  End;
+  Father^[Y]:=D;
+  D:=TerseGetBlok;
+ End;
+ FreeMem(Father,SizeOf(TTerseIntArray));
+ FreeMem(CharExt,SizeOf(TTerseIntArray));
+ FreeMem(Backward,SizeOf(TTerseIntArray));
+ FreeMem(Forward,SizeOf(TTerseIntArray));
+End;
+
+Procedure InflateTerseSpack;
+Var
+ Tree:PTerseTreeArray;
+ Stack:PTerseStackArray;
+ TreeAvail,Node:Integer;
+
+ Procedure TreeInit;
+ Var
+  I:Integer;
+ Begin
+  For I:=0 to TerseTreeSize do Begin
+   Tree^[I].Left:=TerseNone;
+   Tree^[I].Right:=TerseNone;
+   Tree^[I].Back:=0;
+   Tree^[I].NextCount:=TerseNone;
+  End;
+  I:=0;
+  While I<=TerseCodeSize do Begin
+   Tree^[I].Left:=TerseNone;
+   Tree^[I].Right:=I;
+   Inc(I);
+  End;
+  For I:=TerseCodeSize+1 to TerseTreeSize-1 do Begin
+   Tree^[I].NextCount:=I+1;
+   Tree^[I].Left:=TerseNone;
+   Tree^[I].Right:=TerseNone;
+  End;
+  Tree^[TerseTreeSize].NextCount:=TerseNone;
+  Tree^[0].NextCount:=0;
+  Tree^[0].Back:=0;
+  For I:=1 to TerseCodeSize do Tree^[I].NextCount:=TerseNone;
+  TreeAvail:=TerseCodeSize+1;
+ End;
+
+ Function GetTreeNode:Integer;
+ Begin
+  Node:=TreeAvail;
+  TreeAvail:=Tree^[Node].NextCount;
+  GetTreeNode:=Node;
+ End;
+
+ Procedure LruAdd(N:Integer);
+ Var
+  B:Integer;
+ Begin
+  B:=Tree^[0].Back;
+  Tree^[N].NextCount:=0;
+  Tree^[0].Back:=N;
+  Tree^[N].Back:=B;
+  Tree^[B].NextCount:=N;
+ End;
+
+ Procedure DeleteRef(DRef:Integer); forward;
+
+ Procedure LruKill;
+ Var
+  P,Q,R:Integer;
+ Begin
+  P:=Tree^[0].NextCount;
+  Q:=Tree^[P].NextCount;
+  R:=Tree^[P].Back;
+  Tree^[Q].Back:=R;
+  Tree^[R].NextCount:=Q;
+  DeleteRef(Tree^[P].Left);
+  DeleteRef(Tree^[P].Right);
+  Tree^[P].NextCount:=TreeAvail;
+  TreeAvail:=P;
+ End;
+
+ Procedure DeleteRef(DRef:Integer);
+ Begin
+  If Tree^[DRef].NextCount=-1 Then LruAdd(DRef)
+   Else Inc(Tree^[DRef].NextCount);
+ End;
+
+ Procedure BumpRef(BRef:Integer);
+ Var
+  F,P:Integer;
+ Begin
+  If Tree^[BRef].NextCount<0 Then Dec(Tree^[BRef].NextCount)
+   Else Begin
+   F:=Tree^[BRef].NextCount;
+   P:=Tree^[BRef].Back;
+   Tree^[P].NextCount:=F;
+   Tree^[F].Back:=P;
+   Tree^[BRef].NextCount:=-1;
+  End;
+ End;
+
+ Procedure PutChars(X:Integer);
+ Begin
+  Stack^[0]:=0;
+  While True do Begin
+   While X>TerseCodeSize do Begin
+    Inc(Stack^[0]);
+    If Stack^[0]>TerseStackSize Then Begin
+     WriteLn('Pile TERSE pleine.');
+     Halt(1);
+    End;
+    Stack^[Stack^[0]]:=Tree^[X].Right;
+    X:=Tree^[X].Left;
+   End;
+   If X<0 Then Begin
+    WriteLn('Sequence TERSE invalide.');
+    Halt(1);
+   End;
+   TersePutChar(X);
+   If Stack^[0]>0 Then Begin
+    X:=Stack^[Stack^[0]];
+    Dec(Stack^[0]);
+   End
+    Else Break;
+  End;
+ End;
+
+Var
+ N,G,H:Integer;
+Begin
+ GetMem(Tree,SizeOf(TTerseTreeArray));
+ GetMem(Stack,SizeOf(TTerseStackArray));
+ If(Tree=NIL)or(Stack=NIL)Then Begin
+  WriteLn('Memoire insuffisante pour TERSE SPACK.');
+  Halt(1);
+ End;
+ TreeInit;
+ Tree^[TerseTreeSize-1].NextCount:=TerseNone;
+ H:=TerseGetBlok;
+ If H<>TerseEOF Then Begin
+  PutChars(H);
+  G:=TerseGetBlok;
+  While G<>TerseEOF do Begin
+   If TreeAvail=TerseNone Then LruKill;
+   PutChars(G);
+   N:=GetTreeNode;
+   Tree^[N].Left:=H;
+   Tree^[N].Right:=G;
+   BumpRef(H);
+   BumpRef(G);
+   LruAdd(N);
+   H:=G;
+   G:=TerseGetBlok;
+  End;
+ End;
+ FreeMem(Tree,SizeOf(TTerseTreeArray));
+ FreeMem(Stack,SizeOf(TTerseStackArray));
+End;
+
+Procedure InflateTerse;
+Var
+ Version,Byte2,Byte3,Byte4,VariableFlag,Flags,Ratio:Integer;
+ RecordLen1,BlockSize:Integer;
+ RecordLen2:LongInt;
+ Spack:Boolean;
+Begin
+ InitWindow(False);
+ TerseBitsAvailable:=0;
+ TerseSavedBits:=0;
+ Version:=TerseReadByte;
+ Spack:=True;
+ Case Version of
+  $01,$07:Begin
+    Byte2:=TerseReadByte;
+    Byte3:=TerseReadByte;
+    Byte4:=TerseReadByte;
+    RecordLen1:=TerseReadWordBE;
+    If(RecordLen1=0)Then Begin End;
+    If(Byte2<>$89)or(Byte3<>$69)or(Byte4<>$A5)Then Begin
+     WriteLn('En-tete TERSE invalide.');
+     Halt(1);
+    End;
+    Spack:=False;
+   End;
+  $02,$05:Begin
+    VariableFlag:=TerseReadByte;
+    RecordLen1:=TerseReadWordBE;
+    Flags:=TerseReadByte;
+    Ratio:=TerseReadByte;
+    BlockSize:=TerseReadWordBE;
+    RecordLen2:=TerseReadDWordBE;
+    If(VariableFlag<>0)and(VariableFlag<>1)Then Begin
+     WriteLn('Format enregistrement TERSE invalide.');
+     Halt(1);
+    End;
+    If(RecordLen1=0)and(RecordLen2=0)Then Begin
+     WriteLn('Longueur enregistrement TERSE invalide.');
+     Halt(1);
+    End;
+    If(Flags=0)and((Ratio<>0)or(BlockSize<>0))Then Begin
+     WriteLn('En-tete TERSE invalide.');
+     Halt(1);
+    End;
+    Spack:=Version=$05;
+   End;
+ Else
+  WriteLn('Version TERSE non reconnue.');
+  Halt(1);
+ End;
+ If Spack Then InflateTerseSpack
+          Else InflateTersePack;
 End;
 
 Procedure BZAllocTT(Limit:LongInt);
@@ -2089,6 +2663,9 @@ Begin
   10:MethodName:='dcl-implode';
   12:MethodName:='bzip2';
   14:MethodName:='lzma';
+  18:MethodName:='ibm-terse';
+  19:MethodName:='ibm-lz77';
+  93:MethodName:='zstandard';
  Else
   Str(Method,S);
   MethodName:=S;
@@ -2117,6 +2694,38 @@ Begin
  While N>0 do Begin
   ReadZipByte;
   Dec(N);
+ End;
+End;
+
+Procedure PrepareZipCrypto(Flags:Integer;CRC:LongInt;Name:String);
+Var
+ I:Integer;
+ B,CheckByte:Byte;
+Begin
+ ZipCryptActive:=False;
+ If(Flags and 1)=0 Then Exit;
+ If Password=''Then Begin
+  WriteLn('Mot de passe requis pour ',Name);
+  Halt(1);
+ End;
+ If(Flags and $40)<>0 Then Begin
+  WriteLn('Chiffrement fort ZIP non supporte: ',Name);
+  Halt(1);
+ End;
+ If CompLeft<12 Then Begin
+  WriteLn('En-tete de chiffrement ZIP invalide: ',Name);
+  Halt(1);
+ End;
+ ZipCryptInit(Password);
+ ZipCryptActive:=True;
+ CheckByte:=0;
+ For I:=1 to 12 do Begin
+  B:=ReadCompByte;
+  If I=12 Then CheckByte:=B;
+ End;
+ If CheckByte<>Byte(UShiftRight(CRC,24)and $FF)Then Begin
+  WriteLn('Mot de passe incorrect ou en-tete ZIP chiffre invalide: ',Name);
+  Halt(1);
  End;
 End;
 
@@ -2155,10 +2764,6 @@ Begin
   OutName:=CleanName(Name);
   IsDir:=(OutName='')or(OutName[Length(OutName)]='\');
   DoSkip:=IsExcluded(Name);
-  If(Flags and 1)<>0 Then Begin
-   WriteLn('Archive chiffree non supportee: ',Name);
-   Halt(1);
-  End;
   If(Flags and 8)<>0 Then Begin
    WriteLn('Archive avec descripteur de donnees non supportee: ',Name);
    Halt(1);
@@ -2209,6 +2814,13 @@ Begin
      If TestMode Then OutputMode:=2
       Else If PipeMode or CatMode Then OutputMode:=1
       Else OutputMode:=0;
+     CompLeft:=CompSize;
+     ZipCryptActive:=False;
+     ExpectedCRC:=CRC;
+     OutCRC:=LongInt($FFFFFFFF);
+     OutSize:=0;
+     PrevOutByte:=-1;
+     PrepareZipCrypto(Flags,CRC,Name);
      If(OutputMode=0)Then Begin
       MakePath(OutName);
       If Not QuietMode and Not VeryQuietMode Then MoreWriteLn('Extraction '+OutName);
@@ -2221,11 +2833,6 @@ Begin
      End
       Else If TestMode and Not QuietMode and Not VeryQuietMode Then
      MoreWriteLn('Test '+Name);
-     CompLeft:=CompSize;
-     ExpectedCRC:=CRC;
-     OutCRC:=LongInt($FFFFFFFF);
-     OutSize:=0;
-     PrevOutByte:=-1;
      Case Method of
       0:Begin
          InitWindow(False);
@@ -2248,15 +2855,28 @@ Begin
       8:InflateDeflate;
       9:InflateDeflate64;
       10:Begin
-          If OutputMode=0 Then Close(OutFile);
-          WriteLn('Methode ZIP 10 PKWARE DCL Implode/old IBM TERSE non documentee: ',Name);
-          Halt(1);
+          InflateDCLImplode;
          End;
       12:Begin
           InflateBZip2;
          End;
       14:Begin
           InflateLZMA;
+         End;
+      18:Begin
+          InflateTerse;
+         End;
+      19:Begin
+          If OutputMode=0 Then Close(OutFile);
+          WriteLn('Methode ZIP 19 IBM LZ77 z Architecture/PFS non portable: ',Name);
+          WriteLn('Cette methode depend du format CMPSC/dictionnaire IBM z/Architecture.');
+          Halt(1);
+         End;
+      93:Begin
+          If OutputMode=0 Then Close(OutFile);
+          WriteLn('Methode ZIP 93 Zstandard reconnue mais non integree: ',Name);
+          WriteLn('ZSTD requiert un decodeur de frame complet avec FSE et Huffman.');
+          Halt(1);
          End;
      Else
       If OutputMode=0 Then Close(OutFile);
@@ -2304,18 +2924,21 @@ Begin
  WriteLn(' -c        Affiche les fichiers a l''ecran');
  WriteLn(' -z        Affiche le commentaire ZIP');
  WriteLn(' -M        Affichage page par page');
- WriteLn(' -P mot    Mot de passe (archives chiffrees non supportees)');
+ WriteLn(' -P mot    Mot de passe ZipCrypto classique');
  WriteLn(' -X -U -:  Options reconnues pour compatibilite');
  WriteLn;
  WriteLn('Supporte les methodes ZIP store (0), shrink (1), ',
-        'reduce (2-5), implode (6), deflate (8), Deflate64 (9), ',
-        'BZIP2 (12) et LZMA (14).');
+        'reduce (2-5), implode (6), deflate (8), Deflate64 (9), ');
+ WriteLn('DCL Implode (10), BZIP2 (12), LZMA (14), IBM TERSE (18).');
  WriteLn('Methode 7 tokenizing reconnue, mais reservee/non documentee.');
- WriteLn('Methode 10 DCL Implode/old IBM TERSE reconnue, mais non documentee.');
+ WriteLn('Methode 10 DCL Implode/old IBM TERSE supportee.');
+ WriteLn('IBM TERSE (18) supporte les flux PACK/SPACK avec en-tete TERSE.');
+ WriteLn('Methode 19 IBM LZ77 z Architecture/PFS reconnue, non portable.');
+ WriteLn('Methode 93 Zstandard reconnue, decodeur ZSTD non integre.');
  WriteLn('BZIP2 utilise la memoire de tas par blocs pour l''inversion BWT.');
  WriteLn('LZMA utilise un dictionnaire sur tas; lc+lp doit etre <= 4.');
- WriteLn('Note : -P refuse les archives vraiment chiffrees; -X restaure peu');
- WriteLn('d''attributs sous DOS/Windows minimal; -u ne compare pas les dates ZIP.');
+ WriteLn('Note : -P supporte ZipCrypto classique, pas AES/WinZip ni chiffrement fort.');
+ WriteLn('-X restaure peu d''attributs; -u ne compare pas les dates ZIP.');
 End;
 
 Procedure ShowZipComment;
@@ -2363,6 +2986,7 @@ Begin
  WindowLo:=NIL;
  WindowHi:=NIL;
  WindowMask:=$7FFF;
+ ZipCryptActive:=False;
  ShrinkPrefix:=NIL;
  ShrinkSuffix:=NIL;
  ShrinkActive:=NIL;
