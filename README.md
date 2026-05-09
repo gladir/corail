@@ -558,6 +558,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier .CSV en format XML.</td>
 		</tr>	
 		<tr>
+			<td><b>CSV2XLSX.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier CSV en XLSX de Microsoft Excel.</td>
+		</tr>
+		<tr>
 			<td><b>CSV2YAML.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier .CSV en format .YAML (extension .YML).</td>
 		</tr>
