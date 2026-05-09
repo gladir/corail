@@ -554,6 +554,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir un fichier .CSV en format WK1 de Lotus 1-2-3.</td>
 		</tr>
 		<tr>
+			<td><b>CSV2WQ1.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier CSV en WQ1 de Quattro Pro.</td>
+		</tr>
+		<tr>
 			<td><b>CSV2XML.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier .CSV en format XML.</td>
 		</tr>	
