@@ -382,6 +382,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en format MacPaint (.MAC, Apple).</td>
 		</tr>
 		<tr>
+			<td><b>BMP2MSP.PAS</b></td>
+			<td>Cette commande permet de convertir une image BitMap (.BMP) monochrome en format MSP (.MSP) de Microsoft Paint.</td>
+		</tr>
+		<tr>
 			<td><b>BMP2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en code source Pascal.</td>
 		</tr>
