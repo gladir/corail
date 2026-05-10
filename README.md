@@ -1365,6 +1365,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer l'éditeur de texte ASCII du North Commander.</td>
 		</tr>
 		<tr>
+			<td><b>NES.PAS</b></td>
+			<td>Cette commande permet de lancer un emulateur NES (Nintendo Entertainment System).</td>
+		</tr>
+		<tr>
 			<td><b>NET.PAS</b></td>
 			<td>Cette commande permet d'effectuer la gestion réseau.</td>
 		</tr>
