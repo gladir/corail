@@ -1957,6 +1957,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de visualiser un image de format SVG.</td>
 		</tr>
 		<tr>
+			<td><b>VIEWWPG.PAS</b></td>
+			<td>Cette commande permet de visualiser une image WordPerfect Graphics (.WPG).</td>
+		</tr>
+		<tr>
 			<td><b>VIEWXBM.PAS</b></td>
 			<td>Cette commande permet de visualiser un icône en format XBM (X BitMap).</td>
 		</tr>
