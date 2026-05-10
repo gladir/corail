@@ -394,6 +394,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en format PCX (.PCX).</td>
 		</tr>
 		<tr>
+			<td><b>BMP2PNG.PAS</b></td>
+			<td>Cette commande permet de convertir une image BitMap (.BMP) en format PNG (.PNG, Portable Network Graphics).</td>
+		</tr>
+		<tr>
 			<td><b>BMP2PSP.PAS</b></td>
 			<td>Cette commande permet de convertir une image BitMAp (.BMP) en code source PSP (Pascal Server Pages).</td>
 		</tr>
