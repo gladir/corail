@@ -51,6 +51,17 @@ Const
  TerseStackSize=2047;
  DCLMaxBits=13;
  DCLWindowSize=4096;
+ ZstdFSEMaxTableLog=12;
+ ZstdFSEMaxTableSize=4096;
+ ZstdFSEMaxSymbols=256;
+ ZstdHuffMaxSymbols=256;
+ ZstdHuffMaxBits=12;
+ ZstdHuffMaxTableSize=4096;
+ ZstdSeqMaxBlockSize=131072;
+ ZstdSeqChunkBits=14;
+ ZstdSeqChunkSize=16384;        { 1 shl ZstdSeqChunkBits, < 64 Ko pour TP7 }
+ ZstdSeqChunkMask=16383;        { ZstdSeqChunkSize-1 }
+ ZstdSeqNumChunks=8;            { ZstdSeqMaxBlockSize div ZstdSeqChunkSize }
 
 Type
  PWindowHalf=^TWindowHalf;
@@ -94,6 +105,46 @@ Type
  DCLHuffman=Record
   Count:Array[0..DCLMaxBits]of Integer;
   Symbol:Array[0..255]of Integer;
+ End;
+ ZstdFSEEntry=Record
+  Symbol:Byte;
+  Bits:Byte;
+  NewState:Integer;
+ End;
+ ZstdFSETable=Record
+  TableLog:Integer;
+  TableSize:Integer;
+  FastMode:Boolean;
+  Entry:Array[0..ZstdFSEMaxTableSize-1]of ZstdFSEEntry;
+ End;
+ ZstdHuffEntry=Record
+  Symbol:Byte;
+  Bits:Byte;
+ End;
+ ZstdHuffTable=Record
+  TableLog:Integer;
+  TableSize:Integer;
+  MaxSymbol:Integer;
+  Entry:Array[0..ZstdHuffMaxTableSize-1]of ZstdHuffEntry;
+  Weight:Array[0..ZstdHuffMaxSymbols-1]of Byte;
+ End;
+ PZstdSeqChunk=^TZstdSeqChunk;
+ TZstdSeqChunk=Array[0..ZstdSeqChunkSize-1]of Byte;
+ PZstdSeqBuffer=^TZstdSeqBuffer;
+ TZstdSeqBuffer=Record
+  Chunks:Array[0..ZstdSeqNumChunks-1]of PZstdSeqChunk;
+ End;
+ ZstdRevBitStream=Record
+  Buf:PZstdSeqBuffer;
+  Base,Size,Pos:LongInt;
+  Bits:LongInt;
+  BitCount:Integer;
+ End;
+ ZstdSeqTables=Record
+  LL,OFs,ML:ZstdFSETable;
+  LLMode,OFMode,MLMode:Integer;
+  LLRLE,OFRLE,MLRLE:Byte;
+  LLValid,OFValid,MLValid:Boolean;
  End;
  BZHuffman=Record
   MinLen,MaxLen:Integer;
@@ -146,6 +197,7 @@ Var
  DCLWin:PDCLWindow;
  ZipCryptActive:Boolean;
  ZipKey0,ZipKey1,ZipKey2:LongInt;
+ ZstdRep1,ZstdRep2,ZstdRep3:LongInt;
 
 Function Path2Ext(S:String):String;
 Var
@@ -220,6 +272,41 @@ Begin
  R:=IoResult;
  If R=0Then Close(F);
  FileExists:=R=0;
+End;
+
+Function ZipDateTimeStamp(ZTime,ZDate:Integer):LongInt;
+Begin
+ ZipDateTimeStamp:=(LongInt(ZDate)shl 16)or LongInt(ZTime);
+End;
+
+Function GetFileDateTimeStamp(S:String;Var Stamp:LongInt):Boolean;
+Var
+ F:File;
+ R:Integer;
+Begin
+ Assign(F,S);
+ {$I-}Reset(F,1);{$I+}
+ R:=IoResult;
+ If R<>0Then Begin
+  GetFileDateTimeStamp:=False;
+  Exit;
+ End;
+ GetFTime(F,Stamp);
+ Close(F);
+ GetFileDateTimeStamp:=True;
+End;
+
+Procedure SetFileDateTimeStamp(S:String;Stamp:LongInt);
+Var
+ F:File;
+ R:Integer;
+Begin
+ Assign(F,S);
+ {$I-}Reset(F,1);{$I+}
+ R:=IoResult;
+ If R<>0Then Exit;
+ SetFTime(F,Stamp);
+ Close(F);
 End;
 
 Function Long2Str(L:LongInt):String;
@@ -1738,6 +1825,1422 @@ Begin
           Else InflateTersePack;
 End;
 
+Function ZstdReadByte:Byte;
+Begin
+ ZstdReadByte:=ReadCompByte;
+End;
+
+Function ZstdReadWordLE:LongInt;
+Var
+ B1,B2:LongInt;
+Begin
+ B1:=ZstdReadByte;
+ B2:=ZstdReadByte;
+ ZstdReadWordLE:=B1+256*B2;
+End;
+
+Function ZstdReadDWordLE:LongInt;
+Var
+ B1,B2,B3,B4:LongInt;
+Begin
+ B1:=ZstdReadByte;
+ B2:=ZstdReadByte;
+ B3:=ZstdReadByte;
+ B4:=ZstdReadByte;
+ ZstdReadDWordLE:=B1+256*B2+65536*B3+16777216*B4;
+End;
+
+Procedure ZstdSkip(N:LongInt);
+Begin
+ While N>0 do Begin
+  ZstdReadByte;
+  Dec(N);
+ End;
+End;
+
+Function ZstdReadSize(SizeBytes:Integer;Add256:Boolean):LongInt;
+Var
+ I:Integer;
+ V,Mult:LongInt;
+Begin
+ V:=0;
+ Mult:=1;
+ For I:=1 to SizeBytes do Begin
+  V:=V+Mult*ZstdReadByte;
+  Mult:=Mult*256;
+ End;
+ If Add256 Then Inc(V,256);
+ ZstdReadSize:=V;
+End;
+
+Function ZstdBitsMask(N:Integer):LongInt;
+Begin
+ If N<=0 Then ZstdBitsMask:=0
+  Else If N>=31 Then ZstdBitsMask:=$7FFFFFFF
+  Else ZstdBitsMask:=(LongInt(1)shl N)-1;
+End;
+
+Function ZstdHighBit(V:Integer):Integer;
+Var
+ R:Integer;
+Begin
+ R:=0;
+ While V>1 do Begin
+  V:=V shr 1;
+  Inc(R);
+ End;
+ ZstdHighBit:=R;
+End;
+
+Function ZstdBufGet(Buf:PZstdSeqBuffer;Index:LongInt):Byte;Forward;
+Procedure ZstdBufSet(Buf:PZstdSeqBuffer;Index:LongInt;Value:Byte);Forward;
+Procedure ZstdBufAlloc(Var Buf:PZstdSeqBuffer);Forward;
+Procedure ZstdBufFree(Var Buf:PZstdSeqBuffer);Forward;
+
+Function ZstdFSEReadNCount(Var NCount;MaxSymbol,MaxTableLog:Integer;
+ Var TableLog:Integer;Var HeaderSize:Integer):Integer;
+Type
+ TNCount=Array[0..ZstdFSEMaxSymbols]of Integer;
+Var
+ Count:^TNCount;
+ BitStream:LongInt;
+ BitCount,ByteCount,CharNum,Remaining,Threshold,NBBits,MaxV,Value:Integer;
+ Previous0:Boolean;
+ B:Byte;
+
+ Procedure NeedBits(N:Integer);
+ Begin
+  While BitCount<N do Begin
+   B:=ZstdReadByte;
+   BitStream:=BitStream or(LongInt(B)shl BitCount);
+   Inc(BitCount,8);
+   Inc(ByteCount);
+  End;
+ End;
+
+Begin
+ Count:=@NCount;
+ For CharNum:=0 to ZstdFSEMaxSymbols do Count^[CharNum]:=0;
+ B:=ZstdReadByte;
+ BitStream:=B;
+ BitCount:=8;
+ ByteCount:=1;
+ TableLog:=(B and 15)+5;
+ If(TableLog<5)or(TableLog>MaxTableLog)Then Begin
+  WriteLn('TableLog FSE Zstandard invalide.');
+  Halt(1);
+ End;
+ BitStream:=BitStream shr 4;
+ Dec(BitCount,4);
+ Remaining:=(1 shl TableLog)+1;
+ Threshold:=1 shl TableLog;
+ NBBits:=TableLog+1;
+ CharNum:=0;
+ Previous0:=False;
+ While(CharNum<=MaxSymbol)and(Remaining>1)do Begin
+  If Previous0 Then Begin
+   NeedBits(2);
+   While(BitStream and 3)=3 do Begin
+    Inc(CharNum,3);
+    BitStream:=BitStream shr 2;
+    Dec(BitCount,2);
+    NeedBits(2);
+   End;
+   Inc(CharNum,Integer(BitStream and 3));
+   BitStream:=BitStream shr 2;
+   Dec(BitCount,2);
+   If CharNum>MaxSymbol Then Begin
+    WriteLn('RLE FSE Zstandard invalide.');
+    Halt(1);
+   End;
+   Previous0:=False;
+  End;
+  MaxV:=(Threshold shl 1)-1-Remaining;
+  NeedBits(NBBits);
+  Value:=Integer(BitStream and(Threshold-1));
+  If Value<MaxV Then Begin
+   BitStream:=BitStream shr(NBBits-1);
+   Dec(BitCount,NBBits-1);
+  End
+   Else
+  Begin
+   Value:=Integer(BitStream and((Threshold shl 1)-1));
+   If Value>=Threshold Then Dec(Value,MaxV);
+   BitStream:=BitStream shr NBBits;
+   Dec(BitCount,NBBits);
+  End;
+  Dec(Value);
+  Count^[CharNum]:=Value;
+  If Value<0 Then Dec(Remaining)
+             Else Dec(Remaining,Value);
+  Previous0:=Value=0;
+  Inc(CharNum);
+  While(Threshold>Remaining)do Begin
+   Dec(NBBits);
+   Threshold:=Threshold shr 1;
+  End;
+ End;
+ If Remaining<>1 Then Begin
+  WriteLn('Distribution FSE Zstandard invalide.');
+  Halt(1);
+ End;
+ HeaderSize:=ByteCount;
+ ZstdFSEReadNCount:=CharNum-1;
+End;
+
+Function ZstdFSEReadNCountBuf(Buf:PZstdSeqBuffer;Size:LongInt;
+ Var NCount;MaxSymbol,MaxTableLog:Integer;
+ Var TableLog:Integer;Var HeaderSize:Integer):Integer;
+Type
+ TNCount=Array[0..ZstdFSEMaxSymbols]of Integer;
+Var
+ Count:^TNCount;
+ BitStream:LongInt;
+ BitCount,ByteCount,CharNum,Remaining,Threshold,NBBits,MaxV,Value:Integer;
+ Previous0:Boolean;
+ B:Byte;
+
+ Function ReadB:Byte;
+ Begin
+  If ByteCount>=Size Then Begin
+   WriteLn('En-tete FSE Zstandard tronque.');
+   Halt(1);
+  End;
+  ReadB:=ZstdBufGet(Buf,ByteCount);
+  Inc(ByteCount);
+ End;
+
+ Procedure NeedBits(N:Integer);
+ Begin
+  While BitCount<N do Begin
+   B:=ReadB;
+   BitStream:=BitStream or(LongInt(B)shl BitCount);
+   Inc(BitCount,8);
+  End;
+ End;
+
+Begin
+ Count:=@NCount;
+ For CharNum:=0 to ZstdFSEMaxSymbols do Count^[CharNum]:=0;
+ ByteCount:=0;
+ B:=ReadB;
+ BitStream:=B;
+ BitCount:=8;
+ TableLog:=(B and 15)+5;
+ If(TableLog<5)or(TableLog>MaxTableLog)Then Begin
+  WriteLn('TableLog FSE Zstandard invalide.');
+  Halt(1);
+ End;
+ BitStream:=BitStream shr 4;
+ Dec(BitCount,4);
+ Remaining:=(1 shl TableLog)+1;
+ Threshold:=1 shl TableLog;
+ NBBits:=TableLog+1;
+ CharNum:=0;
+ Previous0:=False;
+ While(CharNum<=MaxSymbol)and(Remaining>1)do Begin
+  If Previous0 Then Begin
+   NeedBits(2);
+   While(BitStream and 3)=3 do Begin
+    Inc(CharNum,3);
+    BitStream:=BitStream shr 2;
+    Dec(BitCount,2);
+    NeedBits(2);
+   End;
+   Inc(CharNum,Integer(BitStream and 3));
+   BitStream:=BitStream shr 2;
+   Dec(BitCount,2);
+   If CharNum>MaxSymbol Then Begin
+    WriteLn('RLE FSE Zstandard invalide.');
+    Halt(1);
+   End;
+   Previous0:=False;
+  End;
+  MaxV:=(Threshold shl 1)-1-Remaining;
+  NeedBits(NBBits);
+  Value:=Integer(BitStream and(Threshold-1));
+  If Value<MaxV Then Begin
+   BitStream:=BitStream shr(NBBits-1);
+   Dec(BitCount,NBBits-1);
+  End
+   Else
+  Begin
+   Value:=Integer(BitStream and((Threshold shl 1)-1));
+   If Value>=Threshold Then Dec(Value,MaxV);
+   BitStream:=BitStream shr NBBits;
+   Dec(BitCount,NBBits);
+  End;
+  Dec(Value);
+  Count^[CharNum]:=Value;
+  If Value<0 Then Dec(Remaining)
+             Else Dec(Remaining,Value);
+  Previous0:=Value=0;
+  Inc(CharNum);
+  While(Threshold>Remaining)do Begin
+   Dec(NBBits);
+   Threshold:=Threshold shr 1;
+  End;
+ End;
+ If Remaining<>1 Then Begin
+  WriteLn('Distribution FSE Zstandard invalide.');
+  Halt(1);
+ End;
+ HeaderSize:=ByteCount;
+ ZstdFSEReadNCountBuf:=CharNum-1;
+End;
+
+Procedure ZstdFSEBuildTable(Var T:ZstdFSETable;Var NCount;MaxSymbol,TableLog:Integer);
+Type
+ TNCount=Array[0..ZstdFSEMaxSymbols]of Integer;
+ TSymbols=Array[0..ZstdFSEMaxTableSize-1]of Integer;
+ TNext=Array[0..ZstdFSEMaxSymbols]of Integer;
+Var
+ Count:^TNCount;
+ TableSymbol:^TSymbols;
+ SymbolNext:^TNext;
+ TableSize,HighThreshold,TableMask,Step,Pos:Integer;
+ Sym,I,N,NextState,NB:Integer;
+Begin
+ Count:=@NCount;
+ GetMem(TableSymbol,SizeOf(TSymbols));
+ GetMem(SymbolNext,SizeOf(TNext));
+ If(TableSymbol=NIL)or(SymbolNext=NIL)Then Begin
+  WriteLn('Memoire insuffisante pour table FSE Zstandard.');
+  Halt(1);
+ End;
+ TableSize:=1 shl TableLog;
+ T.TableLog:=TableLog;
+ T.TableSize:=TableSize;
+ T.FastMode:=True;
+ HighThreshold:=TableSize-1;
+ For Sym:=0 to MaxSymbol do Begin
+  If Count^[Sym]=-1 Then Begin
+   TableSymbol^[HighThreshold]:=Sym;
+   Dec(HighThreshold);
+   SymbolNext^[Sym]:=1;
+  End
+   Else Begin
+   If Count^[Sym]>=TableSize div 2 Then T.FastMode:=False;
+   SymbolNext^[Sym]:=Count^[Sym];
+  End;
+ End;
+ TableMask:=TableSize-1;
+ Step:=(TableSize shr 1)+(TableSize shr 3)+3;
+ Pos:=0;
+ For Sym:=0 to MaxSymbol do Begin
+  N:=Count^[Sym];
+  If N>0 Then For I:=1 to N do Begin
+   TableSymbol^[Pos]:=Sym;
+   Pos:=(Pos+Step)and TableMask;
+   While Pos>HighThreshold do Pos:=(Pos+Step)and TableMask;
+  End;
+ End;
+ If Pos<>0 Then Begin
+  FreeMem(TableSymbol,SizeOf(TSymbols));
+  FreeMem(SymbolNext,SizeOf(TNext));
+  WriteLn('Construction FSE Zstandard invalide.');
+  Halt(1);
+ End;
+ For I:=0 to TableSize-1 do Begin
+  Sym:=TableSymbol^[I];
+  NextState:=SymbolNext^[Sym];
+  Inc(SymbolNext^[Sym]);
+  NB:=TableLog-ZstdHighBit(NextState);
+  T.Entry[I].Symbol:=Byte(Sym);
+  T.Entry[I].Bits:=NB;
+  T.Entry[I].NewState:=(NextState shl NB)-TableSize;
+ End;
+ FreeMem(TableSymbol,SizeOf(TSymbols));
+ FreeMem(SymbolNext,SizeOf(TNext));
+End;
+
+Procedure ZstdFSESelfTest;
+Var
+ Count:Array[0..ZstdFSEMaxSymbols]of Integer;
+ T:ZstdFSETable;
+ I:Integer;
+Begin
+ For I:=0 to ZstdFSEMaxSymbols do Count[I]:=0;
+ Count[0]:=1;
+ Count[1]:=1;
+ Count[2]:=1;
+ Count[3]:=1;
+ ZstdFSEBuildTable(T,Count,3,2);
+ If(T.TableSize<>4)or(T.Entry[0].Bits>2)Then Begin
+  WriteLn('Auto-test FSE Zstandard invalide.');
+  Halt(1);
+ End;
+End;
+
+Procedure ZstdHuffBuildTable(Var H:ZstdHuffTable;MaxSymbol:Integer);
+Var
+ Count:Array[0..ZstdHuffMaxBits]of Integer;
+ Start:Array[0..ZstdHuffMaxBits]of Integer;
+ Bits,Sym,Idx,TableLog,Sum,W,Next,Len,J:Integer;
+Begin
+ For Bits:=0 to ZstdHuffMaxBits do Count[Bits]:=0;
+ Sum:=0;
+ For Sym:=0 to MaxSymbol do Begin
+  If H.Weight[Sym]>ZstdHuffMaxBits Then Begin
+   WriteLn('Poids Huffman Zstandard invalide.');
+   Halt(1);
+  End;
+  If H.Weight[Sym]>0 Then Inc(Sum,1 shl(H.Weight[Sym]-1));
+ End;
+ If Sum=0 Then Begin
+  WriteLn('Table Huffman Zstandard vide.');
+  Halt(1);
+ End;
+ TableLog:=ZstdHighBit(Sum);
+ If(1 shl TableLog)<>Sum Then Begin
+  WriteLn('Somme des poids Huffman Zstandard invalide.');
+  Halt(1);
+ End;
+ If TableLog>11 Then Begin
+  WriteLn('Table Huffman Zstandard trop grande.');
+  Halt(1);
+ End;
+ H.TableLog:=TableLog;
+ H.TableSize:=1 shl TableLog;
+ H.MaxSymbol:=MaxSymbol;
+ For Idx:=0 to ZstdHuffMaxTableSize-1 do Begin
+  H.Entry[Idx].Symbol:=0;
+  H.Entry[Idx].Bits:=0;
+ End;
+ For Sym:=0 to MaxSymbol do Begin
+  W:=H.Weight[Sym];
+  If W<>0 Then Inc(Count[W]);
+ End;
+ If(Count[1]<2)or((Count[1]and 1)<>0)Then Begin
+  WriteLn('Poids Huffman Zstandard invalides.');
+  Halt(1);
+ End;
+ Next:=0;
+ For W:=1 to TableLog do Begin
+  Start[W]:=Next;
+  Inc(Next,Count[W]shl(W-1));
+ End;
+ For Sym:=0 to MaxSymbol do Begin
+  W:=H.Weight[Sym];
+  If W<>0 Then Begin
+   Bits:=TableLog+1-W;
+   If(Bits<1)or(Bits>ZstdHuffMaxBits)Then Begin
+    WriteLn('Longueur Huffman Zstandard invalide.');
+    Halt(1);
+   End;
+   Len:=1 shl(W-1);
+   Idx:=Start[W];
+   For J:=0 to Len-1 do Begin
+    H.Entry[Idx].Symbol:=Byte(Sym);
+    H.Entry[Idx].Bits:=Bits;
+    Inc(Idx);
+   End;
+   Inc(Start[W],Len);
+  End;
+ End;
+End;
+
+Procedure ZstdHuffFinishWeights(Var H:ZstdHuffTable;NumWeights:Integer);
+Var
+ I,Sum,Full,Left,LastWeight,MaxSymbol:Integer;
+Begin
+ If(NumWeights<1)or(NumWeights>=ZstdHuffMaxSymbols)Then Begin
+  WriteLn('Nombre de poids Huffman Zstandard invalide.');
+  Halt(1);
+ End;
+ Sum:=0;
+ For I:=0 to NumWeights-1 do Begin
+  If H.Weight[I]>ZstdHuffMaxBits Then Begin
+   WriteLn('Poids Huffman Zstandard invalide.');
+   Halt(1);
+  End;
+  If H.Weight[I]<>0 Then Inc(Sum,1 shl(H.Weight[I]-1));
+ End;
+ If Sum=0 Then Begin
+  WriteLn('Poids Huffman Zstandard vides.');
+  Halt(1);
+ End;
+ Full:=1;
+ While Full<Sum do Full:=Full shl 1;
+ Left:=Full-Sum;
+ If Left=0 Then Begin
+  WriteLn('Poids final Huffman Zstandard invalide.');
+  Halt(1);
+ End;
+ LastWeight:=0;
+ While Left>1 do Begin
+  If(Left and 1)<>0 Then Begin
+   WriteLn('Poids final Huffman Zstandard invalide.');
+   Halt(1);
+  End;
+  Left:=Left shr 1;
+  Inc(LastWeight);
+ End;
+ Inc(LastWeight);
+ H.Weight[NumWeights]:=LastWeight;
+ MaxSymbol:=NumWeights;
+ ZstdHuffBuildTable(H,MaxSymbol);
+End;
+
+Procedure ZstdHuffReadDirect(Var H:ZstdHuffTable;HeaderByte:Integer;
+ Var HeaderSize:Integer);
+Var
+ NumWeights,I,B:Integer;
+Begin
+ NumWeights:=HeaderByte-127;
+ If(NumWeights<1)or(NumWeights>ZstdHuffMaxSymbols-1)Then Begin
+  WriteLn('En-tete Huffman Zstandard invalide.');
+  Halt(1);
+ End;
+ For I:=0 to ZstdHuffMaxSymbols-1 do H.Weight[I]:=0;
+ HeaderSize:=1+(NumWeights+1)div 2;
+ For I:=0 to NumWeights-1 do Begin
+  If(I and 1)=0 Then Begin
+   B:=ZstdReadByte;
+   H.Weight[I]:=(B shr 4)and 15;
+   If I+1<NumWeights Then H.Weight[I+1]:=B and 15;
+  End;
+ End;
+ ZstdHuffFinishWeights(H,NumWeights);
+End;
+
+Procedure ZstdHuffReadFSE(Var H:ZstdHuffTable;HeaderByte:Integer;
+ Var HeaderSize:Integer);
+Type
+ TCount=Array[0..ZstdFSEMaxSymbols]of Integer;
+Var
+ Buf:PZstdSeqBuffer;
+ Count:TCount;
+ T:ZstdFSETable;
+ TableLog,FSEHeaderSize,LastSym:Integer;
+ I,State1,State2,NumWeights:Integer;
+ Off,Start,Cnt:Integer;
+ Bits:LongInt;
+
+ Function RFetch(N:Integer):Boolean;
+ Begin
+  While Cnt<N do Begin
+   If Off<=Start Then Begin
+    RFetch:=False;
+    Exit;
+   End;
+   Dec(Off);
+   Bits:=(Bits shl 8)or ZstdBufGet(Buf,Off);
+   Inc(Cnt,8);
+  End;
+  RFetch:=True;
+ End;
+
+ Function RVal(N:Integer):LongInt;
+ Begin
+  If N=0 Then Begin
+   RVal:=0;
+   Exit;
+  End;
+  If Not RFetch(N)Then Begin
+   WriteLn('En-tete Huffman FSE Zstandard tronque.');
+   Halt(1);
+  End;
+  Dec(Cnt,N);
+  RVal:=UShiftRight(Bits,Cnt)and ZstdBitsMask(N);
+ End;
+
+ Procedure NextState(Var State:Integer);
+ Var
+  E:ZstdFSEEntry;
+ Begin
+  E:=T.Entry[State];
+  State:=E.NewState+RVal(E.Bits);
+ End;
+
+Begin
+ If(HeaderByte<=0)or(HeaderByte>127)Then Begin
+  WriteLn('Taille en-tete Huffman FSE Zstandard invalide.');
+  Halt(1);
+ End;
+ ZstdBufAlloc(Buf);
+ If Buf=NIL Then Begin
+  WriteLn('Memoire insuffisante pour en-tete Huffman Zstandard.');
+  Halt(1);
+ End;
+ For I:=0 to HeaderByte-1 do ZstdBufSet(Buf,I,ZstdReadByte);
+ LastSym:=ZstdFSEReadNCountBuf(Buf,HeaderByte,Count,255,6,
+  TableLog,FSEHeaderSize);
+ If LastSym>255 Then Begin
+  ZstdBufFree(Buf);
+  WriteLn('Table FSE Huffman Zstandard invalide.');
+  Halt(1);
+ End;
+ ZstdFSEBuildTable(T,Count,LastSym,TableLog);
+ If FSEHeaderSize>=HeaderByte Then Begin
+  ZstdBufFree(Buf);
+  WriteLn('Bitstream Huffman FSE Zstandard absent.');
+  Halt(1);
+ End;
+ Start:=FSEHeaderSize;
+ Off:=HeaderByte-1;
+ Bits:=ZstdBufGet(Buf,Off);
+ If Bits=0 Then Begin
+  ZstdBufFree(Buf);
+  WriteLn('Fin bitstream Huffman FSE Zstandard invalide.');
+  Halt(1);
+ End;
+ Cnt:=ZstdHighBit(Integer(Bits));
+ State1:=Integer(RVal(TableLog));
+ State2:=Integer(RVal(TableLog));
+ For I:=0 to ZstdHuffMaxSymbols-1 do H.Weight[I]:=0;
+ NumWeights:=0;
+ While True do Begin
+  If Not RFetch(T.Entry[State1].Bits)Then Begin
+   If NumWeights>=254 Then Begin
+    ZstdBufFree(Buf);
+    WriteLn('Trop de poids Huffman Zstandard.');
+    Halt(1);
+   End;
+   H.Weight[NumWeights]:=T.Entry[State1].Symbol;
+   H.Weight[NumWeights+1]:=T.Entry[State2].Symbol;
+   Inc(NumWeights,2);
+   Break;
+  End;
+  If NumWeights>=255 Then Begin
+   ZstdBufFree(Buf);
+   WriteLn('Trop de poids Huffman Zstandard.');
+   Halt(1);
+  End;
+  H.Weight[NumWeights]:=T.Entry[State1].Symbol;
+  Inc(NumWeights);
+  NextState(State1);
+  If Not RFetch(T.Entry[State2].Bits)Then Begin
+   If NumWeights>=254 Then Begin
+    ZstdBufFree(Buf);
+    WriteLn('Trop de poids Huffman Zstandard.');
+    Halt(1);
+   End;
+   H.Weight[NumWeights]:=T.Entry[State2].Symbol;
+   H.Weight[NumWeights+1]:=T.Entry[State1].Symbol;
+   Inc(NumWeights,2);
+   Break;
+  End;
+  If NumWeights>=255 Then Begin
+   ZstdBufFree(Buf);
+   WriteLn('Trop de poids Huffman Zstandard.');
+   Halt(1);
+  End;
+  H.Weight[NumWeights]:=T.Entry[State2].Symbol;
+  Inc(NumWeights);
+  NextState(State2);
+ End;
+ ZstdBufFree(Buf);
+ HeaderSize:=1+HeaderByte;
+ ZstdHuffFinishWeights(H,NumWeights);
+End;
+
+Procedure ZstdHuffReadTable(Var H:ZstdHuffTable;Var HeaderSize:Integer);
+Var
+ HeaderByte:Integer;
+Begin
+ HeaderByte:=ZstdReadByte;
+ If HeaderByte>=128 Then ZstdHuffReadDirect(H,HeaderByte,HeaderSize)
+  Else ZstdHuffReadFSE(H,HeaderByte,HeaderSize);
+End;
+
+Procedure ZstdHuffSelfTest;
+Var
+ H:ZstdHuffTable;
+ I:Integer;
+Begin
+ For I:=0 to ZstdHuffMaxSymbols-1 do H.Weight[I]:=0;
+ H.Weight[Ord('A')]:=1;
+ H.Weight[Ord('B')]:=1;
+ ZstdHuffBuildTable(H,Ord('B'));
+ If(H.TableSize<>2)or(H.Entry[0].Bits=0)or(H.Entry[1].Bits=0)Then Begin
+  WriteLn('Auto-test Huffman Zstandard invalide.');
+  Halt(1);
+ End;
+End;
+
+Procedure ZstdBuildDefaultSeqTables(Var S:ZstdSeqTables);
+Const
+ LLDef:Array[0..35]of Integer=(
+  4,3,2,2,2,2,2,2,2,2,2,2,2,1,1,1,
+  2,2,2,2,2,2,2,2,2,3,2,1,1,1,1,1,
+  -1,-1,-1,-1);
+ MLDef:Array[0..52]of Integer=(
+  1,4,3,2,2,2,2,2,2,1,1,1,1,1,1,1,
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,-1,-1,
+  -1,-1,-1,-1,-1);
+ OFDef:Array[0..28]of Integer=(
+  1,1,1,1,1,1,2,2,2,1,1,1,1,1,1,1,
+  1,1,1,1,1,1,1,1,-1,-1,-1,-1,-1);
+Begin
+ ZstdFSEBuildTable(S.LL,LLDef,35,6);
+ ZstdFSEBuildTable(S.ML,MLDef,52,6);
+ ZstdFSEBuildTable(S.OFs,OFDef,28,5);
+ S.LLValid:=True;
+ S.MLValid:=True;
+ S.OFValid:=True;
+ S.LLMode:=0;
+ S.MLMode:=0;
+ S.OFMode:=0;
+End;
+
+Function ZstdSeqReadNumber:LongInt;
+Var
+ B0,B1,B2:Integer;
+Begin
+ B0:=ZstdReadByte;
+ If B0=0 Then ZstdSeqReadNumber:=0
+  Else If B0<128 Then ZstdSeqReadNumber:=B0
+  Else If B0<255 Then Begin
+   B1:=ZstdReadByte;
+   ZstdSeqReadNumber:=((B0-128)shl 8)+B1;
+  End
+  Else Begin
+   B1:=ZstdReadByte;
+   B2:=ZstdReadByte;
+   ZstdSeqReadNumber:=B1+(B2 shl 8)+$7F00;
+  End;
+End;
+
+Procedure ZstdSeqReadOneTable(Var Tab:ZstdFSETable;Var Mode:Integer;
+ Var RLE:Byte;Var Valid:Boolean;MaxSymbol,MaxLog:Integer;Name:String);
+Var
+ Count:Array[0..ZstdFSEMaxSymbols]of Integer;
+ TableLog,HeaderSize,LastSym:Integer;
+Begin
+ Case Mode of
+  0:Begin
+     { Default tables are installed before this routine is used. }
+     Valid:=True;
+    End;
+  1:Begin
+     RLE:=ZstdReadByte;
+     Valid:=True;
+    End;
+  2:Begin
+     LastSym:=ZstdFSEReadNCount(Count,MaxSymbol,MaxLog,TableLog,HeaderSize);
+     If LastSym>MaxSymbol Then Begin
+      WriteLn('Table FSE ',Name,' Zstandard invalide.');
+      Halt(1);
+     End;
+     ZstdFSEBuildTable(Tab,Count,LastSym,TableLog);
+     Valid:=True;
+    End;
+  3:Begin
+     If Not Valid Then Begin
+      WriteLn('Repeat_Mode FSE ',Name,' Zstandard sans table precedente.');
+      Halt(1);
+     End;
+    End;
+ Else
+  WriteLn('Mode FSE ',Name,' Zstandard invalide.');
+  Halt(1);
+ End;
+End;
+
+Function ZstdBufGet(Buf:PZstdSeqBuffer;Index:LongInt):Byte;
+Begin
+ ZstdBufGet:=Buf^.Chunks[Index shr ZstdSeqChunkBits]^[Index and ZstdSeqChunkMask];
+End;
+
+Procedure ZstdBufSet(Buf:PZstdSeqBuffer;Index:LongInt;Value:Byte);
+Begin
+ Buf^.Chunks[Index shr ZstdSeqChunkBits]^[Index and ZstdSeqChunkMask]:=Value;
+End;
+
+Procedure ZstdBufAlloc(Var Buf:PZstdSeqBuffer);
+Var
+ I,J:Integer;
+Begin
+ New(Buf);
+ If Buf=NIL Then Exit;
+ For I:=0 to ZstdSeqNumChunks-1 do Buf^.Chunks[I]:=NIL;
+ For I:=0 to ZstdSeqNumChunks-1 do Begin
+  New(Buf^.Chunks[I]);
+  If Buf^.Chunks[I]=NIL Then Begin
+   For J:=0 to I-1 do Dispose(Buf^.Chunks[J]);
+   Dispose(Buf);
+   Buf:=NIL;
+   Exit;
+  End;
+ End;
+End;
+
+Procedure ZstdBufFree(Var Buf:PZstdSeqBuffer);
+Var
+ I:Integer;
+Begin
+ If Buf=NIL Then Exit;
+ For I:=0 to ZstdSeqNumChunks-1 do
+  If Buf^.Chunks[I]<>NIL Then Dispose(Buf^.Chunks[I]);
+ Dispose(Buf);
+ Buf:=NIL;
+End;
+
+Function ZstdByteHighBit(V:Byte):Integer;
+Var
+ I:Integer;
+Begin
+ For I:=7 downto 0 do
+  If(V and(1 shl I))<>0 Then Begin
+   ZstdByteHighBit:=I;
+   Exit;
+  End;
+ ZstdByteHighBit:=-1;
+End;
+
+Procedure ZstdRevReload(Var B:ZstdRevBitStream);
+Var
+ NB,I,Shift:LongInt;
+Begin
+ If B.BitCount>32 Then Begin
+  WriteLn('Bitstream sequences Zstandard trop court.');
+  Halt(1);
+ End;
+ If B.Pos>=B.Base+4 Then Begin
+  B.Pos:=B.Pos-(B.BitCount div 8);
+  B.BitCount:=B.BitCount and 7;
+ End
+  Else If B.Pos<>B.Base Then Begin
+  NB:=B.BitCount div 8;
+  If B.Pos-NB<B.Base Then NB:=B.Pos-B.Base;
+  B.Pos:=B.Pos-NB;
+  B.BitCount:=B.BitCount-(NB*8);
+ End;
+ B.Bits:=0;
+ Shift:=0;
+ For I:=B.Pos to B.Pos+3 do Begin
+  If I<B.Base+B.Size Then B.Bits:=B.Bits or(LongInt(ZstdBufGet(B.Buf,I))shl Shift);
+  Inc(Shift,8);
+ End;
+End;
+
+Procedure ZstdRevInit(Var B:ZstdRevBitStream;Buf:PZstdSeqBuffer;Base,Size:LongInt);
+Var
+ Last:Byte;
+ I,Shift:LongInt;
+Begin
+ If Size<=0 Then Begin
+  WriteLn('Bitstream sequences Zstandard vide.');
+  Halt(1);
+ End;
+ B.Buf:=Buf;
+ B.Base:=Base;
+ B.Size:=Size;
+ Last:=ZstdBufGet(Buf,Base+Size-1);
+ If Last=0 Then Begin
+  WriteLn('Fin de bitstream Zstandard invalide.');
+  Halt(1);
+ End;
+ If Size>=4 Then B.Pos:=Base+Size-4
+            Else B.Pos:=Base;
+ B.Bits:=0;
+ Shift:=0;
+ For I:=B.Pos to B.Pos+3 do Begin
+  If I<Base+Size Then B.Bits:=B.Bits or(LongInt(ZstdBufGet(Buf,I))shl Shift);
+  Inc(Shift,8);
+ End;
+ B.BitCount:=8-ZstdByteHighBit(Last);
+ If Size<4 Then B.BitCount:=B.BitCount+(4-Size)*8;
+End;
+
+Function ZstdRevReadBits(Var B:ZstdRevBitStream;N:Integer):LongInt;
+Var
+ R,T:LongInt;
+Begin
+ If N=0 Then Begin
+  ZstdRevReadBits:=0;
+  Exit;
+ End;
+ If B.BitCount+N>32 Then Begin
+  ZstdRevReload(B);
+  If B.BitCount+N>32 Then Begin
+   WriteLn('Bitstream sequences Zstandard trop court.');
+   Halt(1);
+  End;
+ End;
+ T:=B.Bits shl B.BitCount;
+ R:=UShiftRight(T,32-N)and ZstdBitsMask(N);
+ Inc(B.BitCount,N);
+ If B.BitCount>=25 Then ZstdRevReload(B);
+ ZstdRevReadBits:=R;
+End;
+
+Function ZstdPeekBits(Var B:ZstdRevBitStream;N:Integer):LongInt;
+Var
+ T:LongInt;
+Begin
+ If N=0 Then Begin
+  ZstdPeekBits:=0;
+  Exit;
+ End;
+ If B.BitCount+N>32 Then Begin
+  ZstdRevReload(B);
+  If B.BitCount+N>32 Then Begin
+   WriteLn('Bitstream Huffman Zstandard trop court.');
+   Halt(1);
+  End;
+ End;
+ T:=B.Bits shl B.BitCount;
+ ZstdPeekBits:=UShiftRight(T,32-N)and ZstdBitsMask(N);
+End;
+
+Procedure ZstdConsumeBits(Var B:ZstdRevBitStream;N:Integer);
+Begin
+ Inc(B.BitCount,N);
+ If B.BitCount>=25 Then ZstdRevReload(B);
+End;
+
+Procedure ZstdHuffDecodeStream(Var H:ZstdHuffTable;StreamBuf:PZstdSeqBuffer;
+ StreamBase,StreamSize:LongInt;LitBuf:PZstdSeqBuffer;Var LitPos:LongInt;
+ NumLits:LongInt);
+Var
+ Off,Start,Cnt:LongInt;
+ Bits,Idx:LongInt;
+ I:LongInt;
+
+ Function HFetch(N:Integer):Boolean;
+ Begin
+  While Cnt<N do Begin
+   If Off<=Start Then Begin
+    HFetch:=False;
+    Exit;
+   End;
+   Dec(Off);
+   Bits:=(Bits shl 8)or ZstdBufGet(StreamBuf,Off);
+   Inc(Cnt,8);
+  End;
+  HFetch:=True;
+ End;
+Begin
+ If NumLits<=0 Then Exit;
+ If StreamSize<=0 Then Begin
+  WriteLn('Bitstream Huffman Zstandard vide.');
+  Halt(1);
+ End;
+ Off:=StreamBase+StreamSize-1;
+ If StreamBase>0 Then Start:=StreamBase-1
+                 Else Start:=StreamBase;
+ Bits:=ZstdBufGet(StreamBuf,Off);
+ If Bits=0 Then Begin
+  WriteLn('Fin bitstream Huffman Zstandard invalide.');
+  Halt(1);
+ End;
+ Cnt:=ZstdHighBit(Integer(Bits));
+ For I:=1 to NumLits do Begin
+  If Not HFetch(H.TableLog)Then Begin
+   WriteLn('Bitstream Huffman Zstandard trop court.');
+   Halt(1);
+  End;
+  Idx:=UShiftRight(Bits,Cnt-H.TableLog)and ZstdBitsMask(H.TableLog);
+  ZstdBufSet(LitBuf,LitPos,H.Entry[Idx].Symbol);
+  Inc(LitPos);
+  Dec(Cnt,H.Entry[Idx].Bits);
+ End;
+End;
+
+Function ZstdFSESymbol(Var T:ZstdFSETable;State:Integer):Byte;
+Begin
+ If(State<0)or(State>=T.TableSize)Then Begin
+  WriteLn('Etat FSE Zstandard invalide.');
+  Halt(1);
+ End;
+ ZstdFSESymbol:=T.Entry[State].Symbol;
+End;
+
+Procedure ZstdFSENextState(Var BS:ZstdRevBitStream;Var T:ZstdFSETable;
+ Var State:Integer);
+Var
+ E:ZstdFSEEntry;
+Begin
+ E:=T.Entry[State];
+ State:=E.NewState+ZstdRevReadBits(BS,E.Bits);
+End;
+
+Procedure ZstdLLCode(Code:Byte;Var Base:LongInt;Var Bits:Integer);
+Const
+ BaseTab:Array[16..35]of LongInt=(
+  16,18,20,22,24,28,32,40,48,64,128,256,512,1024,
+  2048,4096,8192,16384,32768,65536);
+ BitsTab:Array[16..35]of Byte=(
+  1,1,1,1,2,2,3,3,4,6,7,8,9,10,11,12,13,14,15,16);
+Begin
+ If Code<=15 Then Begin
+  Base:=Code;
+  Bits:=0;
+ End
+  Else If Code<=35 Then Begin
+  Base:=BaseTab[Code];
+  Bits:=BitsTab[Code];
+ End
+  Else
+ Begin
+  WriteLn('Code LL Zstandard invalide.');
+  Halt(1);
+ End;
+End;
+
+Procedure ZstdMLCode(Code:Byte;Var Base:LongInt;Var Bits:Integer);
+Const
+ BaseTab:Array[32..52]of LongInt=(
+  35,37,39,41,43,47,51,59,67,83,99,131,259,515,
+  1027,2051,4099,8195,16387,32771,65539);
+ BitsTab:Array[32..52]of Byte=(
+  1,1,1,1,2,2,3,3,4,4,5,7,8,9,10,11,12,13,14,15,16);
+Begin
+ If Code<=31 Then Begin
+  Base:=Code+3;
+  Bits:=0;
+ End
+  Else If Code<=52 Then Begin
+  Base:=BaseTab[Code];
+  Bits:=BitsTab[Code];
+ End
+  Else
+ Begin
+  WriteLn('Code ML Zstandard invalide.');
+  Halt(1);
+ End;
+End;
+
+Function ZstdResolveOffset(OffsetValue,LL:LongInt):LongInt;
+Var
+ Offset:LongInt;
+Begin
+ If OffsetValue>3 Then Begin
+  Offset:=OffsetValue-3;
+  ZstdRep3:=ZstdRep2;
+  ZstdRep2:=ZstdRep1;
+  ZstdRep1:=Offset;
+ End
+  Else If OffsetValue=1 Then Begin
+  If LL=0 Then Begin
+   Offset:=ZstdRep2;
+   ZstdRep2:=ZstdRep1;
+   ZstdRep1:=Offset;
+  End
+   Else Offset:=ZstdRep1;
+ End
+  Else If OffsetValue=2 Then Begin
+  Offset:=ZstdRep2;
+  ZstdRep2:=ZstdRep1;
+  ZstdRep1:=Offset;
+ End
+  Else If OffsetValue=3 Then Begin
+  If LL=0 Then Begin
+   Offset:=ZstdRep1-1;
+   ZstdRep3:=ZstdRep2;
+   ZstdRep2:=ZstdRep1;
+   ZstdRep1:=Offset;
+  End
+   Else Begin
+   Offset:=ZstdRep3;
+   ZstdRep3:=ZstdRep2;
+   ZstdRep2:=ZstdRep1;
+   ZstdRep1:=Offset;
+  End;
+ End
+  Else
+ Begin
+  WriteLn('Offset Zstandard invalide.');
+  Halt(1);
+ End;
+ If Offset<=0 Then Begin
+  WriteLn('Repeat offset Zstandard invalide.');
+  Halt(1);
+ End;
+ ZstdResolveOffset:=Offset;
+End;
+
+Procedure ZstdCopyMatch(Offset,ML:LongInt);
+Var
+ I:LongInt;
+ B:Byte;
+Begin
+ If Offset>OutSize Then Begin
+  WriteLn('Reference LZ77 Zstandard invalide.');
+  Halt(1);
+ End;
+ For I:=1 to ML do Begin
+  B:=GetWindowByte(WinPos-Offset);
+  PutOutByte(B);
+ End;
+End;
+
+Procedure ZstdExecuteSequence(LL,OffsetValue,ML:LongInt;
+ LitBuf:PZstdSeqBuffer;Var LitPos:LongInt;LitSize:LongInt);
+Var
+ I,Offset:LongInt;
+Begin
+ If LitBuf=NIL Then Exit;
+ If LitPos+LL>LitSize Then Begin
+  WriteLn('Litteraux Zstandard insuffisants.');
+  Halt(1);
+ End;
+ For I:=1 to LL do Begin
+  PutOutByte(ZstdBufGet(LitBuf,LitPos));
+  Inc(LitPos);
+ End;
+ Offset:=ZstdResolveOffset(OffsetValue,LL);
+ ZstdCopyMatch(Offset,ML);
+End;
+
+Procedure ZstdSeqDecodeCodes(Var S:ZstdSeqTables;Buf:PZstdSeqBuffer;
+ Size,NumSeq:LongInt;LitBuf:PZstdSeqBuffer;LitSize:LongInt;DoExecute:Boolean);
+Var
+ BS:ZstdRevBitStream;
+ LLState,OFState,MLState:Integer;
+ I,LL,ML,OffsetValue,LitPos:LongInt;
+ Base:LongInt;
+ ExtraBits:Integer;
+ LLC,OMC,MLC:Byte;
+Begin
+ If NumSeq=0 Then Exit;
+ ZstdRevInit(BS,Buf,0,Size);
+ If S.LLMode=1 Then LLState:=0 Else LLState:=ZstdRevReadBits(BS,S.LL.TableLog);
+ If S.OFMode=1 Then OFState:=0 Else OFState:=ZstdRevReadBits(BS,S.OFs.TableLog);
+ If S.MLMode=1 Then MLState:=0 Else MLState:=ZstdRevReadBits(BS,S.ML.TableLog);
+ LitPos:=0;
+ For I:=1 to NumSeq do Begin
+  If S.LLMode=1 Then LLC:=S.LLRLE Else LLC:=ZstdFSESymbol(S.LL,LLState);
+  If S.OFMode=1 Then OMC:=S.OFRLE Else OMC:=ZstdFSESymbol(S.OFs,OFState);
+  If S.MLMode=1 Then MLC:=S.MLRLE Else MLC:=ZstdFSESymbol(S.ML,MLState);
+  If OMC>30 Then Begin
+   WriteLn('Code offset Zstandard trop grand.');
+   Halt(1);
+  End;
+  OffsetValue:=(LongInt(1)shl OMC)+ZstdRevReadBits(BS,OMC);
+  ZstdMLCode(MLC,Base,ExtraBits);
+  ML:=Base+ZstdRevReadBits(BS,ExtraBits);
+  ZstdLLCode(LLC,Base,ExtraBits);
+  LL:=Base+ZstdRevReadBits(BS,ExtraBits);
+  If DoExecute Then ZstdExecuteSequence(LL,OffsetValue,ML,LitBuf,LitPos,LitSize)
+               Else ZstdResolveOffset(OffsetValue,LL);
+  If I<NumSeq Then Begin
+   If S.LLMode<>1 Then ZstdFSENextState(BS,S.LL,LLState);
+   If S.MLMode<>1 Then ZstdFSENextState(BS,S.ML,MLState);
+   If S.OFMode<>1 Then ZstdFSENextState(BS,S.OFs,OFState);
+  End;
+ End;
+ If DoExecute and(LitBuf<>NIL)Then Begin
+  While LitPos<LitSize do Begin
+   PutOutByte(ZstdBufGet(LitBuf,LitPos));
+   Inc(LitPos);
+  End;
+ End;
+End;
+
+Procedure ZstdReadLiteralsSection(LitBuf:PZstdSeqBuffer;Var LitSize:LongInt;
+ Var H:ZstdHuffTable;Var HValid:Boolean;Var BytesRead:LongInt);
+Var
+ H0,H1,H2,H3,H4:Integer;
+ LitType,SizeFormat,NumStreams,HeaderSize:Integer;
+ RegenSize,CompSize,Bytes,StartCount:LongInt;
+ LitPos,I:LongInt;
+ RleByte:Byte;
+ StreamBuf:PZstdSeqBuffer;
+ J1,J2,J3:Integer;
+ Sz1,Sz2,Sz3,Sz4:LongInt;
+ Off1,Off2,Off3,Off4:LongInt;
+ Seg:LongInt;
+Begin
+ StartCount:=CompLeft;
+ H0:=ZstdReadByte;
+ LitType:=H0 and 3;
+ SizeFormat:=(H0 shr 2)and 3;
+ If(LitType=0)or(LitType=1)Then Begin
+  Case SizeFormat of
+   0,2:RegenSize:=H0 shr 3;
+   1:Begin
+      H1:=ZstdReadByte;
+      RegenSize:=LongInt(H0 shr 4)or(LongInt(H1)shl 4);
+     End;
+   3:Begin
+      H1:=ZstdReadByte;
+      H2:=ZstdReadByte;
+      RegenSize:=LongInt(H0 shr 4)or(LongInt(H1)shl 4)or(LongInt(H2)shl 12);
+     End;
+  End;
+  If RegenSize>ZstdSeqMaxBlockSize Then Begin
+   WriteLn('Litteraux Zstandard trop volumineux.');
+   Halt(1);
+  End;
+  LitSize:=RegenSize;
+  If LitType=0 Then Begin
+   For I:=0 to RegenSize-1 do ZstdBufSet(LitBuf,I,ZstdReadByte);
+  End
+   Else
+  Begin
+   RleByte:=ZstdReadByte;
+   For I:=0 to RegenSize-1 do ZstdBufSet(LitBuf,I,RleByte);
+  End;
+  BytesRead:=StartCount-CompLeft;
+  Exit;
+ End;
+ { LitType in [2,3]: compressed/treeless Huffman }
+ Case SizeFormat of
+  0:Begin
+     NumStreams:=1;
+     H1:=ZstdReadByte;
+     H2:=ZstdReadByte;
+     RegenSize:=LongInt(H0 shr 4)or(LongInt(H1 and $3F)shl 4);
+     CompSize:=LongInt(H1 shr 6)or(LongInt(H2)shl 2);
+    End;
+  1:Begin
+     NumStreams:=4;
+     H1:=ZstdReadByte;
+     H2:=ZstdReadByte;
+     RegenSize:=LongInt(H0 shr 4)or(LongInt(H1 and $3F)shl 4);
+     CompSize:=LongInt(H1 shr 6)or(LongInt(H2)shl 2);
+    End;
+  2:Begin
+     NumStreams:=4;
+     H1:=ZstdReadByte;
+     H2:=ZstdReadByte;
+     H3:=ZstdReadByte;
+     RegenSize:=LongInt(H0 shr 4)or(LongInt(H1)shl 4)or(LongInt(H2 and $3)shl 12);
+     CompSize:=LongInt(H2 shr 2)or(LongInt(H3)shl 6);
+    End;
+  3:Begin
+     NumStreams:=4;
+     H1:=ZstdReadByte;
+     H2:=ZstdReadByte;
+     H3:=ZstdReadByte;
+     H4:=ZstdReadByte;
+     RegenSize:=LongInt(H0 shr 4)or(LongInt(H1)shl 4)or(LongInt(H2 and $3F)shl 12);
+     CompSize:=LongInt(H2 shr 6)or(LongInt(H3)shl 2)or(LongInt(H4)shl 10);
+    End;
+ End;
+ If RegenSize>ZstdSeqMaxBlockSize Then Begin
+  WriteLn('Litteraux Zstandard trop volumineux.');
+  Halt(1);
+ End;
+ If CompSize>ZstdSeqMaxBlockSize Then Begin
+  WriteLn('Flux litteraux Zstandard trop volumineux.');
+  Halt(1);
+ End;
+ LitSize:=RegenSize;
+ If LitType=2 Then Begin
+  ZstdHuffReadTable(H,HeaderSize);
+  HValid:=True;
+  Bytes:=CompSize-HeaderSize;
+ End
+  Else
+ Begin
+  If Not HValid Then Begin
+   WriteLn('Litteraux treeless Zstandard sans table Huffman.');
+   Halt(1);
+  End;
+  Bytes:=CompSize;
+ End;
+ If Bytes<=0 Then Begin
+  WriteLn('Taille flux Huffman Zstandard invalide.');
+  Halt(1);
+ End;
+ ZstdBufAlloc(StreamBuf);
+ If StreamBuf=NIL Then Begin
+  WriteLn('Memoire insuffisante pour litteraux Zstandard.');
+  Halt(1);
+ End;
+ LitPos:=0;
+ If NumStreams=1 Then Begin
+  For I:=0 to Bytes-1 do ZstdBufSet(StreamBuf,I,ZstdReadByte);
+  ZstdHuffDecodeStream(H,StreamBuf,0,Bytes,LitBuf,LitPos,RegenSize);
+ End
+  Else
+ Begin
+  If Bytes<6 Then Begin
+   WriteLn('Table de saut Huffman Zstandard invalide.');
+   ZstdBufFree(StreamBuf);
+   Halt(1);
+  End;
+  J1:=ZstdReadByte;J1:=J1 or(Integer(ZstdReadByte)shl 8);
+  J2:=ZstdReadByte;J2:=J2 or(Integer(ZstdReadByte)shl 8);
+  J3:=ZstdReadByte;J3:=J3 or(Integer(ZstdReadByte)shl 8);
+  Sz1:=J1;Sz2:=J2;Sz3:=J3;
+  Sz4:=Bytes-6-Sz1-Sz2-Sz3;
+  If Sz4<=0 Then Begin
+   WriteLn('Taille flux 4 Huffman Zstandard invalide.');
+   ZstdBufFree(StreamBuf);
+   Halt(1);
+  End;
+  ZstdBufSet(StreamBuf,0,Byte(J1 and $FF));
+  ZstdBufSet(StreamBuf,1,Byte((J1 shr 8)and $FF));
+  ZstdBufSet(StreamBuf,2,Byte(J2 and $FF));
+  ZstdBufSet(StreamBuf,3,Byte((J2 shr 8)and $FF));
+  ZstdBufSet(StreamBuf,4,Byte(J3 and $FF));
+  ZstdBufSet(StreamBuf,5,Byte((J3 shr 8)and $FF));
+  Off1:=6;Off2:=Off1+Sz1;Off3:=Off2+Sz2;Off4:=Off3+Sz3;
+  For I:=6 to Bytes-1 do ZstdBufSet(StreamBuf,I,ZstdReadByte);
+  Seg:=(RegenSize+3)div 4;
+  ZstdHuffDecodeStream(H,StreamBuf,Off1,Sz1,LitBuf,LitPos,Seg);
+  ZstdHuffDecodeStream(H,StreamBuf,Off2,Sz2,LitBuf,LitPos,Seg);
+  ZstdHuffDecodeStream(H,StreamBuf,Off3,Sz3,LitBuf,LitPos,Seg);
+  ZstdHuffDecodeStream(H,StreamBuf,Off4,Sz4,LitBuf,LitPos,RegenSize-3*Seg);
+ End;
+ ZstdBufFree(StreamBuf);
+ If LitPos<>RegenSize Then Begin
+  WriteLn('Decodage litteraux Zstandard incomplet.');
+  Halt(1);
+ End;
+ BytesRead:=StartCount-CompLeft;
+End;
+
+Procedure ZstdReadSequencesAndExecute(BlockSize,LitConsumed:LongInt;
+ Var S:ZstdSeqTables;LitBuf:PZstdSeqBuffer;LitSize:LongInt);
+Var
+ NumSeq,BitstreamSize,I,LitPos:LongInt;
+ StartCount,HdrConsumed:LongInt;
+ Modes:Integer;
+ Buf:PZstdSeqBuffer;
+Begin
+ StartCount:=CompLeft;
+ NumSeq:=ZstdSeqReadNumber;
+ If NumSeq=0 Then Begin
+  LitPos:=0;
+  While LitPos<LitSize do Begin
+   PutOutByte(ZstdBufGet(LitBuf,LitPos));
+   Inc(LitPos);
+  End;
+  HdrConsumed:=StartCount-CompLeft;
+  If LitConsumed+HdrConsumed<>BlockSize Then Begin
+   WriteLn('Taille bloc Zstandard incoherente.');
+   Halt(1);
+  End;
+  Exit;
+ End;
+ Modes:=ZstdReadByte;
+ If(Modes and 3)<>0 Then Begin
+  WriteLn('Modes sequences Zstandard invalides.');
+  Halt(1);
+ End;
+ S.LLMode:=(Modes shr 6)and 3;
+ S.OFMode:=(Modes shr 4)and 3;
+ S.MLMode:=(Modes shr 2)and 3;
+ ZstdSeqReadOneTable(S.LL,S.LLMode,S.LLRLE,S.LLValid,35,9,'LL');
+ ZstdSeqReadOneTable(S.OFs,S.OFMode,S.OFRLE,S.OFValid,31,8,'OF');
+ ZstdSeqReadOneTable(S.ML,S.MLMode,S.MLRLE,S.MLValid,52,9,'ML');
+ HdrConsumed:=StartCount-CompLeft;
+ BitstreamSize:=BlockSize-LitConsumed-HdrConsumed;
+ If(BitstreamSize<=0)or(BitstreamSize>ZstdSeqMaxBlockSize)Then Begin
+  WriteLn('Taille bitstream sequences Zstandard invalide.');
+  Halt(1);
+ End;
+ ZstdBufAlloc(Buf);
+ If Buf=NIL Then Begin
+  WriteLn('Memoire insuffisante pour sequences Zstandard.');
+  Halt(1);
+ End;
+ For I:=0 to BitstreamSize-1 do ZstdBufSet(Buf,I,ZstdReadByte);
+ ZstdSeqDecodeCodes(S,Buf,BitstreamSize,NumSeq,LitBuf,LitSize,True);
+ ZstdBufFree(Buf);
+End;
+
+Procedure InflateZstdFrame;
+Var
+ Desc,DictFlag,FCSFlag,BlockType:Integer;
+ Header:LongInt;
+ SingleSegment,ChecksumFlag,LastBlock:Boolean;
+ DictSize,FCSSize:Integer;
+ BlockSize,I,LitSize,LitConsumed:LongInt;
+ B:Byte;
+ LitBuf:PZstdSeqBuffer;
+ Huff:ZstdHuffTable;
+ HuffValid:Boolean;
+ Seq:ZstdSeqTables;
+Begin
+ ZstdRep1:=1;
+ ZstdRep2:=4;
+ ZstdRep3:=8;
+ HuffValid:=False;
+ ZstdBuildDefaultSeqTables(Seq);
+ ZstdBufAlloc(LitBuf);
+ If LitBuf=NIL Then Begin
+  WriteLn('Memoire insuffisante pour bloc Zstandard.');
+  Halt(1);
+ End;
+ Desc:=ZstdReadByte;
+ DictFlag:=Desc and 3;
+ ChecksumFlag:=(Desc and 4)<>0;
+ If(Desc and 8)<>0 Then Begin
+  WriteLn('En-tete Zstandard reserve invalide.');
+  Halt(1);
+ End;
+ SingleSegment:=(Desc and 32)<>0;
+ FCSFlag:=(Desc shr 6)and 3;
+ If Not SingleSegment Then ZstdReadByte;
+ Case DictFlag of
+  0:DictSize:=0;
+  1:DictSize:=1;
+  2:DictSize:=2;
+  3:DictSize:=4;
+ Else
+  DictSize:=0;
+ End;
+ ZstdSkip(DictSize);
+ If FCSFlag=0 Then Begin
+  If SingleSegment Then FCSSize:=1 Else FCSSize:=0;
+ End
+  Else If FCSFlag=1 Then FCSSize:=2
+  Else If FCSFlag=2 Then FCSSize:=4
+  Else FCSSize:=8;
+ If FCSSize=2 Then ZstdReadSize(FCSSize,True)
+              Else ZstdReadSize(FCSSize,False);
+ Repeat
+  Header:=ZstdReadByte;
+  Header:=Header or(Integer(ZstdReadByte)shl 8);
+  Header:=Header or(Integer(ZstdReadByte)shl 16);
+  LastBlock:=(Header and 1)<>0;
+  BlockType:=(Header shr 1)and 3;
+  BlockSize:=Header shr 3;
+  Case BlockType of
+   0:Begin
+      For I:=1 to BlockSize do PutOutByte(ZstdReadByte);
+     End;
+   1:Begin
+      B:=ZstdReadByte;
+      For I:=1 to BlockSize do PutOutByte(B);
+     End;
+   2:Begin
+      LitSize:=0;
+      LitConsumed:=0;
+      ZstdReadLiteralsSection(LitBuf,LitSize,Huff,HuffValid,LitConsumed);
+      ZstdReadSequencesAndExecute(BlockSize,LitConsumed,Seq,LitBuf,LitSize);
+     End;
+  Else
+   ZstdBufFree(LitBuf);
+   WriteLn('Bloc Zstandard reserve invalide.');
+   Halt(1);
+  End;
+ Until LastBlock;
+ If ChecksumFlag Then ZstdSkip(4);
+ ZstdBufFree(LitBuf);
+End;
+
+Procedure InflateZstd;
+Var
+ Magic:LongInt;
+ Size:LongInt;
+Begin
+ InitWindow(False);
+ Repeat
+  Magic:=ZstdReadDWordLE;
+  If(Magic and $FFFFFFF0)=LongInt($184D2A50)Then Begin
+   Size:=ZstdReadDWordLE;
+   ZstdSkip(Size);
+  End
+   Else If Magic=LongInt($FD2FB528)Then Begin
+   InflateZstdFrame;
+  End
+   Else
+  Begin
+   WriteLn('Signature Zstandard invalide.');
+   Halt(1);
+  End;
+ Until(OutSize>=UncompSize)or(CompLeft<=0);
+End;
+
 Procedure BZAllocTT(Limit:LongInt);
 Var
  I,Need:Integer;
@@ -2732,8 +4235,8 @@ End;
 Procedure ExtractArchive;
 Var
  Sig:LongInt;
- Flags,Method,NameLen,ExtraLen:Integer;
- CRC,CompSize:LongInt;
+ Flags,Method,NameLen,ExtraLen,ZipTime,ZipDate:Integer;
+ CRC,CompSize,ZipStamp,DiskStamp:LongInt;
  Name,OutName:String;
  I:Integer;
  B:Byte;
@@ -2751,8 +4254,9 @@ Begin
   ReadWordLE;
   Flags:=ReadWordLE;
   Method:=ReadWordLE;
-  ReadWordLE;
-  ReadWordLE;
+  ZipTime:=ReadWordLE;
+  ZipDate:=ReadWordLE;
+  ZipStamp:=ZipDateTimeStamp(ZipTime,ZipDate);
   CRC:=ReadDWordLE;
   CompSize:=ReadDWordLE;
   UncompSize:=ReadDWordLE;
@@ -2803,6 +4307,16 @@ Begin
      SkipBytes(CompSize);
     End
      Else If FreshenMode and Not Existing Then Begin
+     SkipBytes(CompSize);
+    End
+     Else If FreshenMode and Existing and GetFileDateTimeStamp(OutName,DiskStamp)
+       and(DiskStamp>=ZipStamp)Then Begin
+     If Not QuietMode and Not VeryQuietMode Then MoreWriteLn('A jour '+OutName);
+     SkipBytes(CompSize);
+    End
+     Else If UpdateMode and Existing and GetFileDateTimeStamp(OutName,DiskStamp)
+       and(DiskStamp>=ZipStamp)Then Begin
+     If Not QuietMode and Not VeryQuietMode Then MoreWriteLn('A jour '+OutName);
      SkipBytes(CompSize);
     End
      Else
@@ -2873,10 +4387,7 @@ Begin
           Halt(1);
          End;
       93:Begin
-          If OutputMode=0 Then Close(OutFile);
-          WriteLn('Methode ZIP 93 Zstandard reconnue mais non integree: ',Name);
-          WriteLn('ZSTD requiert un decodeur de frame complet avec FSE et Huffman.');
-          Halt(1);
+          InflateZstd;
          End;
      Else
       If OutputMode=0 Then Close(OutFile);
@@ -2884,14 +4395,18 @@ Begin
       Halt(1);
      End;
      OutCRC:=OutCRC xor LongInt($FFFFFFFF);
-     If OutputMode=0 Then Close(OutFile);
      If CompLeft>0 Then SkipBytes(CompLeft);
      If(OutSize<>UncompSize)or Not SameDWord(OutCRC,ExpectedCRC)Then Begin
+      If OutputMode=0 Then Close(OutFile);
       WriteLn('Erreur CRC/taille pour ',Name);
       If Not VeryQuietMode Then
        WriteLn('  taille=',OutSize,'/',UncompSize,
         ' crc=',Hex8(OutCRC),'/',Hex8(ExpectedCRC));
       Halt(1);
+     End;
+     If OutputMode=0 Then Begin
+      Close(OutFile);
+      SetFileDateTimeStamp(OutName,ZipStamp);
      End;
     End;
    End;
@@ -2929,16 +4444,17 @@ Begin
  WriteLn;
  WriteLn('Supporte les methodes ZIP store (0), shrink (1), ',
         'reduce (2-5), implode (6), deflate (8), Deflate64 (9), ');
- WriteLn('DCL Implode (10), BZIP2 (12), LZMA (14), IBM TERSE (18).');
+ WriteLn('DCL Implode (10), BZIP2 (12), LZMA (14), IBM TERSE (18), ',
+        'Zstandard/ZSTD (93).');
  WriteLn('Methode 7 tokenizing reconnue, mais reservee/non documentee.');
  WriteLn('Methode 10 DCL Implode/old IBM TERSE supportee.');
  WriteLn('IBM TERSE (18) supporte les flux PACK/SPACK avec en-tete TERSE.');
  WriteLn('Methode 19 IBM LZ77 z Architecture/PFS reconnue, non portable.');
- WriteLn('Methode 93 Zstandard reconnue, decodeur ZSTD non integre.');
+ WriteLn('Methode 93 Zstandard: blocs Raw/RLE et compresses Huffman/FSE/LZ77.');
  WriteLn('BZIP2 utilise la memoire de tas par blocs pour l''inversion BWT.');
  WriteLn('LZMA utilise un dictionnaire sur tas; lc+lp doit etre <= 4.');
  WriteLn('Note : -P supporte ZipCrypto classique, pas AES/WinZip ni chiffrement fort.');
- WriteLn('-X restaure peu d''attributs; -u ne compare pas les dates ZIP.');
+ WriteLn('-X restaure peu d''attributs; -f/-u comparent les dates ZIP/DOS.');
 End;
 
 Procedure ShowZipComment;
