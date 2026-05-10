@@ -366,6 +366,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en fichier Radiance RGBE (.HDR).</td>
 		</tr>
 		<tr>
+			<td><b>BMP2ICO.PAS</b></td>
+			<td>Cette commande permet de convertir une image BitMap (.BMP) en ressource icône Windows (.ICO).</td>
+		</tr>
+		<tr>
 			<td><b>BMP2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en code source Pascal.</td>
 		</tr>
