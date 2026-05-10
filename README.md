@@ -338,6 +338,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en fichier DirectDraw Surface (.DDS).</td>
 		</tr>
 		<tr>
+			<td><b>BMP2DIB.PAS</b></td>
+			<td>Cette commande permet de convertir une image BitMap (.BMP) en fichier Device-Independent Bitmap (.DIB).</td>
+		</tr>
+		<tr>
 			<td><b>BMP2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en code source Pascal.</td>
 		</tr>
