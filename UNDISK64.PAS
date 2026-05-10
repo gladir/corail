@@ -1,6 +1,6 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2026
-  @website(https://www.gladir.com/commodore64-0)
+  @website(https://www.gladir.com/corail)
   @abstract(Target: Turbo Pascal 7, Free Pascal 3.2)
 }
 
