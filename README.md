@@ -410,6 +410,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en format Targa (.TGA) utilisé sur Amiga, Atari ST et MS-DOS.</td>
 		</tr>
 		<tr>
+			<td><b>BMP2TIFF.PAS</b></td>
+			<td>Cette commande permet de convertir une image BitMap (.BMP) en format TIFF (Tagged Image File Format).</td>
+		</tr>
+		<tr>
 			<td><b>BMP2XBM.PAS</b></td>
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en XBM (X BitMap).</td>
 		</tr>
