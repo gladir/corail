@@ -1873,6 +1873,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'extraire tous les fichiers contenus dans une image disque de format .D64 du Commodore 64.</td>
 		</tr>
 		<tr>
+			<td><b>UNDISKAM.PAS</b></td>
+			<td>Cette commande permet d'extraire tous les fichiers contenus dans une image disque de format .ADF de l'Amiga (syst´┐¢mes OFS et FFS).</td>
+		</tr>
+		<tr>
 			<td><b>UNEXPAND.PAS</b></td>
 			<td>Cette commande permet de convertir des espaces en tabulations.</td>
 		</tr>				
