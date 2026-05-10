@@ -1366,7 +1366,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>NES.PAS</b></td>
-			<td>Cette commande permet de lancer un emulateur NES.</td>
+			<td>Cette commande permet de lancer un emulateur NES (Nintendo Entertainment System).</td>
 		</tr>
 		<tr>
 			<td><b>NET.PAS</b></td>
