@@ -350,6 +350,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en fichier OpenEXR (.EXR).</td>
 		</tr>
 		<tr>
+			<td><b>BMP2FAX.PAS</b></td>
+			<td>Cette commande permet de convertir une image BitMap (.BMP) en fichier Group 3 FAX brut (.FAX).</td>
+		</tr>
+		<tr>
 			<td><b>BMP2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en code source Pascal.</td>
 		</tr>
