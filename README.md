@@ -378,6 +378,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en format LBM (.LBM, IFF/ILBM Electronic Arts).</td>
 		</tr>
 		<tr>
+			<td><b>BMP2MAC.PAS</b></td>
+			<td>Cette commande permet de convertir une image BitMap (.BMP) en format MacPaint (.MAC, Apple).</td>
+		</tr>
+		<tr>
 			<td><b>BMP2PAS.PAS</b></td>
 			<td>Cette commande permet de convertir une image BitMap (.BMP) en code source Pascal.</td>
 		</tr>
