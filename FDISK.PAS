@@ -824,14 +824,57 @@ Begin
  Until False;
 End;
 
-Procedure DeletePartition;Begin
+Procedure DeletePartition;
+Var
+ Partition:PartSec Absolute Buffer;
+ I,Count,Slot:Byte;
+ Ch:Char;
+ Confirm:String;
+Begin
  ClrScr;
- WriteLn('Cette fonctionnalit� n''est pas implement� !');
- Write(' ':2,'Appuyez sur ');
- HighVideo;
- Write('ECHAP');
- LowVideo;
- Write(' pour quitter FDISK');
+ WriteLn;
+ WriteLnCenter('Suppression d''une partition primaire DOS');
+ WriteLn;
+ ReadPartitionRecord;
+ WriteListPartition;
+ WriteLn;
+ Count:=0;
+ For I:=0 To 3 Do
+  If Partition.PartTable[I].PartType<>0 Then Inc(Count);
+ If Count=0 Then Begin
+  WriteLn(' ':2,'Aucune partition a supprimer.');
+  Write(' ':2,'Appuyez sur ');
+  HighVideo; Write('ECHAP'); LowVideo;
+  Write(' pour quitter FDISK');
+  ReadKey;
+  Exit;
+ End;
+ Write(' ':2,'Entrez le numero de la partition a supprimer (1-4, ECHAP=annuler) : ');
+ Repeat
+  Ch:=ReadKey;
+  If Ch=#27 Then Exit;
+  If Ch In['1'..'4']Then Begin
+   Slot:=Ord(Ch)-Ord('1');
+   If Partition.PartTable[Slot].PartType<>0 Then Break;
+  End;
+ Until False;
+ WriteLn(Ch);
+ WriteLn;
+ Write(' ':2,'Confirmez la suppression de la partition ',Slot+1,
+       ' en tapant son numero : ');
+ ReadLn(Confirm);
+ If Confirm<>Chr(Ord('1')+Slot)Then Begin
+  WriteLn(' ':2,'Suppression annulee.');
+  Write(' ':2,'Appuyez sur une touche...');
+  ReadKey;
+  Exit;
+ End;
+ FillChar(Partition.PartTable[Slot],SizeOf(PartEntry),0);
+ Partition.IdCode:=$AA55;
+ WritePartitionRecord;
+ WriteLn;
+ WriteLn(' ':2,'Partition ',Slot+1,' supprimee.');
+ Write(' ':2,'Appuyez sur une touche...');
  ReadKey;
 End;
 
