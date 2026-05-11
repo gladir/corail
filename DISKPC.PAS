@@ -384,6 +384,152 @@ Begin
  For I:=0 to SectorsPerCluster-1 do WriteSector(ClusterSector(Cl)+I);
 End;
 
+Procedure CopyCluster(FromCl,ToCl:LongInt);
+Var
+ I:Integer;
+Begin
+ For I:=0 to SectorsPerCluster-1 do Begin
+  ReadSector(ClusterSector(FromCl)+I);
+  WriteSector(ClusterSector(ToCl)+I);
+ End;
+End;
+
+Function EntryFirstCluster(Off:Integer):LongInt;
+Var
+ Cl:LongInt;
+Begin
+ Cl:=LongInt(LE16(Off+26));
+ If FATType=32Then
+  Cl:=Cl+LongInt(LE16(Off+20))*65536;
+ EntryFirstCluster:=Cl;
+End;
+
+Procedure PutEntryFirstCluster(Off:Integer;Cl:LongInt);
+Begin
+ If FATType=32Then PutLE16(Off+20,Word((Cl shr 16)and $FFFF))
+               Else PutLE16(Off+20,0);
+ PutLE16(Off+26,Word(Cl and $FFFF));
+End;
+
+Function FindPredCluster(Target:LongInt):LongInt;
+Var
+ C:LongInt;
+Begin
+ For C:=2 to ClusterCount+1 do
+  If NextCluster(C)=Target Then Begin
+   FindPredCluster:=C;
+   Exit;
+  End;
+ FindPredCluster:=0;
+End;
+
+Function UpdateDirChainReference(StartCl,Target,NewCl:LongInt):Boolean;Forward;
+
+Function UpdateDirSectorReference(LBA,Target,NewCl:LongInt):Boolean;
+Var
+ I,O:Integer;
+ A:Byte;
+ FC:LongInt;
+Begin
+ UpdateDirSectorReference:=False;
+ ReadSector(LBA);
+ For I:=0 to 15 do Begin
+  O:=I*32;
+  If Sec[O]=0Then Continue;
+  If Sec[O]=$E5Then Continue;
+  A:=Sec[O+11];
+  If(A and $0F)=$0FThen Continue;
+  FC:=EntryFirstCluster(O);
+  If FC=Target Then Begin
+   PutEntryFirstCluster(O,NewCl);
+   WriteSector(LBA);
+   UpdateDirSectorReference:=True;
+   Exit;
+  End;
+  If((A and $10)<>0)and(FC>=2)and(Sec[O]<>Ord('.'))Then Begin
+   If UpdateDirChainReference(FC,Target,NewCl)Then Begin
+    UpdateDirSectorReference:=True;
+    Exit;
+   End;
+   ReadSector(LBA);
+  End;
+ End;
+End;
+
+Function UpdateDirChainReference(StartCl,Target,NewCl:LongInt):Boolean;
+Var
+ Cur,S,J:LongInt;
+Begin
+ UpdateDirChainReference:=False;
+ Cur:=StartCl;
+ While(Cur>=2)and(Not IsEOC(Cur))do Begin
+  S:=ClusterSector(Cur);
+  For J:=0 to SectorsPerCluster-1 do
+   If UpdateDirSectorReference(S+J,Target,NewCl)Then Begin
+    UpdateDirChainReference:=True;
+    Exit;
+   End;
+  Cur:=NextCluster(Cur);
+ End;
+End;
+
+Function UpdateDirReference(Target,NewCl:LongInt):Boolean;
+Var
+ S:LongInt;
+Begin
+ UpdateDirReference:=False;
+ If FATType=32Then Begin
+  UpdateDirReference:=UpdateDirChainReference(RootCluster,Target,NewCl);
+  Exit;
+ End;
+ For S:=0 to RootDirSectors-1 do
+  If UpdateDirSectorReference(RootStart+S,Target,NewCl)Then Begin
+   UpdateDirReference:=True;
+   Exit;
+  End;
+End;
+
+Procedure RelocateCluster(Target,ReserveEnd:LongInt);
+Var
+ NewCl,Pred,Val:LongInt;
+Begin
+ Val:=NextCluster(Target);
+ If Val=0 Then Exit;
+ NewCl:=FindFreeCluster(ReserveEnd+1);
+ If NewCl=0 Then Begin
+  WriteLn('Espace insuffisant pour deplacer le cluster ',Target,'.');
+  Halt(1);
+ End;
+ CopyCluster(Target,NewCl);
+ SetClusterValue(NewCl,Val);
+ Pred:=FindPredCluster(Target);
+ If Pred<>0 Then SetClusterValue(Pred,NewCl)
+ Else If Not UpdateDirReference(Target,NewCl)Then Begin
+  SetClusterValue(NewCl,0);
+  SetClusterValue(Target,0);
+  WriteLn('Cluster ',Target,' alloue sans entree de repertoire, reutilise.');
+  Exit;
+ End;
+ SetClusterValue(Target,0);
+End;
+
+Procedure ReserveSystemClusters(Need:LongInt);
+Var
+ C,ReserveEnd:LongInt;
+Begin
+ If Need<=0 Then Exit;
+ If FATType=32 Then Begin
+  WriteLn('/SYS est supporte seulement sur FAT12/FAT16.');
+  Halt(1);
+ End;
+ If Need>ClusterCount Then Begin
+  WriteLn('Fichier systeme trop grand pour cette image.');
+  Halt(1);
+ End;
+ ReserveEnd:=Need+1;
+ For C:=2 to ReserveEnd do RelocateCluster(C,ReserveEnd);
+End;
+
 Function ValidDOSChar(C:Char):Boolean;
 Begin
  ValidDOSChar:=C in['A'..'Z','0'..'9','$','%','''','-','_','@','~','`','!','(',')','{','}','^','#','&'];
@@ -483,7 +629,8 @@ Begin
 End;
 
 Procedure WriteDirectoryEntry(EntrySector:LongInt;EntryOff:Integer;
- Var Raw:Array of Byte;FirstCluster:LongInt;Size:LongInt;Stamp:LongInt);
+ Var Raw:Array of Byte;FirstCluster:LongInt;Size:LongInt;Stamp:LongInt;
+ Attr:Byte);
 Var
  I:Integer;
  T,D:Word;
@@ -491,7 +638,7 @@ Begin
  ReadSector(EntrySector);
  For I:=0 to 31 do Sec[EntryOff+I]:=0;
  For I:=0 to 10 do Sec[EntryOff+I]:=Raw[I];
- Sec[EntryOff+11]:=$20;
+ Sec[EntryOff+11]:=Attr;
  T:=Word(Stamp and $FFFF);
  D:=Word((Stamp shr 16)and $FFFF);
  PutLE16(EntryOff+14,T);
@@ -504,13 +651,13 @@ Begin
  WriteSector(EntrySector);
 End;
 
-Procedure CopyFileToImage(SourceName:String);
+Procedure CopyFileToImage(SourceName:String;SysMode:Boolean);
 Var
  Src:File;
  Raw:Array[0..10]of Byte;
  EntrySector:LongInt;
  EntryOff:Integer;
- Size,Remain:LongInt;
+ Size,Remain,Need,ClusterBytes:LongInt;
  Cl,FirstCl,PrevCl,NextFree:LongInt;
  I:Integer;
  R:Word;
@@ -530,9 +677,34 @@ Begin
  End;
  Size:=FileSize(Src);
  GetFTime(Src,Stamp);
+ ClusterBytes:=LongInt(SectorsPerCluster)*SectorSize;
  Remain:=Size;
  FirstCl:=0;
  PrevCl:=0;
+ If SysMode Then Begin
+  Need:=(Size+ClusterBytes-1)div ClusterBytes;
+  ReserveSystemClusters(Need);
+  Cl:=2;
+  While Remain>0 do Begin
+   If FirstCl=0 Then FirstCl:=Cl;
+   If Remain>ClusterBytes Then SetClusterValue(Cl,Cl+1)
+    Else SetClusterValue(Cl,EOCValue);
+   For I:=0 to SectorsPerCluster-1 do Begin
+    FillChar(Sec,SizeOf(Sec),0);
+    If Remain>0 Then Begin
+     BlockRead(Src,Sec,SectorSize,R);
+     Dec(Remain,R);
+    End;
+    WriteSector(ClusterSector(Cl)+I);
+   End;
+   Inc(Cl);
+  End;
+  If Size=0 Then FirstCl:=0;
+  Close(Src);
+  WriteDirectoryEntry(EntrySector,EntryOff,Raw,FirstCl,Size,Stamp,$27);
+  WriteLn(SourceName,' -> image (/SYS)');
+  Exit;
+ End;
  NextFree:=2;
  While Remain>0 do Begin
   Cl:=FindFreeCluster(NextFree);
@@ -557,22 +729,34 @@ Begin
  End;
  Close(Src);
  If Size=0Then FirstCl:=0;
- WriteDirectoryEntry(EntrySector,EntryOff,Raw,FirstCl,Size,Stamp);
+ WriteDirectoryEntry(EntrySector,EntryOff,Raw,FirstCl,Size,Stamp,$20);
  WriteLn(SourceName,' -> image');
 End;
 
-Procedure Help;
-Begin
- WriteLn('DISKPC : copie des fichiers dans une image disque PC FAT.');
+Procedure Help;Begin
+ WriteLn('DISKPC : Cette commande permet de copier des fichiers ',
+         'dans une image disque PC FAT.');
  WriteLn;
- WriteLn('Syntaxe : DISKPC image.img fichier1 [fichier2 ...]');
+ WriteLn('Syntaxe : DISKPC image.img fichier1 [fichier2 ...] [/SYS:fichier]');
  WriteLn;
  WriteLn('Ajoute les fichiers dans la racine de la premiere partition FAT.');
+ WriteLn('/SYS:fichier place un fichier systeme au debut de la zone donnees');
+ WriteLn('FAT12/FAT16 et deplace les clusters occupes si necessaire.');
  WriteLn('Supporte FAT12, FAT16 et FAT32. Noms longs VFAT non crees.');
+End;
+
+Function IsSysParam(S:String):Boolean;
+Var
+ U:String;
+Begin
+ U:=UpStr(S);
+ IsSysParam:=(Copy(U,1,5)='/SYS:')or(Copy(U,1,5)='-SYS:');
 End;
 
 Var
  I:Integer;
+ P:String;
+ SysSeen:Boolean;
 Begin
  If(ParamCount<2)or(ParamStr(1)='/?')or(ParamStr(1)='-h')or
    (ParamStr(1)='--help')Then Begin
@@ -587,6 +771,18 @@ Begin
   Halt(1);
  End;
  ReadBoot;
- For I:=2 to ParamCount do CopyFileToImage(ParamStr(I));
+ SysSeen:=False;
+ For I:=2 to ParamCount do Begin
+  P:=ParamStr(I);
+  If IsSysParam(P)Then Begin
+   If SysSeen Then Begin
+    WriteLn('Un seul parametre /SYS:fichier est supporte.');
+    Halt(1);
+   End;
+   SysSeen:=True;
+   CopyFileToImage(Copy(P,6,Length(P)-5),True);
+  End
+   Else CopyFileToImage(P,False);
+ End;
  Close(Img);
 End.
