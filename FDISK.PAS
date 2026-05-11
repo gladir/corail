@@ -41,12 +41,14 @@ Var
  Buffer:Array[0..1023]of Byte;
  CliI:Byte;
  CliJ,CliCode:Integer;
- { Format d'image detecte : raw (par defaut), VHD fixe ou VHD dynamique. }
- VHDKind:(_VHDNone,_VHDFixed,_VHDDynamic);
+ { Format d'image detecte : raw, VHD fixe, VHD dynamique ou VMDK sparse. }
+ VHDKind:(_VHDNone,_VHDFixed,_VHDDynamic,_VMDKSparse);
  VHDDiskSec:LongInt;        { Taille virtuelle en secteurs }
- VHDBlockSizeSec:LongInt;   { Sectors per block (dynamique) }
- VHDBitmapSecs:LongInt;     { Secteurs occupes par le bitmap de bloc }
- VHDBATFileOfs:LongInt;     { Offset fichier de la BAT (octets) }
+ VHDBlockSizeSec:LongInt;   { Sectors per block (VHD dyn) / per grain (VMDK) }
+ VHDBitmapSecs:LongInt;     { Secteurs occupes par le bitmap (VHD dyn) }
+ VHDBATFileOfs:LongInt;     { Offset fichier de la BAT (VHD) / GD (VMDK) }
+ VMDKGTEsPerGT:LongInt;     { Nombre d'entrees par grain table (VMDK) }
+ FsHint:Byte;               { Hint dernier ParsePartType : 0=none 1=NTFS 2=HPFS }
 
 Procedure DiskReset;
 {$IFDEF Windows}
@@ -146,10 +148,9 @@ Procedure WriteLnCenter(S:String);Begin
  WriteLn(S);
 End;
 
-{ Detecte le format de l'image (raw, VHD fixe, VHD dynamique).
-  Met a jour VHDKind, VHDDiskSec, et pour dynamique : VHDBlockSizeSec,
-  VHDBitmapSecs, VHDBATFileOfs. A appeler apres chaque changement de
-  FileName. }
+{ Detecte le format de l'image (raw, VHD fixe, VHD dynamique, VMDK sparse,
+  ou VMDK descripteur texte). A appeler apres chaque changement de FileName. }
+{$R-}
 Procedure DetectImageFormat;
 Var
  F:File;
@@ -157,18 +158,128 @@ Var
  BR:Word;
  Sz,BlockSize,BAToff,CurSize:LongInt;
  DiskType:LongInt;
+ I,J,K:Integer;
+ S,ExtName,DescDir:String;
+ ExtSecs,ExtOfs:LongInt;
+ Code:Integer;
+
+ Function ReadLE32(Ofs:Integer):LongInt;
+ Begin
+  ReadLE32:=LongInt(Sec[Ofs])
+           Or(LongInt(Sec[Ofs+1])Shl 8)
+           Or(LongInt(Sec[Ofs+2])Shl 16)
+           Or(LongInt(Sec[Ofs+3])Shl 24);
+ End;
+
 Begin
  VHDKind:=_VHDNone;
  VHDDiskSec:=0;
  VHDBlockSizeSec:=0;
  VHDBitmapSecs:=0;
  VHDBATFileOfs:=0;
+ VMDKGTEsPerGT:=0;
  If FileName='' Then Exit;
  {$I-}Assign(F,FileName);Reset(F,1);{$I+}
  If IOResult<>0 Then Exit;
+ { Lecture du secteur 0 pour detection VMDK ou descripteur texte. }
+ FillChar(Sec,SizeOf(Sec),0);
+ {$I-}BlockRead(F,Sec,512,BR);{$I+}
+ If IOResult<>0 Then Begin Close(F); Exit; End;
+ { Tolere BR<512 pour les fichiers descripteurs courts }
+ If BR=0 Then Begin Close(F); Exit; End;
+
+ { ===== VMDK sparse : magic 'KDMV' (0x564D444B little-endian) ===== }
+ If(Sec[0]=$4B)And(Sec[1]=$44)And(Sec[2]=$4D)And(Sec[3]=$56)Then Begin
+  { Capacity @ +12 (8 LE, low 32 @ +12..+15) }
+  VHDDiskSec:=ReadLE32(12);
+  { GrainSize @ +20 (8 LE, low 32 @ +20..+23) }
+  VHDBlockSizeSec:=ReadLE32(20);
+  If(VHDBlockSizeSec<=0)Then Begin Close(F); Exit; End;
+  { NumGTEsPerGT @ +44 (4 LE) }
+  VMDKGTEsPerGT:=ReadLE32(44);
+  If(VMDKGTEsPerGT<=0)Then Begin Close(F); Exit; End;
+  { GDOffset @ +56 (8 LE) -- offset en SECTEURS }
+  BAToff:=ReadLE32(56);
+  If BAToff<=0 Then BAToff:=ReadLE32(48); { fallback : RGDOffset }
+  If BAToff<=0 Then Begin Close(F); Exit; End;
+  VHDBATFileOfs:=BAToff*512;
+  VHDKind:=_VMDKSparse;
+  Close(F);
+  Exit;
+ End;
+
+ { ===== VMDK descripteur texte : commence par '# Disk DescriptorFile'
+   ou contient 'createType=' et lignes 'RW <N> FLAT "..."' ===== }
+ If(Sec[0]=$23)Or((Sec[0]>=Ord('A'))And(Sec[0]<=Ord('z')))Then Begin
+  { Construire chaine depuis le secteur (jusqu'a 511 chars) }
+  S:='';
+  For I:=0 To 511 Do
+   If(Sec[I]>=32)Or(Sec[I]=10)Or(Sec[I]=13)Or(Sec[I]=9)Then
+    S:=S+Chr(Sec[I])
+   Else
+    S:=S+' ';
+  { Cherche un marqueur 'Disk DescriptorFile' ou 'createType' }
+  I:=Pos('DescriptorFile',S);
+  If I=0 Then I:=Pos('createType',S);
+  If I=0 Then I:=Pos('# Disk',S);
+  If I>0 Then Begin
+   { Cherche ligne 'RW <N> FLAT "nom"' }
+   I:=Pos('RW ',S);
+   If(I>0)And(Pos('FLAT',S)>I)Then Begin
+    { Extraire nombre apres 'RW ' }
+    K:=I+3;
+    While(K<=Length(S))And(S[K]=' ')Do Inc(K);
+    ExtName:='';
+    While(K<=Length(S))And(S[K] in['0'..'9'])Do Begin
+     ExtName:=ExtName+S[K]; Inc(K);
+    End;
+    Val(ExtName,ExtSecs,Code);
+    If Code<>0 Then ExtSecs:=0;
+    { Trouver '"' ouvrante apres FLAT }
+    I:=Pos('FLAT',S);
+    K:=I+4;
+    While(K<=Length(S))And(S[K]<>'"')Do Inc(K);
+    If(K<Length(S))And(S[K]='"')Then Begin
+     Inc(K);
+     ExtName:='';
+     While(K<=Length(S))And(S[K]<>'"')Do Begin
+      ExtName:=ExtName+S[K]; Inc(K);
+     End;
+     { Offset (apres '"') }
+     If S[K]='"' Then Inc(K);
+     While(K<=Length(S))And(S[K]=' ')Do Inc(K);
+     DescDir:='';
+     While(K<=Length(S))And(S[K] in['0'..'9'])Do Begin
+      DescDir:=DescDir+S[K]; Inc(K);
+     End;
+     Val(DescDir,ExtOfs,Code);
+     If Code<>0 Then ExtOfs:=0;
+     Close(F);
+     { Resoudre chemin relatif a la position du descripteur }
+     DescDir:=FileName;
+     J:=Length(DescDir);
+     While(J>0)And(DescDir[J]<>'\')And(DescDir[J]<>'/')And(DescDir[J]<>':')Do Dec(J);
+     DescDir:=Copy(DescDir,1,J);
+     { Si ExtName n'a pas de chemin absolu, prefixer }
+     If(Pos(':',ExtName)=0)And(Length(ExtName)>0)And
+       (ExtName[1]<>'\')And(ExtName[1]<>'/')Then
+      ExtName:=DescDir+ExtName;
+     { Bascule sur le fichier d'extension brut (raw flat) }
+     FileName:=ExtName;
+     VHDDiskSec:=ExtSecs;
+     { Re-detection au cas ou l'extension serait elle-meme VHD/VMDK }
+     DetectImageFormat;
+     Exit;
+    End;
+   End;
+   Close(F);
+   Exit;
+  End;
+ End;
+
+ { ===== VHD : footer 'conectix' aux 512 derniers octets ===== }
  Sz:=FileSize(F);
- If Sz<1024 Then Begin Close(F); Exit; End;
- { Footer VHD aux 512 derniers octets }
+ If(Sz<1024)Or(Sz<0)Then Begin Close(F); Exit; End;
  {$I-}Seek(F,Sz-512);{$I+}
  If IOResult<>0 Then Begin Close(F); Exit; End;
  {$I-}BlockRead(F,Sec,512,BR);{$I+}
@@ -216,6 +327,7 @@ Begin
  End;
  Close(F);
 End;
+{$R+}
 
 { Traduit un LBA virtuel en offset fichier (octets) selon le format.
   Pour un bloc VHD dynamique non alloue : retourne -1 (lecture = zeros). }
@@ -224,13 +336,46 @@ Var
  F:File;
  BR:Word;
  BlockIdx,OfsInBlock,BATEntry:LongInt;
+ GrainNum,GTIdx,GTOff,GTSec,GrainSec:LongInt;
  BATBuf:Array[0..3]of Byte;
 Begin
- If VHDKind<>_VHDDynamic Then Begin
+ If(VHDKind=_VHDNone)Or(VHDKind=_VHDFixed)Then Begin
   VHDFileOffset:=LBA*512;
   Exit;
  End;
  VHDFileOffset:=-1;
+ If VHDKind=_VMDKSparse Then Begin
+  { Lookup 2-niveaux : GrainDir -> GrainTable -> grain
+    GrainNum = LBA / GrainSize ; GTIdx = GrainNum / GTEsPerGT
+    GTOff = GrainNum mod GTEsPerGT. Toutes les entrees sont en
+    sectors LE 32-bit. 0 = non alloue. }
+  GrainNum:=LBA Div VHDBlockSizeSec;
+  GTIdx:=GrainNum Div VMDKGTEsPerGT;
+  GTOff:=GrainNum Mod VMDKGTEsPerGT;
+  OfsInBlock:=LBA Mod VHDBlockSizeSec;
+  {$I-}Assign(F,FileName);Reset(F,1);{$I+}
+  If IOResult<>0 Then Exit;
+  { Lire GD[GTIdx] (4 octets LE) }
+  {$I-}Seek(F,VHDBATFileOfs+GTIdx*4);{$I+}
+  If IOResult<>0 Then Begin Close(F); Exit; End;
+  {$I-}BlockRead(F,BATBuf,4,BR);{$I+}
+  If(IOResult<>0)Or(BR<>4)Then Begin Close(F); Exit; End;
+  GTSec:=LongInt(BATBuf[0])Or(LongInt(BATBuf[1])Shl 8)
+        Or(LongInt(BATBuf[2])Shl 16)Or(LongInt(BATBuf[3])Shl 24);
+  If GTSec=0 Then Begin Close(F); Exit; End;
+  { Lire GT[GTOff] }
+  {$I-}Seek(F,GTSec*512+GTOff*4);{$I+}
+  If IOResult<>0 Then Begin Close(F); Exit; End;
+  {$I-}BlockRead(F,BATBuf,4,BR);{$I+}
+  Close(F);
+  If(BR<>4)Then Exit;
+  GrainSec:=LongInt(BATBuf[0])Or(LongInt(BATBuf[1])Shl 8)
+           Or(LongInt(BATBuf[2])Shl 16)Or(LongInt(BATBuf[3])Shl 24);
+  If GrainSec=0 Then Exit;
+  VHDFileOffset:=GrainSec*512+OfsInBlock*512;
+  Exit;
+ End;
+ { VHD dynamique }
  BlockIdx:=LBA Div VHDBlockSizeSec;
  OfsInBlock:=LBA Mod VHDBlockSizeSec;
  {$I-}Assign(F,FileName);Reset(F,1);{$I+}
@@ -394,6 +539,36 @@ Function ReadSector(LBA:LongInt;Var Buf):Boolean;
 Begin
  If FileName<>'' Then ReadSector:=ReadImgSector(LBA,Buf)
  Else ReadSector:=ReadDiskLBA(LBA,Buf);
+End;
+
+{ Ecrit un secteur (512 octets) en LBA sur le disque physique courant. }
+Function WriteDiskLBA(LBA:LongInt;Var Buf):Boolean;
+{$IFDEF Windows}
+ Begin WriteDiskLBA:=False; End;
+{$ELSE}
+Var
+ Cyl,Head,Sect:Word;
+ Tmp:LongInt;
+ Status:Byte;
+Begin
+ WriteDiskLBA:=False;
+ FetchGeometry;
+ If Not GeoValid Then Exit;
+ Sect:=Word(LBA Mod GeoSPT)+1;
+ Tmp:=LBA Div GeoSPT;
+ Head:=Word(Tmp Mod GeoHeads);
+ Cyl:=Word(Tmp Div GeoHeads);
+ If Cyl>1023 Then Exit;
+ Status:=WriteTrack($80+CurrentDisk-1,Head,Byte(Cyl),Byte(Sect),1,Buf);
+ WriteDiskLBA:=(Status=0);
+End;
+{$ENDIF}
+
+{ Ecrit un secteur dans l'image OU sur le disque selon le mode courant. }
+Function WriteSector(LBA:LongInt;Var Buf):Boolean;
+Begin
+ If FileName<>'' Then WriteSector:=WriteImgSector(LBA,Buf)
+ Else WriteSector:=WriteDiskLBA(LBA,Buf);
 End;
 
 { Recupere le nom de volume d'une partition FAT12/16/32, HPFS ou NTFS.
@@ -683,6 +858,7 @@ Var
  TypeName:String;
  TotSec:LongInt;
  Pct:Integer;
+ Buffer2:Array[0..511]of Byte;
 Begin
  Write(' ':2,'Lecteur de disque dur en cours : ');
  HighVideo;
@@ -747,7 +923,23 @@ Begin
    $02:TypeName:='XENIX root';
    $03:TypeName:='XENIX /usr';
    $04,$05,$06:TypeName:='FAT16';
-   $07:TypeName:='NTFS ou HPFS';
+   $07:Begin
+    { Type $07 : NTFS, HPFS, exFAT ou IFS. Distinguer via le boot sector
+      de la partition (offset +3 : OEM name pour NTFS/exFAT,
+      ou offset +54 : FileSystemType pour HPFS FAT-like BPB). }
+    TypeName:='IFS';
+    If ReadSector(Partition.PartTable[I].SecOfs,Buffer2) Then Begin
+     { 'NTFS    ' a offset 3 ? }
+     If(Buffer2[3]=$4E)And(Buffer2[4]=$54)And(Buffer2[5]=$46)And
+       (Buffer2[6]=$53)Then TypeName:='NTFS' Else
+     { 'EXFAT   ' a offset 3 ? }
+     If(Buffer2[3]=$45)And(Buffer2[4]=$58)And(Buffer2[5]=$46)And
+       (Buffer2[6]=$41)And(Buffer2[7]=$54)Then TypeName:='exFAT' Else
+     { 'HPFS    ' a offset 54 (BPB FAT-like) ? }
+     If(Buffer2[54]=$48)And(Buffer2[55]=$50)And(Buffer2[56]=$46)And
+       (Buffer2[57]=$53)Then TypeName:='HPFS';
+    End;
+   End;
    $08:TypeName:='D�marrage AIX';
    $09:TypeName:='Donn�es AIX';
    $0A:TypeName:='OS/2 Boot Manager';
@@ -773,10 +965,13 @@ Begin
   { % d'occupation reel via scan FAT (image fichier ou disque physique) }
   Pct:=PartUsagePct(Partition.PartTable[I]);
   If Pct<0 Then
-   { Fallback : % du disque physique occupe par cette partition }
+   { Fallback : % du disque physique occupe par cette partition.
+     NumSec peut etre > 21M (>=10 Go), donc NumSec*100 deborde LongInt.
+     On divise d'abord par 1024 pour rester dans la plage. }
    If TotSec>0 Then
-    Write(Integer((LongInt(Partition.PartTable[I].NumSec)*100+TotSec Div 2)
-                  Div TotSec),'%')
+    Write(Integer((LongInt(Partition.PartTable[I].NumSec Shr 10)*100
+                  +(TotSec Shr 10)Div 2)
+                  Div(TotSec Shr 10)),'%')
    Else
     Write('  ? ')
   Else
@@ -877,8 +1072,11 @@ Var
  I,Slot:Byte;
  FreeStart,UsedEnd,Tot,MaxMB,NumSec,SecOfs:LongInt;
  PE:PartEntry;
+ BootSec:Array[0..511]of Byte;
+ LocalHint:Byte;
 Begin
  DoCreatePartition:=False;
+ LocalHint:=FsHint;   { FsHint peut etre ecrase par d'autres appels }
  ReadPartitionRecord;
  Slot:=255;
  For I:=0 To 3 Do
@@ -917,6 +1115,27 @@ Begin
  Partition.PartTable[Slot]:=PE;
  Partition.IdCode:=$AA55;
  WritePartitionRecord;
+ { Si l'utilisateur a demande NTFS ou HPFS, ecrire un boot sector minimal
+   contenant la signature systeme pour que la detection fonctionne. }
+ If(PType=$07)And(LocalHint in[1,2])Then Begin
+  FillChar(BootSec,SizeOf(BootSec),0);
+  { BPB minimal commun }
+  BootSec[0]:=$EB; BootSec[1]:=$52; BootSec[2]:=$90;   { JMP court }
+  BootSec[11]:=$00; BootSec[12]:=$02;                  { BytesPerSec=512 }
+  BootSec[13]:=8;                                      { SecPerClus=8 }
+  BootSec[510]:=$55; BootSec[511]:=$AA;
+  If LocalHint=1 Then Begin
+   { NTFS : 'NTFS    ' a offset 3 }
+   BootSec[3]:=$4E; BootSec[4]:=$54; BootSec[5]:=$46; BootSec[6]:=$53;
+   BootSec[7]:=$20; BootSec[8]:=$20; BootSec[9]:=$20; BootSec[10]:=$20;
+  End Else Begin
+   { HPFS : 'HPFS    ' a offset 54 (FileSystemType FAT-like BPB) }
+   BootSec[54]:=$48; BootSec[55]:=$50; BootSec[56]:=$46; BootSec[57]:=$53;
+   BootSec[58]:=$20; BootSec[59]:=$20; BootSec[60]:=$20; BootSec[61]:=$20;
+  End;
+  If Not WriteSector(SecOfs,BootSec)And Verbose Then
+   WriteLn('Avertissement : ecriture du marqueur de systeme echouee.');
+ End;
  If Verbose Then
   WriteLn('Partition ',Slot+1,' creee : LBA ',SecOfs,'..',SecOfs+NumSec-1,
           ' (',SizeMB,' Mo, type $',HexByteStr(PType),')');
@@ -1056,6 +1275,7 @@ Var
  U:String;
 Begin
  ParsePartType:=Default;
+ FsHint:=0;
  If S='' Then Exit;
  If(S[1]='$')Or(S[1]='x')Or(S[1]='X')Then S[1]:=' ';
  If(Length(S)>=2)And(S[1]='0')And((S[2]='x')Or(S[2]='X'))Then Begin
@@ -1067,16 +1287,18 @@ Begin
  If S='3' Then Begin ParsePartType:=$06; Exit; End;
  If S='4' Then Begin ParsePartType:=$0B; Exit; End;
  If S='5' Then Begin ParsePartType:=$0C; Exit; End;
- If S='6' Then Begin ParsePartType:=$07; Exit; End;
- If S='7' Then Begin ParsePartType:=$0A; Exit; End;  { OS/2 Boot Manager }
- If S='8' Then Begin ParsePartType:=$02; Exit; End;  { XENIX root }
- If S='9' Then Begin ParsePartType:=$03; Exit; End;  { XENIX /usr }
- If S='10'Then Begin ParsePartType:=$08; Exit; End;  { AIX boot }
- If S='11'Then Begin ParsePartType:=$09; Exit; End;  { AIX data }
- If S='12'Then Begin ParsePartType:=$24; Exit; End;  { NEC DOS }
- If S='13'Then Begin ParsePartType:=$35; Exit; End;  { JFS }
+ If S='6' Then Begin ParsePartType:=$07; FsHint:=1; Exit; End;  { NTFS }
+ If S='7' Then Begin ParsePartType:=$07; FsHint:=2; Exit; End;  { HPFS }
+ If S='8' Then Begin ParsePartType:=$0A; Exit; End;  { OS/2 Boot Manager }
+ If S='9' Then Begin ParsePartType:=$02; Exit; End;  { XENIX root }
+ If S='10'Then Begin ParsePartType:=$03; Exit; End;  { XENIX /usr }
+ If S='11'Then Begin ParsePartType:=$08; Exit; End;  { AIX boot }
+ If S='12'Then Begin ParsePartType:=$09; Exit; End;  { AIX data }
+ If S='13'Then Begin ParsePartType:=$24; Exit; End;  { NEC DOS }
+ If S='14'Then Begin ParsePartType:=$35; Exit; End;  { JFS }
  U:=StrToUpper(S);
- If(U='HPFS')Or(U='NTFS')Then Begin ParsePartType:=$07; Exit; End;
+ If U='NTFS'     Then Begin ParsePartType:=$07; FsHint:=1; Exit; End;
+ If U='HPFS'     Then Begin ParsePartType:=$07; FsHint:=2; Exit; End;
  If U='OS2BM'    Then Begin ParsePartType:=$0A; Exit; End;
  If U='OS/2BM'   Then Begin ParsePartType:=$0A; Exit; End;
  If U='XENIX'    Then Begin ParsePartType:=$02; Exit; End;
@@ -1118,6 +1340,8 @@ Var
  PType:Byte;
  PE:PartEntry;
  TypeS:String;
+ BootSec:Array[0..511]of Byte;
+ LocalHint:Byte;
 Begin
  ClrScr;
  WriteLn;
@@ -1169,13 +1393,13 @@ Begin
 
  WriteLn;
  WriteLn('Type de partition :');
- WriteLn('   1. FAT12               8. XENIX root');
- WriteLn('   2. FAT16 (<32 Mo)      9. XENIX /usr');
- WriteLn('   3. FAT16 (BIGDOS)     10. AIX boot');
- WriteLn('   4. FAT32              11. AIX data');
- WriteLn('   5. FAT32 LBA          12. NEC DOS');
- WriteLn('   6. HPFS / NTFS        13. JFS');
- WriteLn('   7. OS/2 Boot Manager');
+ WriteLn('   1. FAT12               8. OS/2 Boot Manager');
+ WriteLn('   2. FAT16 (<32 Mo)      9. XENIX root');
+ WriteLn('   3. FAT16 (BIGDOS)     10. XENIX /usr');
+ WriteLn('   4. FAT32              11. AIX boot');
+ WriteLn('   5. FAT32 LBA          12. AIX data');
+ WriteLn('   6. NTFS               13. NEC DOS');
+ WriteLn('   7. HPFS               14. JFS');
  Write('Choix [4], Q/X/E pour annuler : ');
  ReadLn(TypeS);
  { Annulation : touches Q, X, E (quit/exit) }
@@ -1190,8 +1414,8 @@ Begin
    Exit;
   End;
  End;
- If TypeS='' Then PType:=$0B
- Else PType:=ParsePartType(TypeS,$0B);
+ If TypeS='' Then Begin PType:=$0B; LocalHint:=0; End
+ Else Begin PType:=ParsePartType(TypeS,$0B); LocalHint:=FsHint; End;
 
  { Construire l'entree }
  FillChar(PE,SizeOf(PE),0);
@@ -1206,6 +1430,23 @@ Begin
  Partition.IdCode:=$AA55;
 
  WritePartitionRecord;
+ { Marqueur NTFS/HPFS dans le boot sector de la nouvelle partition. }
+ If(PType=$07)And(LocalHint in[1,2])Then Begin
+  FillChar(BootSec,SizeOf(BootSec),0);
+  BootSec[0]:=$EB; BootSec[1]:=$52; BootSec[2]:=$90;
+  BootSec[11]:=$00; BootSec[12]:=$02;
+  BootSec[13]:=8;
+  BootSec[510]:=$55; BootSec[511]:=$AA;
+  If LocalHint=1 Then Begin
+   BootSec[3]:=$4E; BootSec[4]:=$54; BootSec[5]:=$46; BootSec[6]:=$53;
+   BootSec[7]:=$20; BootSec[8]:=$20; BootSec[9]:=$20; BootSec[10]:=$20;
+  End Else Begin
+   BootSec[54]:=$48; BootSec[55]:=$50; BootSec[56]:=$46; BootSec[57]:=$53;
+   BootSec[58]:=$20; BootSec[59]:=$20; BootSec[60]:=$20; BootSec[61]:=$20;
+  End;
+  If Not WriteSector(SecOfs,BootSec)Then
+   WriteLn('Avertissement : ecriture du marqueur de systeme echouee.');
+ End;
  WriteLn;
  WriteLn('Partition ',Slot+1,' creee : LBA ',SecOfs,'..',SecOfs+NumSec-1,
          ' (',SizeMB,' Mo, type $',HexByteStr(PType),')');
@@ -1618,10 +1859,10 @@ BEGIN
   WriteLn('                             taille : Mo (defaut/MAX = espace libre).');
   WriteLn('                             type   : 1=FAT12 2=FAT16<32M 3=BIGDOS');
   WriteLn('                                      4=FAT32 (defaut) 5=FAT32LBA');
-  WriteLn('                                      6=HPFS/NTFS 7=OS/2BM');
-  WriteLn('                                      8=XENIX 9=XENIX/usr');
-  WriteLn('                                      10=AIX 11=AIXdata');
-  WriteLn('                                      12=NECDOS 13=JFS');
+  WriteLn('                                      6=NTFS 7=HPFS 8=OS/2BM');
+  WriteLn('                                      9=XENIX 10=XENIX/usr');
+  WriteLn('                                      11=AIX 12=AIXdata');
+  WriteLn('                                      13=NECDOS 14=JFS');
   WriteLn('                                      ou $XX hexa (ex. $07 NTFS).');
   WriteLn('  delete <n>                 Supprime la partition n (1..4).');
   WriteLn('  activate <n>               Marque la partition n comme active.');
