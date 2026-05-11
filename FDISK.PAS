@@ -26,8 +26,8 @@ Type
   SecOfs,NumSec:LongInt;
  End;
 
- PartSec=Record { dï¿½crit le secteur de partition }
-  BootCode:Array[0..$1BD]of Byte;    { Code de dï¿½marrage du disque dur }
+ PartSec=Record { d‚crit le secteur de partition }
+  BootCode:Array[0..$1BD]of Byte;    { Code de d‚marrage du disque dur }
   PartTable:Array[0..3]of PartEntry; { Table des partitions de disque dur }
   IdCode:Word;                       { Signature: AA55h }
  End;
@@ -866,7 +866,7 @@ Begin
                 Else WriteLn(CurrentDisk);
  LowVideo;
  WriteLn;
- WriteLn(' ':2,'Partition    Etat   Type   Nom du volume    Mo  Systï¿½me    Utilisï¿½');
+ WriteLn(' ':2,'Partition    Etat   Type   Nom du volume    Mo  SystŠme    Utilis‚');
  ReadPartitionRecord;
  { Verifie la signature MBR $55AA. Sinon, image disquette ou secteur non
    partitionne : ne rien afficher pour eviter erreurs d'overflow. }
@@ -940,17 +940,17 @@ Begin
        (Buffer2[57]=$53)Then TypeName:='HPFS';
     End;
    End;
-   $08:TypeName:='Dï¿½marrage AIX';
-   $09:TypeName:='Donnï¿½es AIX';
+   $08:TypeName:='D‚marrage AIX';
+   $09:TypeName:='Donn‚es AIX';
    $0A:TypeName:='OS/2 Boot Manager';
    $0B,$0C:TypeName:='FAT32';
    $0D:TypeName:='SILICON SAFE';
    $0E,$0F:TypeName:='FAT16/WIN95';
-   $11,$14,$16:TypeName:='FAT12 cachï¿½';
+   $11,$14,$16:TypeName:='FAT12 cach‚';
    $12:TypeName:='Partition de configuration';
-   $17:TypeName:='IFS cachï¿½';
+   $17:TypeName:='IFS cach‚';
    $18:TypeName:='AST SmartSleep';
-   $1B:TypeName:='FAT32 cachï¿½';
+   $1B:TypeName:='FAT32 cach‚';
    $1C:TypeName:='FAT32';
    $1E:TypeName:='FAT16/WIN95';
    $24:TypeName:='NEC DOS';
@@ -1469,7 +1469,7 @@ Begin
  WriteLn;
  WriteLn;
  WriteLn;
- Write(' ':2,'Entrez le numï¿½ro de la partition que vous voulez activer...: ');
+ Write(' ':2,'Entrez le num‚ro de la partition que vous voulez activer...: ');
  HighVideo;
  CurrActive:=0;
  For I:=0 to 3 do Begin
@@ -1735,7 +1735,7 @@ Begin
  LowVideo;
  Case Language of
   _English: WriteLn('Create DOS Partition');
-  Else WriteLn('Crï¿½ation d''une partition ou lecteur logique DOS');
+  Else WriteLn('Cr‚ation d''une partition ou lecteur logique DOS');
  End;
  HighVideo;
  Write(' ':4,'2. ');
@@ -1763,7 +1763,7 @@ Begin
  LowVideo;
  Case Language of
   _English:WriteLn('Select Next Fixed Disk Drive');
-  Else WriteLn('Sï¿½lectionne le prochain unitï¿½ de disque dur');
+  Else WriteLn('S‚lectionne le prochain unit‚ de disque dur');
  End;
  HighVideo;
  Write(' ':4,'6. ');
@@ -1879,7 +1879,7 @@ BEGIN
   Else
  Begin
   If SizeOf(PartSec)<>512 Then Begin
-   WriteLn('Mauvaise directive de compilation. Les enregistrements ne doivent pas ï¿½tre alignï¿½s');
+   WriteLn('Mauvaise directive de compilation. Les enregistrements ne doivent pas ˆtre align‚s');
    Halt;
   End;
   FileName:='';
