@@ -91,7 +91,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>	        
 	        <tr>
                         <td><b>ARJ.PAS</b></td>
-                        <td>Cette commande permet d'afficher la liste des fichiers contenu dans un archive ARJ.</td>
+                        <td>Cette commande permet de compresser, d'extraire et d'afficher la liste des fichiers contenu dans un archive ARJ.</td>
                 </tr>
 		<tr>
 			<td><b>ASC2ABAP.PAS</b></td>
