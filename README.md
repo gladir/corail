@@ -89,6 +89,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>APPLY.PAS</b></td>
 			<td>Cette commande permet d'appliquer des commandes à plusieurs reprises. Cette commande est originaire du <a href="https://www.gladir.com/OS/ZENITHDATASYSTEMSMICROSOFTMSDOS2/apply.htm">Zenith Data Systems Microsoft MS-DOS 2</a>.</td>
 		</tr>	        
+		<tr>
+			<td><b>ARC.PAS</b></td>
+			<td>Cette commande permet de créer, compresser, extraire et gérer des fichiers d'archives afin de regrouper plusieurs fichiers dans un seul conteneur compressé (.ARC).</td>
+		</tr>
+		</tr>
 	        <tr>
                         <td><b>ARJ.PAS</b></td>
                         <td>Cette commande permet de compresser, d'extraire et d'afficher la liste des fichiers contenu dans un archive ARJ.</td>
