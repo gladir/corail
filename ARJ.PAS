@@ -481,6 +481,111 @@ Begin
  D_Decompress := (not D_Error) and (Count >= OSize);
 End;
 
+{ ============================================================ }
+{ === ARJ Method 4 Decompressor (LZ77 + unary length/distance) }
+{ ============================================================ }
+{ Decoded from unarj DECODE.C decode_f / decode_len / decode_ptr.
+  No per-block header, no Huffman: each token is a length code
+  (unary prefix in [0..STOPL] + extras). Code 0 means literal, then
+  read 8 raw bits. Otherwise matchLen = code + 2 and a distance code
+  follows (unary prefix in [STRTP..STOPP] + extras). }
+
+Const
+ D4_STRTP = 9;   D4_STOPP = 13;
+ D4_STRTL = 0;   D4_STOPL = 7;
+
+Function D4_DecodeLen: Word;
+Var Plus, Pwr: LongInt;
+    Width: Byte;
+    C: Word;
+Begin
+ Plus := 0;
+ Pwr := LongInt(1) shl D4_STRTL;
+ Width := D4_STRTL;
+ While Width < D4_STOPL Do Begin
+  C := D_GetBits(1);
+  If C = 0 Then Break;
+  Plus := Plus + Pwr;
+  Pwr := Pwr shl 1;
+  Inc(Width);
+ End;
+ If Width > 0 Then C := D_GetBits(Width) Else C := 0;
+ D4_DecodeLen := Word(LongInt(C) + Plus);
+End;
+
+Function D4_DecodePtr: Word;
+Var Plus, Pwr: LongInt;
+    Width: Byte;
+    C: Word;
+Begin
+ Plus := 0;
+ Pwr := LongInt(1) shl D4_STRTP;
+ Width := D4_STRTP;
+ While Width < D4_STOPP Do Begin
+  C := D_GetBits(1);
+  If C = 0 Then Break;
+  Plus := Plus + Pwr;
+  Pwr := Pwr shl 1;
+  Inc(Width);
+ End;
+ If Width > 0 Then C := D_GetBits(Width) Else C := 0;
+ D4_DecodePtr := Word(LongInt(C) + Plus);
+End;
+
+Function D_DecompressF(CSize, OSize, ExpectedCRC: LongInt;
+                       Var ResCRC: LongInt): Boolean;
+Var
+ Count, J, I, P: LongInt;
+ C, Pos: Word;
+ Lit: Byte;
+Begin
+ D_InitCRC;
+ ResCRC := LongInt($FFFFFFFF);
+ D_DictPos := 0;
+ D_Error := False;
+ D_CompLeft := CSize;
+ D_InPos := 0; D_InEnd := 0;
+ D_InitGetBits;
+ Count := 0;
+ While(Count < OSize) and (not D_Error) Do Begin
+  C := D4_DecodeLen;
+  If C = 0 Then Begin
+   Lit := Byte(D_GetBits(8));
+   D_Dict^[D_DictPos] := Lit;
+   ResCRC := D_UpdateCRC(ResCRC, Lit);
+   Inc(D_DictPos);
+   If D_DictPos >= D_DICSIZ Then Begin
+    BlockWrite(DestFile, D_Dict^, D_DICSIZ);
+    D_DictPos := 0;
+   End;
+   Inc(Count);
+  End Else Begin
+   J := LongInt(C) + 2;          { matchLen = code + 2 (THRESHOLD=3) }
+   Inc(Count, J);
+   Pos := D4_DecodePtr;
+   I := LongInt(D_DictPos) - LongInt(Pos) - 1;
+   If I < 0 Then Inc(I, D_DICSIZ);
+   P := I;
+   While J > 0 Do Begin
+    D_Dict^[D_DictPos] := D_Dict^[P];
+    ResCRC := D_UpdateCRC(ResCRC, D_Dict^[P]);
+    Inc(P);
+    If P >= D_DICSIZ Then P := 0;
+    Inc(D_DictPos);
+    If D_DictPos >= D_DICSIZ Then Begin
+     BlockWrite(DestFile, D_Dict^, D_DICSIZ);
+     D_DictPos := 0;
+    End;
+    Dec(J);
+   End;
+  End;
+ End;
+ If(D_DictPos > 0) and (not D_Error) Then
+  BlockWrite(DestFile, D_Dict^, D_DictPos);
+ ResCRC := ResCRC xor LongInt($FFFFFFFF);
+ D_DecompressF := (not D_Error) and (Count >= OSize);
+End;
+
 { ============================================================ }{ === ARJ Archive Writer (method 0 stored)               ==== }
 { ============================================================ }
 
@@ -676,14 +781,33 @@ Begin
 End;
 
 { ============================================================ }
-{ === ARJ Method 1 Encoder (literal-only Huffman)         === }
+{ === ARJ Methods 1/2/3 Encoder (LZ77 + dynamic Huffman)  === }
 { ============================================================ }
+{ Methods 1, 2 and 3 share exactly the same bitstream format
+  (LZSS with NC=510 literal/length alphabet, NP=17 distance
+  alphabet, encoded with dynamic Huffman per block). They only
+  differ in encoder effort: chain depth and good-match cutoff. }
+
+Const
+ E_WINSZ      = D_DICSIZ;       { 26624 bytes window }
+ E_MIN_MATCH  = 3;
+ E_MAX_MATCH  = 256;            { length codes 3..256 -> NC sym 256..509 }
+ E_HASH_BITS  = 13;
+ E_HASH_SIZE  = 8192;
+ E_HASH_MASK  = 8191;
+ E_BUF_SIZE   = 32000;          { input buffer, > WINSZ + MAX_MATCH }
+ E_MAX_BLK_SY = 8000;           { symbols per emitted block }
+ E_HASH_EMPTY = $FFFF;
 
 Type
- TOutBuf4K  = Array[0..4095] of Byte;     POutBuf4K  = ^TOutBuf4K;
- TBlockBuf  = Array[0..7999] of Byte;     PBlockBuf  = ^TBlockBuf;
- THuffPar   = Array[0..1023] of Integer;  PHuffPar   = ^THuffPar;
- THuffNF    = Array[0..1023] of LongInt;  PHuffNF    = ^THuffNF;
+ TOutBuf4K  = Array[0..4095] of Byte;          POutBuf4K  = ^TOutBuf4K;
+ THuffPar   = Array[0..1023] of Integer;       PHuffPar   = ^THuffPar;
+ THuffNF    = Array[0..1023] of LongInt;       PHuffNF    = ^THuffNF;
+ TInBufE    = Array[0..E_BUF_SIZE-1] of Byte;  PInBufE    = ^TInBufE;
+ THashH     = Array[0..E_HASH_SIZE-1] of Word; PHashH     = ^THashH;
+ THashP     = Array[0..E_BUF_SIZE-1] of Word;  PHashP     = ^THashP;
+ TBlkSym    = Array[0..E_MAX_BLK_SY-1] of Word;PBlkSym    = ^TBlkSym;
+ TBlkDst    = Array[0..E_MAX_BLK_SY-1] of Word;PBlkDst    = ^TBlkDst;
 
 Var
  E_BitBuf: Word;
@@ -691,16 +815,36 @@ Var
  E_OutBuf: POutBuf4K;
  E_OutPos: Word;
  E_BytesWritten: LongInt;
- E_BlockBuf: PBlockBuf;
+ E_BlkSym: PBlkSym;
+ E_BlkDst: PBlkDst;
  E_BlockN: Word;
  E_FreqC: Array[0..D_NC-1] of LongInt;
  E_FreqT: Array[0..D_NT-1] of LongInt;
+ E_FreqP: Array[0..D_NP-1] of LongInt;
  E_LensC: Array[0..D_NC-1] of Byte;
  E_LensT: Array[0..D_NT-1] of Byte;
+ E_LensP: Array[0..D_NP-1] of Byte;
  E_CodesC: Array[0..D_NC-1] of Word;
  E_CodesT: Array[0..D_NT-1] of Word;
+ E_CodesP: Array[0..D_NP-1] of Word;
  E_HuffParent: PHuffPar;
  E_HuffNF: PHuffNF;
+ { LZ77 sliding window state }
+ E_InBuf: PInBufE;
+ E_InLen: Word;
+ E_WPos: Word;
+ E_HashH: PHashH;
+ E_HashP: PHashP;
+ E_MaxChain: Word;     { chain depth limit (method parameter) }
+ E_GoodMatch: Word;    { stop searching once we beat this length }
+ E_DistMax: Word;      { max actual offset (method 4 = 15872, others = 26624) }
+ E_M4: Boolean;        { True when current method is 4 (LZ77 + unary codes) }
+
+Const
+ E4_STRTP = 9;   E4_STOPP = 13;
+ E4_STRTL = 0;   E4_STOPL = 7;
+ E4_MAX_DIST  = 15872;     { 1 + max encoded distance (7680+8191) }
+ E4_MAX_MATCH = 256;       { len codes 1..254 -> match 3..256 }
 
 Procedure E_FlushOut;
 Begin
@@ -929,65 +1073,157 @@ Begin
  E_ProcessCLen(Lens, N, False);
 End;
 
-{ Flush the current literal block: emit BlockSize, the three length tables
-  (NT, CLen, NP), then the Huffman-coded literals. }
+{ Flush the current block: emit BlockSize, NT/CLen/NP tables, then
+  per-symbol Huffman codes and (for matches) the distance code +
+  extra bits. }
 Procedure E_FlushBlock;
 Var
  I, ActiveLast: Integer;
  N: Word;
- NPLens: Array[0..D_NP-1] of Byte;
- OnlySym: Integer;
- ActiveCount: Integer;
+ NCActive, NPActive: Integer;
+ NCOnlySym, NPOnlySym: Integer;
+ Sym, Dist, ExtraB, M: Word;
+ J, ExtraN: Byte;
 Begin
  If E_BlockN = 0 Then Exit;
- { 1) Frequencies for C alphabet (literals only). }
+ { 1) Frequencies for C (NC) and P (NP) alphabets. }
  For I := 0 To D_NC-1 Do E_FreqC[I] := 0;
- For I := 0 To E_BlockN-1 Do Inc(E_FreqC[E_BlockBuf^[I]]);
- { 2) Build C Huffman tree. }
- ActiveCount := 0; OnlySym := -1;
- For I := 0 To D_NC-1 Do If E_FreqC[I] > 0 Then Begin
-  Inc(ActiveCount);
-  OnlySym := I;
+ For I := 0 To D_NP-1 Do E_FreqP[I] := 0;
+ For I := 0 To E_BlockN-1 Do Begin
+  Sym := E_BlkSym^[I];
+  Inc(E_FreqC[Sym]);
+  If Sym >= 256 Then Begin
+   Dist := E_BlkDst^[I];
+   If Dist = 0 Then J := 0
+   Else Begin
+    J := 0; M := Dist;
+    While M > 0 Do Begin Inc(J); M := M shr 1; End;
+   End;
+   Inc(E_FreqP[J]);
+  End;
  End;
+ NCActive := 0; NCOnlySym := -1;
+ For I := 0 To D_NC-1 Do If E_FreqC[I] > 0 Then Begin
+  Inc(NCActive); NCOnlySym := I;
+ End;
+ NPActive := 0; NPOnlySym := -1;
+ For I := 0 To D_NP-1 Do If E_FreqP[I] > 0 Then Begin
+  Inc(NPActive); NPOnlySym := I;
+ End;
+ { 2) Build C and P Huffman trees. }
  E_BuildHuffman(E_FreqC, D_NC, E_LensC);
  E_CanonicalCodes(E_LensC, D_NC, E_CodesC);
+ E_BuildHuffman(E_FreqP, D_NP, E_LensP);
+ E_CanonicalCodes(E_LensP, D_NP, E_CodesP);
  { 3) BlockSize. }
  E_PutBits(16, E_BlockN);
- If ActiveCount = 1 Then Begin
-  { Single-symbol block: use special forms throughout. }
-  { NT: special N=0, C=0 }
+ { 4) NT + CLen tables. Special form when NC has a single symbol. }
+ If NCActive = 1 Then Begin
   E_PutBits(D_TBIT, 0);
   E_PutBits(D_TBIT, 0);
-  { CLen: special N=0, C=OnlySym }
   E_PutBits(D_CBIT, 0);
-  E_PutBits(D_CBIT, OnlySym);
-  { NP: special N=0, C=0 }
-  E_PutBits(D_PBIT, 0);
-  E_PutBits(D_PBIT, 0);
-  { No further bits per symbol: decoder returns the constant via CTable. }
+  E_PutBits(D_CBIT, NCOnlySym);
+  { Force length 0 to skip per-symbol Huffman code emission below. }
+  E_LensC[NCOnlySym] := 0;
  End Else Begin
-  { 4) Determine N for CLen and count NT symbol frequencies. }
   ActiveLast := -1;
   For I := 0 To D_NC-1 Do If E_LensC[I] <> 0 Then ActiveLast := I;
   N := ActiveLast + 1;
   For I := 0 To D_NT-1 Do E_FreqT[I] := 0;
   E_ProcessCLen(E_LensC, N, True);
-  { 5) Build NT Huffman tree and codes. }
   E_BuildHuffman(E_FreqT, D_NT, E_LensT);
   E_CanonicalCodes(E_LensT, D_NT, E_CodesT);
-  { 6) Write NT length table. }
   E_WritePtLen(E_LensT, D_NT, D_TBIT, 3);
-  { 7) Write CLen using NT tree. }
   E_WriteCLenHeader(E_LensC, D_NC);
-  { 8) NP length table: all zero (no matches). }
-  For I := 0 To D_NP-1 Do NPLens[I] := 0;
-  E_WritePtLen(NPLens, D_NP, D_PBIT, -1);
  End;
- { 9) Emit each literal as its Huffman code. }
- If ActiveCount > 1 Then
-  For I := 0 To E_BlockN-1 Do
-   E_PutBits(E_LensC[E_BlockBuf^[I]], E_CodesC[E_BlockBuf^[I]]);
+ { 5) NP table. }
+ If NPActive = 0 Then Begin
+  E_PutBits(D_PBIT, 0);
+  E_PutBits(D_PBIT, 0);
+ End Else If NPActive = 1 Then Begin
+  E_PutBits(D_PBIT, 0);
+  E_PutBits(D_PBIT, NPOnlySym);
+  E_LensP[NPOnlySym] := 0;
+ End Else Begin
+  E_WritePtLen(E_LensP, D_NP, D_PBIT, -1);
+ End;
+ { 6) Emit each symbol (and distance if it is a match). }
+ For I := 0 To E_BlockN-1 Do Begin
+  Sym := E_BlkSym^[I];
+  If E_LensC[Sym] > 0 Then
+   E_PutBits(E_LensC[Sym], E_CodesC[Sym]);
+  If Sym >= 256 Then Begin
+   Dist := E_BlkDst^[I];
+   If Dist = 0 Then Begin
+    J := 0; ExtraN := 0; ExtraB := 0;
+   End Else Begin
+    J := 0; M := Dist;
+    While M > 0 Do Begin Inc(J); M := M shr 1; End;
+    ExtraN := J - 1;
+    ExtraB := Dist - (Word(1) shl ExtraN);
+   End;
+   If E_LensP[J] > 0 Then
+    E_PutBits(E_LensP[J], E_CodesP[J]);
+   If ExtraN > 0 Then E_PutBits(ExtraN, ExtraB);
+  End;
+ End;
  E_BlockN := 0;
+End;
+
+Procedure E_HashReset;
+Var I: Integer;
+Begin
+ For I := 0 To E_HASH_SIZE-1 Do E_HashH^[I] := E_HASH_EMPTY;
+End;
+
+Function E_Hash3(P: Word): Word;
+Begin
+ E_Hash3 := ((Word(E_InBuf^[P]) shl 7) xor
+             (Word(E_InBuf^[P+1]) shl 3) xor
+              Word(E_InBuf^[P+2])) and E_HASH_MASK;
+End;
+
+Procedure E_HashInsert(P: Word);
+Var H: Word;
+Begin
+ H := E_Hash3(P);
+ E_HashP^[P] := E_HashH^[H];
+ E_HashH^[H] := P;
+End;
+
+{ Greedy longest-match search at position E_WPos. Returns BestLen
+  (0 or >=MIN_MATCH) and BestDist (encoded value: actual_offset - 1). }
+Procedure E_FindMatch(Var BestLen, BestDist: Word);
+Var
+ H, Cand, Limit, K, MaxLen: Word;
+ ChainAttempts: Word;
+Begin
+ BestLen := 0;
+ BestDist := 0;
+ MaxLen := E_MAX_MATCH;
+ If E_InLen - E_WPos < MaxLen Then MaxLen := E_InLen - E_WPos;
+ If MaxLen < E_MIN_MATCH Then Exit;
+ If E_WPos > E_DistMax Then Limit := E_WPos - E_DistMax
+                       Else Limit := 0;
+ H := E_Hash3(E_WPos);
+ Cand := E_HashH^[H];
+ ChainAttempts := 0;
+ While(Cand <> E_HASH_EMPTY)and(Cand < E_WPos)and
+      (ChainAttempts < E_MaxChain) Do Begin
+  If Cand >= Limit Then Begin
+   K := 0;
+   While(K < MaxLen)and(E_InBuf^[Cand+K] = E_InBuf^[E_WPos+K]) Do
+    Inc(K);
+   If(K >= E_MIN_MATCH)and(K > BestLen) Then Begin
+    BestLen := K;
+    BestDist := E_WPos - Cand - 1;
+    If K >= E_GoodMatch Then Break;
+    If K >= E_MAX_MATCH Then Break;
+   End;
+  End;
+  Cand := E_HashP^[Cand];
+  Inc(ChainAttempts);
+ End;
 End;
 
 Procedure E_BeginEncode;
@@ -997,43 +1233,176 @@ Begin
  E_OutPos := 0;
  E_BytesWritten := 0;
  E_BlockN := 0;
+ E_WPos := 0;
+ E_InLen := 0;
+ E_HashReset;
 End;
 
-Procedure E_AddByte(B: Byte);
+{ === Method 4 token emission (LZ77 + unary, no Huffman, no blocks). === }
+{ Width selection table for the length code (C in 0..254): the smallest
+  W in [0..7] such that C < 2^(W+1) - 1, i.e. W = floor(log2(C+1)).
+  PlusByW[W] = 2^W - 1 (the bias added by the unary prefix). }
+Const
+ E4_PlusByW: Array[0..7] of Word = (0, 1, 3, 7, 15, 31, 63, 127);
+
+Procedure E4_EmitLenCode(C: Word);
+Var W: Byte;
 Begin
- E_BlockBuf^[E_BlockN] := B;
- Inc(E_BlockN);
- If E_BlockN >= 8000 Then E_FlushBlock;
+ If C = 0 Then W := 0
+ Else If C <=   2 Then W := 1
+ Else If C <=   6 Then W := 2
+ Else If C <=  14 Then W := 3
+ Else If C <=  30 Then W := 4
+ Else If C <=  62 Then W := 5
+ Else If C <= 126 Then W := 6
+ Else                  W := 7;
+ If W < E4_STOPL Then Begin
+  If W > 0 Then E_PutBits(W, (Word(1) shl W) - 1);   { W '1' bits }
+  E_PutBits(1, 0);                                   { terminating 0 }
+ End Else
+  E_PutBits(W, (Word(1) shl W) - 1);                 { 7 '1' bits, no term. }
+ If W > 0 Then E_PutBits(W, C - E4_PlusByW[W]);
+End;
+
+Procedure E4_EmitPtrCode(D: Word);
+Var W: Byte;
+    Plus: Word;
+Begin
+ If      D <  512 Then Begin W :=  9; Plus :=    0; End
+ Else If D < 1536 Then Begin W := 10; Plus :=  512; End
+ Else If D < 3584 Then Begin W := 11; Plus := 1536; End
+ Else If D < 7680 Then Begin W := 12; Plus := 3584; End
+ Else                  Begin W := 13; Plus := 7680; End;
+ If W < E4_STOPP Then Begin
+  If W > E4_STRTP Then
+   E_PutBits(W - E4_STRTP, (Word(1) shl (W - E4_STRTP)) - 1);
+  E_PutBits(1, 0);
+ End Else
+  E_PutBits(W - E4_STRTP, (Word(1) shl (W - E4_STRTP)) - 1);  { 4 ones }
+ E_PutBits(W, D - Plus);
+End;
+
+Procedure E_AddLiteral(B: Byte);
+Begin
+ If E_M4 Then Begin
+  E4_EmitLenCode(0);
+  E_PutBits(8, B);
+ End Else Begin
+  E_BlkSym^[E_BlockN] := B;
+  E_BlkDst^[E_BlockN] := 0;
+  Inc(E_BlockN);
+  If E_BlockN >= E_MAX_BLK_SY Then E_FlushBlock;
+ End;
+End;
+
+Procedure E_AddMatch(MLen, MDist: Word);
+Begin
+ If E_M4 Then Begin
+  E4_EmitLenCode(MLen - 2);    { c = matchLen - 2 }
+  E4_EmitPtrCode(MDist);
+ End Else Begin
+  E_BlkSym^[E_BlockN] := MLen + 253;   { 256..509 for MLen 3..256 }
+  E_BlkDst^[E_BlockN] := MDist;
+  Inc(E_BlockN);
+  If E_BlockN >= E_MAX_BLK_SY Then E_FlushBlock;
+ End;
 End;
 
 Procedure E_EndEncode;
 Begin
- If E_BlockN > 0 Then E_FlushBlock;
+ If(not E_M4) and (E_BlockN > 0) Then E_FlushBlock;
  E_FinishBits;
 End;
 
-{ Compress a file using method 1 (literal-only Huffman).
+{ Configure encoder effort according to ARJ method number (1..4). }
+Procedure E_SetMethod(M: Byte);
+Begin
+ E_M4 := (M = 4);
+ If E_M4 Then E_DistMax := E4_MAX_DIST
+         Else E_DistMax := E_WINSZ;
+ Case M Of
+  1: Begin E_MaxChain := 256; E_GoodMatch := 64; End;
+  2: Begin E_MaxChain :=  32; E_GoodMatch := 32; End;
+  3: Begin E_MaxChain :=   8; E_GoodMatch := 16; End;
+  4: Begin E_MaxChain :=  16; E_GoodMatch := 32; End;
+ Else
+   Begin E_MaxChain := 16; E_GoodMatch := 24; End;
+ End;
+End;
+
+{ Compress a file using LZ77 + dynamic Huffman (methods 1..3).
+  The bitstream is method-agnostic; only encoder effort varies.
   Returns the number of compressed bytes written. }
 Function E_CompressFile(Var Src: File; OSize: LongInt;
                         Var FileCRC: LongInt): LongInt;
 Var
- Buf: Array[0..4095] of Byte;
- ToRead: LongInt;
- Got, I: Integer;
- CRC: LongInt;
+ CRC, Remaining: LongInt;
+ ReadAmt: LongInt;
+ Got, K: Integer;
+ KeepFrom: Word;
+ EOF_Reached: Boolean;
+ MatchLen, MatchDist: Word;
+ I: Word;
 Begin
  D_InitCRC;
  CRC := LongInt($FFFFFFFF);
  E_BeginEncode;
- While OSize > 0 Do Begin
-  If OSize > 4096 Then ToRead := 4096 Else ToRead := OSize;
-  BlockRead(Src, Buf, ToRead, Got);
-  If Got <= 0 Then Break;
-  For I := 0 To Got-1 Do Begin
-   CRC := D_UpdateCRC(CRC, Buf[I]);
-   E_AddByte(Buf[I]);
+ EOF_Reached := False;
+ Remaining := OSize;
+ While True Do Begin
+  { Ensure enough lookahead, unless EOF reached. }
+  If(not EOF_Reached) and
+    (LongInt(E_InLen) - LongInt(E_WPos) < E_MAX_MATCH + E_MIN_MATCH) Then
+  Begin
+   { Shift left if the buffer is nearly full. }
+   If LongInt(E_InLen) + 4096 > E_BUF_SIZE Then Begin
+    If E_WPos > E_WINSZ Then KeepFrom := E_WPos - E_WINSZ
+                         Else KeepFrom := 0;
+    If KeepFrom > 0 Then Begin
+     Move(E_InBuf^[KeepFrom], E_InBuf^[0], E_InLen - KeepFrom);
+     E_WPos := E_WPos - KeepFrom;
+     E_InLen := E_InLen - KeepFrom;
+     E_HashReset;
+     If E_WPos >= E_MIN_MATCH Then
+      For I := 0 To E_WPos - E_MIN_MATCH Do E_HashInsert(I);
+    End;
+   End;
+   { Read more from the source file. }
+   ReadAmt := LongInt(E_BUF_SIZE) - LongInt(E_InLen);
+   If ReadAmt > Remaining Then ReadAmt := Remaining;
+   If ReadAmt > 0 Then Begin
+    BlockRead(Src, E_InBuf^[E_InLen], ReadAmt, Got);
+    If Got <= 0 Then EOF_Reached := True
+    Else Begin
+     For K := 0 To Got - 1 Do
+      CRC := D_UpdateCRC(CRC, E_InBuf^[E_InLen + K]);
+     E_InLen := E_InLen + Got;
+     Remaining := Remaining - Got;
+    End;
+   End;
+   If Remaining <= 0 Then EOF_Reached := True;
   End;
-  Dec(OSize, Got);
+  { Done? }
+  If E_WPos >= E_InLen Then Break;
+  { Find best match (only if enough lookahead). }
+  If LongInt(E_InLen) - LongInt(E_WPos) >= E_MIN_MATCH Then
+   E_FindMatch(MatchLen, MatchDist)
+  Else Begin
+   MatchLen := 0; MatchDist := 0;
+  End;
+  If MatchLen >= E_MIN_MATCH Then Begin
+   E_AddMatch(MatchLen, MatchDist);
+   For I := 1 To MatchLen Do Begin
+    If LongInt(E_WPos) + E_MIN_MATCH <= LongInt(E_InLen) Then
+     E_HashInsert(E_WPos);
+    Inc(E_WPos);
+   End;
+  End Else Begin
+   E_AddLiteral(E_InBuf^[E_WPos]);
+   If LongInt(E_WPos) + E_MIN_MATCH <= LongInt(E_InLen) Then
+    E_HashInsert(E_WPos);
+   Inc(E_WPos);
+  End;
  End;
  E_EndEncode;
  FileCRC := CRC xor LongInt($FFFFFFFF);
@@ -1078,9 +1447,13 @@ BEGIN
  New(D_Dict);
  New(D_CRCTab);
  New(E_OutBuf);
- New(E_BlockBuf);
+ New(E_BlkSym);
+ New(E_BlkDst);
  New(E_HuffParent);
  New(E_HuffNF);
+ New(E_InBuf);
+ New(E_HashH);
+ New(E_HashP);
  Language:=_French;
  TmpLanguage:=GetEnv('LANGUAGE');
  If TmpLanguage<>''Then Begin
@@ -1098,7 +1471,7 @@ BEGIN
   WriteLn('          ARJ e archive.arj  (extraire les fichiers)');
   WriteLn('          ARJ x archive.arj  (extraire les fichiers)');
   WriteLn('          ARJ a archive.arj fichier1 [fichier2 ...]  (ajouter des fichiers)');
-  WriteLn('Switch  : -m<N>  M�thode de compression (0=stockage, 1=Huffman, 2-4=non support�)');
+  WriteLn('Switch  : -m<N>  M�thode de compression (0=stockage, 1=max, 2=normal, 3=rapide, 4=tr�s rapide)');
  End
   Else
  If ParamCount>0Then Begin
@@ -1227,7 +1600,7 @@ BEGIN
       Else
      If(HeaderBuffer.FType<=1)and(TargetName<>'')Then Begin
       DataPos:=FilePosFindFiles+LongInt(HeaderBuffer.BHdrSz)+10;
-      If(HeaderBuffer.SVer>3)Then Begin
+      If(HeaderBuffer.SVer>4)Then Begin
        Case Language of
         _English:WriteLn('Skipping ',TargetName,
                          ' : compression method ',HeaderBuffer.SVer,
@@ -1264,6 +1637,13 @@ BEGIN
           Dec(Remaining,Got);
          End;
          ResCRC:=ResCRC xor LongInt($FFFFFFFF);
+        End
+         Else
+        If HeaderBuffer.SVer=4 Then Begin
+         { M�thode 4 : LZ77 + codes unaires (sans Huffman) }
+         OkExtract:=D_DecompressF(HeaderBuffer.CSize,
+                                  HeaderBuffer.OSize,
+                                  ExpCRC,ResCRC);
         End
          Else
         Begin
@@ -1325,11 +1705,6 @@ BEGIN
      If(Length(SwArg) >= 3)and((SwArg[2]='m')or(SwArg[2]='M'))Then Begin
       If(SwArg[3] in ['0'..'4'])and(Length(SwArg) = 3)Then Begin
        Method := Ord(SwArg[3]) - Ord('0');
-       If Method > 1 Then Begin
-        WriteLn('M�thode de compression ',Method,
-                ' non support�e en �criture (utilisez -m0 ou -m1)');
-        Halt;
-       End;
       End
        Else
       Begin
@@ -1425,22 +1800,23 @@ BEGIN
      End
       Else
      Begin
-      { Method 1: write header with placeholder, compress, patch CSize. }
+      { Methods 1..3: write header with placeholder, compress, patch CSize. }
+      E_SetMethod(Method);
       HeaderStart := FilePos(SourceARJ);
-      WriteArjHeader(SourceARJ, 0, 1, SrcDosDT, 0, SrcSize, 0,
+      WriteArjHeader(SourceARJ, 0, Method, SrcDosDT, 0, SrcSize, 0,
                      StoredName, '');
       DataEnd := FilePos(SourceARJ);
       CompressedSize := E_CompressFile(SrcFile, SrcSize, SrcCRC);
       DataEnd := FilePos(SourceARJ);
       Seek(SourceARJ, HeaderStart);
-      WriteArjHeader(SourceARJ, 0, 1, SrcDosDT, CompressedSize, SrcSize,
+      WriteArjHeader(SourceARJ, 0, Method, SrcDosDT, CompressedSize, SrcSize,
                      SrcCRC, StoredName, '');
       Seek(SourceARJ, DataEnd);
       Case Language of
        _English:WriteLn('Adding: ',StoredName,' (',SrcSize,' -> ',
-                        CompressedSize,' bytes, method 1)');
+                        CompressedSize,' bytes, method ',Method,')');
        Else WriteLn('Ajout : ',StoredName,' (',SrcSize,' -> ',
-                    CompressedSize,' octets, m�thode 1)');
+                    CompressedSize,' octets, m�thode ',Method,')');
       End;
      End;
      Close(SrcFile);
