@@ -630,6 +630,70 @@ Begin
  DoInitMBR:=True;
 End;
 
+{ Cree un fichier d'image disque de SizeMB Mo, rempli de zeros, avec un MBR
+  vide (table de partitions a zero + signature $AA55). FName est le nom du
+  fichier a creer. Si Overwrite=False et le fichier existe deja, echoue.
+  Retourne True si OK. }
+Function DoCreateImage(FName:String;SizeMB:LongInt;
+                       Overwrite,Verbose:Boolean):Boolean;
+Var
+ F:File;
+ Sec:Array[0..511]of Byte;
+ TotalSec,I:LongInt;
+ HasExt:Boolean;
+ K:Byte;
+Begin
+ DoCreateImage:=False;
+ If FName='' Then Begin
+  If Verbose Then WriteLn('Erreur : nom de fichier vide.');
+  Exit;
+ End;
+ { Ajouter l'extension .IMG si aucune extension n'est presente.
+   On cherche un point apres le dernier separateur de chemin. }
+ HasExt:=False;
+ For K:=Length(FName) DownTo 1 Do Begin
+  If(FName[K]='\')Or(FName[K]='/')Or(FName[K]=':')Then Break;
+  If FName[K]='.' Then Begin HasExt:=True; Break; End;
+ End;
+ If Not HasExt Then FName:=FName+'.IMG';
+ If SizeMB<1 Then Begin
+  If Verbose Then WriteLn('Erreur : taille invalide (Mo>=1 requis).');
+  Exit;
+ End;
+ If Not Overwrite Then Begin
+  {$I-}Assign(F,FName);Reset(F,1);{$I+}
+  If IOResult=0 Then Begin
+   Close(F);
+   If Verbose Then WriteLn('Erreur : le fichier "',FName,'" existe deja.');
+   Exit;
+  End;
+ End;
+ {$I-}Assign(F,FName);Rewrite(F,512);{$I+}
+ If IOResult<>0 Then Begin
+  If Verbose Then WriteLn('Erreur : impossible de creer "',FName,'".');
+  Exit;
+ End;
+ FillChar(Sec,SizeOf(Sec),0);
+ TotalSec:=SizeMB*2048;  { 1 Mo = 2048 secteurs de 512 octets }
+ { Premier secteur : MBR vide avec signature $AA55 }
+ Sec[510]:=$55;
+ Sec[511]:=$AA;
+ {$I-}BlockWrite(F,Sec,1);{$I+}
+ If IOResult<>0 Then Begin Close(F);Exit;End;
+ FillChar(Sec,SizeOf(Sec),0);
+ For I:=2 To TotalSec Do Begin
+  {$I-}BlockWrite(F,Sec,1);{$I+}
+  If IOResult<>0 Then Begin Close(F);Exit;End;
+ End;
+ Close(F);
+ If Verbose Then
+  WriteLn('Image "',FName,'" creee : ',SizeMB,' Mo (',TotalSec,' secteurs).');
+ { Bascule sur la nouvelle image }
+ FileName:=FName;
+ IsDisk:=False;
+ DoCreateImage:=True;
+End;
+
 { Convertit une chaine en type de partition (1..5 ou $XX hexa ou XX decimal). }
 Function ParsePartType(S:String;Default:Byte):Byte;
 Var
@@ -968,9 +1032,52 @@ Begin
 {$ENDIF}
 End;
 
+Procedure CreateDiskImage;
+Var
+ FName:String;
+ SizeMB:LongInt;
+ Overwrite:Boolean;
+ F:File;
+ Ch:Char;
+Begin
+ ClrScr;
+ WriteLn;
+ WriteLnCenter('Creation d''un fichier image de disque');
+ WriteLn;
+ Write(' ':2,'Nom du fichier image a creer : ');
+ ReadLn(FName);
+ If FName='' Then Exit;
+ Write(' ':2,'Taille en Mo [10] : ');
+ SizeMB:=ReadIntLine(10);
+ If SizeMB<1 Then Begin
+  WriteLn(' ':2,'Taille invalide.');
+  ReadKey;
+  Exit;
+ End;
+ Overwrite:=True;
+ {$I-}Assign(F,FName);Reset(F,1);{$I+}
+ If IOResult=0 Then Begin
+  Close(F);
+  Write(' ':2,'Le fichier existe deja. Ecraser ? (O/N) : ');
+  Ch:=ReadKey;
+  WriteLn(Ch);
+  If(Ch<>'o')And(Ch<>'O')Then Begin
+   WriteLn(' ':2,'Annule.');
+   ReadKey;
+   Exit;
+  End;
+ End;
+ If DoCreateImage(FName,SizeMB,Overwrite,True)Then
+  WriteLn(' ':2,'FDISK travaille maintenant sur cette image.');
+ WriteLn;
+ Write(' ':2,'Appuyez sur une touche...');
+ ReadKey;
+End;
+
 Function ShowMainMenu:Byte;
 Var
  Choice:Char;
+ ChoiceX,ChoiceY:Byte;
 Begin
  ShowMainMenu:=0;
  Choice:='4';
@@ -1035,7 +1142,13 @@ Begin
   _English:WriteLn('Select Next Fixed Disk Drive');
   Else WriteLn('S�lectionne le prochain unit� de disque dur');
  End;
- WriteLn;
+ HighVideo;
+ Write(' ':4,'6. ');
+ LowVideo;
+ Case Language of
+  _English:WriteLn('Create Disk Image File');
+  Else WriteLn('Cr�ation d''un fichier image de disque');
+ End;
  WriteLn;
  WriteLn;
  Case Language of
@@ -1043,7 +1156,10 @@ Begin
   Else Write(' ':4,'Entrez votre choix : ');
  End;
  HighVideo;
- WriteLn('[',Choice,']');
+ Write('[');
+ ChoiceX:=WhereX;
+ ChoiceY:=WhereY;
+ WriteLn(Choice,']');
  LowVideo;
  WriteLn;
  WriteLn;
@@ -1065,9 +1181,9 @@ Begin
   End;
  End;
  Repeat
-  GotoXY(27,19);
+  GotoXY(ChoiceX,ChoiceY);
   Write(Choice);
-  GotoXY(27,19);
+  GotoXY(ChoiceX,ChoiceY);
   Case ReadKey of
    #0:ReadKey;
    #13:Begin
@@ -1077,6 +1193,7 @@ Begin
      '3':ShowMainMenu:=3;
      '4':ShowMainMenu:=4;
      '5':ShowMainMenu:=5;
+     '6':ShowMainMenu:=6;
     End;
     Exit;
    End;
@@ -1086,6 +1203,7 @@ Begin
    '3':Choice:='3';
    '4':Choice:='4';
    '5':Choice:='5';
+   '6':Choice:='6';
   End;
  Until False;
 End;
@@ -1122,8 +1240,10 @@ BEGIN
   WriteLn('  delete <n>                 Supprime la partition n (1..4).');
   WriteLn('  activate <n>               Marque la partition n comme active.');
   WriteLn('  init                       Efface la table de partitions.');
+  WriteLn('  image <fichier> <Mo>       Cree un fichier image disque vide.');
   WriteLn;
   WriteLn('Exemples :');
+  WriteLn('  FDISK image disk.img 100         Cree image vide de 100 Mo.');
   WriteLn('  FDISK disk.img create 64 4       Cree FAT32 de 64 Mo.');
   WriteLn('  FDISK disk.img create MAX 6      Utilise tout l''espace, BIGDOS.');
   WriteLn('  FDISK disk.img activate 1');
@@ -1144,7 +1264,7 @@ BEGIN
    TmpLanguage:=StrToUpper(TmpLanguage);
    If(TmpLanguage<>'CREATE')And(TmpLanguage<>'DELETE')And
      (TmpLanguage<>'ACTIVATE')And(TmpLanguage<>'LIST')And
-     (TmpLanguage<>'INIT')Then Begin
+     (TmpLanguage<>'INIT')And(TmpLanguage<>'IMAGE')Then Begin
     FileName:=ParamStr(1);
     IsDisk:=False;
    End;
@@ -1173,6 +1293,11 @@ BEGIN
    End Else
    If TmpLanguage='INIT' Then Begin
     If Not DoInitMBR(True)Then Halt(1);
+   End Else
+   If TmpLanguage='IMAGE' Then Begin
+    { FDISK image <fichier> <Mo> }
+    If Not DoCreateImage(ParamStr(CliI+1),ParseSizeMB(ParamStr(CliI+2)),
+                         True,True)Then Halt(1);
    End Else Begin
     WriteLn('Commande inconnue : ',ParamStr(CliI));
     WriteLn('Utilisez FDISK /? pour l''aide.');
@@ -1188,6 +1313,7 @@ BEGIN
      3:DeletePartition;
      4:ShowPartition;
      5:SelectFixedDisk;
+     6:CreateDiskImage;
     End;
    Until False;
    ClrScr;
