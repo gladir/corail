@@ -1258,6 +1258,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher un fichier de la fin vers le début.</td>
 		</tr>
 		<tr>
+			<td><b>LHICE.PAS</b></td>
+			<td>Cette commande permet de lancer l'outil de compression de fichiers haute performance de Haruyasu Yoshizaki (1988-89).</td>
+		</tr>
+		<tr>
 			<td><b>LINE.PAS</b></td>
 			<td>Cette commande permet d'effectuer la lecture d'une ligne. Cette commande est inspiré de UNIX.</td>
 		</tr>
