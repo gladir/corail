@@ -180,11 +180,11 @@ End;
 Procedure D_FillBuf(N: Byte);
 Begin
  If N >= 16 Then D_BitBuf := 0
-            Else D_BitBuf := D_BitBuf shl N;
+            Else D_BitBuf := (LongInt(D_BitBuf) shl N) and $FFFF;
  While N > D_BitCount Do Begin
   Dec(N, D_BitCount);
   If N < 16 Then
-   D_BitBuf := D_BitBuf or (Word(D_SubBitBuf) shl N);
+   D_BitBuf := D_BitBuf or Word((LongInt(D_SubBitBuf) shl N) and $FFFF);
   D_SubBitBuf := D_GetByte;
   D_BitCount := 8;
  End;
@@ -195,6 +195,7 @@ End;
 Function D_GetBits(N: Byte): Word;
 Var X: Word;
 Begin
+ If N = 0 Then Begin D_GetBits := 0; Exit; End;
  X := D_BitBuf shr (16 - N);
  D_FillBuf(N);
  D_GetBits := X;
