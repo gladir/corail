@@ -1411,6 +1411,19 @@ End;
 
 { ============================================================ }
 
+Const
+ MAX_PATTERNS = 16;
+ MAX_ENTRIES  = 1000;
+
+Type
+ PatStr        = String[127];
+ PatternArray  = Array[1..MAX_PATTERNS] of PatStr;
+ ArcEntName    = String[63];
+ ArcEntNamesT  = Array[1..MAX_ENTRIES] of ArcEntName;
+ ArcEntDTsT    = Array[1..MAX_ENTRIES] of LongInt;
+ PArcEntNames  = ^ArcEntNamesT;
+ PArcEntDTs    = ^ArcEntDTsT;
+
 Var
  Language:(_French,_English,_Germany,_Italian,_Spain);
  TmpLanguage:String;
@@ -1424,416 +1437,800 @@ Var
  ExtractBuf:Array[0..4095]of Byte;
  ResCRC, ExpCRC:LongInt;
  OkExtract:Boolean;
- ParamIdx:Integer;
  SrcFile:File;
  SrcName,StoredName:String;
  SrcSize,EOAOff:LongInt;
  SrcCRC:LongInt;
  SrcDosDT:LongInt;
- SR:SearchRec;
  ArchiveExists:Boolean;
  DowDummy:Word;
- Method:Byte;
- SwArg:String;
- ArcName:String;
- FirstFileIdx:Integer;
  HeaderStart, DataEnd, CompressedSize: LongInt;
 
-BEGIN
- New(D_InBuf);
- New(D_CTable);
- New(D_LeftT);
- New(D_RightT);
- New(D_Dict);
- New(D_CRCTab);
- New(E_OutBuf);
- New(E_BlkSym);
- New(E_BlkDst);
- New(E_HuffParent);
- New(E_HuffNF);
- New(E_InBuf);
- New(E_HashH);
- New(E_HashP);
- Language:=_French;
- TmpLanguage:=GetEnv('LANGUAGE');
- If TmpLanguage<>''Then Begin
-  If TmpLanguage[1]='"'Then TmpLanguage:=Copy(TmpLanguage,2,255);
-  If StrToUpper(Copy(TmpLanguage,1,2))='EN'Then Language:=_English Else
-  If StrToUpper(Copy(TmpLanguage,1,2))='GR'Then Language:=_Germany Else
-  If StrToUpper(Copy(TmpLanguage,1,2))='IT'Then Language:=_Italian Else
-  If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
+ Sw_Cmd       : Char;
+ Sw_ArcName   : String;
+ Sw_Method    : Byte;
+ Sw_SkipTime  : Boolean;
+ Sw_DelAfter  : Boolean;
+ Sw_ExclPath  : Boolean;
+ Sw_Freshen   : Boolean;
+ Sw_Password  : String;
+ Sw_NoProg    : Boolean;
+ Sw_OnlyNew   : Boolean;
+ Sw_Recurse   : Boolean;
+ Sw_Update    : Boolean;
+ Sw_Volumes   : Boolean;
+ Sw_WorkDir   : String;
+ Sw_AssumeYes : Boolean;
+ Sw_ExclCount : Integer;
+ Sw_ExclPat   : PatternArray;
+ Sw_InclCount : Integer;
+ Sw_InclPat   : PatternArray;
+
+ ArcEnt_Count : Integer;
+ ArcEnt_Names : PArcEntNames;
+ ArcEnt_DTs   : PArcEntDTs;
+
+Function WildMatch(Pat, S: String): Boolean;
+Var I, J, StarI, StarJ: Integer; UP, US: String;
+Begin
+ UP := StrToUpper(Pat);
+ US := StrToUpper(S);
+ I := 1; J := 1; StarI := 0; StarJ := 0;
+ While J <= Length(US) Do Begin
+  If(I <= Length(UP)) and ((UP[I] = US[J]) or (UP[I] = '?')) Then Begin
+   Inc(I); Inc(J);
+  End Else
+  If(I <= Length(UP)) and (UP[I] = '*') Then Begin
+   StarI := I; StarJ := J; Inc(I);
+  End Else
+  If StarI > 0 Then Begin
+   I := StarI + 1; Inc(StarJ); J := StarJ;
+  End Else Begin
+   WildMatch := False; Exit;
+  End;
  End;
- If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('ARJ : Cette commande permet d''afficher la liste des fichiers contenu dans ',
-          'une archive de format ARJ.');
-  WriteLn;
-  WriteLn('Syntaxe : ARJ l archive.arj');
-  WriteLn('          ARJ e archive.arj  (extraire les fichiers)');
-  WriteLn('          ARJ x archive.arj  (extraire les fichiers)');
-  WriteLn('          ARJ a archive.arj fichier1 [fichier2 ...]  (ajouter des fichiers)');
-  WriteLn('Switch  : -m<N>  M�thode de compression (0=stockage, 1=max, 2=normal, 3=rapide, 4=tr�s rapide)');
+ While(I <= Length(UP)) and (UP[I] = '*') Do Inc(I);
+ WildMatch := I > Length(UP);
+End;
+
+Function MatchAnyPat(N: String; Var PL: PatternArray; PC: Integer): Boolean;
+Var K: Integer;
+Begin
+ If PC = 0 Then Begin MatchAnyPat := True; Exit; End;
+ For K := 1 To PC Do
+  If WildMatch(PL[K], N) or WildMatch(PL[K], StripPath(N)) Then Begin
+   MatchAnyPat := True; Exit;
+  End;
+ MatchAnyPat := False;
+End;
+
+Function NameAllowed(N: String): Boolean;
+Var K: Integer;
+Begin
+ NameAllowed := False;
+ If(Sw_InclCount > 0) and (not MatchAnyPat(N, Sw_InclPat, Sw_InclCount))
+  Then Exit;
+ For K := 1 To Sw_ExclCount Do
+  If WildMatch(Sw_ExclPat[K], N) or
+     WildMatch(Sw_ExclPat[K], StripPath(N))
+   Then Exit;
+ NameAllowed := True;
+End;
+
+Procedure InitSwitches;
+Begin
+ Sw_Cmd := ' '; Sw_ArcName := ''; Sw_Method := 1;
+ Sw_SkipTime := False; Sw_DelAfter := False; Sw_ExclPath := True;
+ Sw_Freshen := False; Sw_Password := ''; Sw_NoProg := False;
+ Sw_OnlyNew := False; Sw_Recurse := False; Sw_Update := False;
+ Sw_Volumes := False; Sw_WorkDir := ''; Sw_AssumeYes := False;
+ Sw_ExclCount := 0; Sw_InclCount := 0;
+End;
+
+Procedure ParseArgs;
+Var I: Integer; A: String; Sw: Char; Val: String;
+Begin
+ InitSwitches;
+ If ParamCount < 1 Then Exit;
+ A := ParamStr(1);
+ If Length(A) >= 1 Then Sw_Cmd := A[1];
+ If(Sw_Cmd >= 'A') and (Sw_Cmd <= 'Z') Then
+  Sw_Cmd := Chr(Ord(Sw_Cmd) + 32);
+ For I := 2 To ParamCount Do Begin
+  A := ParamStr(I);
+  If A = '' Then Continue;
+  If(A[1]='-') or (A[1]='/') Then Begin
+   If Length(A) < 2 Then Continue;
+   Sw := A[2];
+   If(Sw >= 'A') and (Sw <= 'Z') Then Sw := Chr(Ord(Sw)+32);
+   Val := Copy(A, 3, 255);
+   Case Sw of
+    'c': Sw_SkipTime := True;
+    'd': Sw_DelAfter := True;
+    'e': Sw_ExclPath := True;
+    'f': Sw_Freshen := True;
+    'g': Sw_Password := Val;
+    'i': Sw_NoProg := True;
+    'm': Begin
+     If(Length(Val) = 1) and (Val[1] in ['0'..'4']) Then
+      Sw_Method := Ord(Val[1]) - Ord('0')
+     Else Begin
+      WriteLn('Valeur invalide pour le switch -m : ',A); Halt;
+     End;
+    End;
+    'n': Sw_OnlyNew := True;
+    'r': Sw_Recurse := True;
+    'u': Sw_Update := True;
+    'v': Sw_Volumes := True;
+    'w': Sw_WorkDir := Val;
+    'x': If Val <> '' Then Begin
+          If Sw_ExclCount < MAX_PATTERNS Then Begin
+           Inc(Sw_ExclCount); Sw_ExclPat[Sw_ExclCount] := Val;
+          End;
+         End;
+    'y': Sw_AssumeYes := True;
+   Else
+    WriteLn('Switch non reconnu : ', A); Halt;
+   End;
+  End Else Begin
+   If Sw_ArcName = '' Then Sw_ArcName := A
+   Else If Sw_InclCount < MAX_PATTERNS Then Begin
+    Inc(Sw_InclCount); Sw_InclPat[Sw_InclCount] := A;
+   End;
+  End;
+ End;
+End;
+
+Function ReadEntryName(Var H: ArjHeader): String;
+Var BB: Integer; S: String;
+Begin
+ S := ''; BB := 1;
+ While(BB <= 120) and (H.NameDat[BB] <> #0) Do Begin
+  S := S + H.NameDat[BB]; Inc(BB);
+ End;
+ ReadEntryName := S;
+End;
+
+Function LastComp(S: String): String;
+Var I: Integer;
+Begin
+ For I := Length(S) Downto 1 Do
+  If(S[I]='/') or (S[I]='\') or (S[I]=':') Then Begin
+   LastComp := Copy(S, I+1, 255); Exit;
+  End;
+ LastComp := S;
+End;
+
+Function NormSep(S: String): String;
+Var I: Integer;
+Begin
+ For I := 1 To Length(S) Do If S[I] = '/' Then S[I] := '\';
+ NormSep := S;
+End;
+
+Procedure MakeDirs(Path: String);
+Var I: Integer; D: String;
+Begin
+ For I := 1 To Length(Path) Do
+  If(Path[I] = '\') or (Path[I] = '/') Then Begin
+   D := Copy(Path, 1, I-1);
+   If(D <> '') and (D[Length(D)] <> ':') Then Begin
+    {$I-}MkDir(D);{$I+}
+    If IoResult <> 0 Then ;
+   End;
+  End;
+End;
+
+Function OpenArchiveRead: Boolean;
+Begin
+ OpenArchiveRead := False;
+ If Sw_ArcName = '' Then Begin
+  WriteLn('Nom d''archive ARJ attendu'); Exit;
+ End;
+ {$I-}Assign(SourceARJ, Sw_ArcName); Reset(SourceARJ, 1);{$I+}
+ If IoResult <> 0 Then Begin
+  WriteLn('Fichier ARJ introuvable : ', Sw_ArcName); Exit;
+ End;
+ OpenArchiveRead := True;
+End;
+
+{ ============================================================ }
+{ === Command: list (l) / verbose list (v)                === }
+{ ============================================================ }
+
+Procedure CmdList(Verbose: Boolean);
+Var Disp: String;
+Begin
+ If not OpenArchiveRead Then Halt;
+ NumFiles := 0; FilePosFindFiles := 0; FirstEntry := True;
+ Repeat
+  Seek(SourceARJ,FilePosFindFiles);
+  FillChar(HeaderBuffer,SizeOf(HeaderBuffer),0);
+  BlockRead(SourceARJ,HeaderBuffer,SizeOf(HeaderBuffer),ByteReaded);
+  If HeaderBuffer.BHdrSz > 0 Then Begin
+   TargetName := ReadEntryName(HeaderBuffer);
+   Disp := LastComp(TargetName);
+   PackSize := LongInt(HeaderBuffer.BHdrSz) + HeaderBuffer.CSize;
+   If HeaderBuffer.FType = 2 Then PackSize := HeaderBuffer.BHdrSz;
+   If HeaderBuffer.BHdrSz = 0 Then PackSize := 0;
+   Inc(FilePosFindFiles, PackSize + 10);
+   If FirstEntry Then Begin
+    FirstEntry := False;
+    Case Language of
+     _English: Begin
+      WriteLn('Processing archive: ',TargetName);
+      Write('Archive date:       ');
+     End;
+     Else Begin
+      WriteLn('Traitement d''archive : ',TargetName);
+      Write('Archive date : ');
+     End;
+    End;
+    UnpackTime(HeaderBuffer.DosDT,DT);
+    Write(DT.Year:4,'-',PadZeroLeft(DT.Month,2),'-',PadZeroLeft(DT.Day,2),' ');
+    Write(DT.Hour:2,':',PadZeroLeft(DT.Min,2),':',PadZeroLeft(DT.Sec,2));
+    WriteLn;
+    Case Language of
+     _English: Write(PadRight('Filename',12),' ',PadRight('Original',10),' ',
+                     PadRight('Compressed',10),' ',PadRight('Ratio',5),' ',
+                     PadRight('DateTime',8),' ',PadRight('modified',8),' ',
+                     PadRight('CRC-32',8));
+     Else      Write(PadRight('Nom fichier',12),' ',PadRight('Original',10),' ',
+                     PadRight('Compress',9),Chr(233),' ',PadRight('Ratio',5),' ',
+                     PadRight('DateHeur',8),' ',PadRight('modifi',7),Chr(233),' ',
+                     PadRight('CRC-32',8));
+    End;
+    If Verbose Then Write(' Met') Else Write(' AttrBTPMGVX');
+    WriteLn;
+    WriteLn('------------ ---------- ---------- ----- ',
+            '----------------- -------- --- -');
+   End
+    Else
+   If(HeaderBuffer.FType <= 1) and (Disp <> '') and NameAllowed(Disp) Then Begin
+    Write(PadRight(Disp,12),' ');
+    Write(HeaderBuffer.OSize:10,' ');
+    Write(PackSize:10,' ');
+    If HeaderBuffer.OSize > 0 Then
+     Write(HeaderBuffer.CSize / HeaderBuffer.OSize:5:3,' ')
+    Else Write('0.000 ');
+    UnpackTime(HeaderBuffer.DosDT,DT);
+    Write(PadZeroLeft(DT.Year mod 100,2),'-',PadZeroLeft(DT.Month,2),
+          '-',PadZeroLeft(DT.Day,2),' ');
+    Write(DT.Hour:2,':',PadZeroLeft(DT.Min,2),':',PadZeroLeft(DT.Sec,2));
+    Write(' ',LongHex2Str(HeaderBuffer.SEFP));
+    If Verbose Then Write('  M',HeaderBuffer.SVer);
+    WriteLn;
+    Inc(NumFiles);
+   End;
+  End;
+ Until HeaderBuffer.BHdrSz = 0;
+ If NumFiles > 0 Then Begin
+  WriteLn('------------ ---------- ---------- -----');
+  Case Language of
+   _English: WriteLn(NumFiles:3,' file(s)');
+   Else      WriteLn(NumFiles:3,' fichier(s)');
+  End;
+ End;
+ Close(SourceARJ);
+End;
+
+{ ============================================================ }
+{ === Decompress one entry to DestFile                    === }
+{ ============================================================ }
+
+Function DecompressOne(Var H: ArjHeader; Var RCRC: LongInt): Boolean;
+Var GotL, B2: Integer;
+Begin
+ ExpCRC := H.SEFP;
+ If H.SVer = 0 Then Begin
+  D_InitCRC;
+  RCRC := LongInt($FFFFFFFF);
+  Remaining := H.OSize;
+  DecompressOne := True;
+  While Remaining > 0 Do Begin
+   If Remaining > 4096 Then ToRead := 4096 Else ToRead := Remaining;
+   BlockRead(SourceARJ, ExtractBuf, ToRead, GotL);
+   If GotL <= 0 Then Begin DecompressOne := False; Break; End;
+   BlockWrite(DestFile, ExtractBuf, GotL);
+   For B2 := 0 To GotL - 1 Do
+    RCRC := D_UpdateCRC(RCRC, ExtractBuf[B2]);
+   Dec(Remaining, GotL);
+  End;
+  RCRC := RCRC xor LongInt($FFFFFFFF);
  End
   Else
- If ParamCount>0Then Begin
-  If ParamStr(1)='l'Then Begin
-   If ParamStr(2)=''Then Begin
-    WriteLn('Nom d''archive ARJ attendu');
-    Halt;
-   End;
-   {$I-}Assign(SourceARJ,ParamStr(2));
-   Reset(SourceARJ,1);{$I+}
-   If IoResult<>0Then Begin
-    WriteLn('Fichier ARJ introuvable : ',ParamStr(2));
-    Halt;
-   End;
-   NumFiles:=0;
-   FilePosFindFiles:=0;
-   FirstEntry:=True;
-   Repeat
-    Seek(SourceARJ,FilePosFindFiles);
-    FillChar(HeaderBuffer,SizeOf(HeaderBuffer),0);
-    BlockRead(SourceARJ,HeaderBuffer,SizeOf(HeaderBuffer),ByteReaded);
-    If HeaderBuffer.BHdrSz>0 Then Begin
-     B:=1;
-     TargetName:='';
-     While HeaderBuffer.NameDat[B]<>#0 do Begin
-      If HeaderBuffer.NameDat[B]='/'Then TargetName:=''
-                                    Else TargetName:=TargetName+HeaderBuffer.NameDat[B];
-      Inc(B);
+ If H.SVer = 4 Then
+  DecompressOne := D_DecompressF(H.CSize, H.OSize, ExpCRC, RCRC)
+ Else
+  DecompressOne := D_Decompress(H.CSize, H.OSize, ExpCRC, RCRC);
+End;
+
+{ ============================================================ }
+{ === Command: extract (e) / extract w/ path (x) / test (t) }
+{ ============================================================ }
+
+Procedure CmdExtract(KeepPath, TestOnly: Boolean);
+Var Disp, OutName: String; AlreadyExist: Boolean;
+Begin
+ If not OpenArchiveRead Then Halt;
+ NumFiles := 0; FilePosFindFiles := 0; FirstEntry := True;
+ Repeat
+  Seek(SourceARJ,FilePosFindFiles);
+  FillChar(HeaderBuffer,SizeOf(HeaderBuffer),0);
+  BlockRead(SourceARJ,HeaderBuffer,SizeOf(HeaderBuffer),ByteReaded);
+  If HeaderBuffer.BHdrSz > 0 Then Begin
+   TargetName := ReadEntryName(HeaderBuffer);
+   Disp := LastComp(TargetName);
+   PackSize := LongInt(HeaderBuffer.BHdrSz) + HeaderBuffer.CSize;
+   If HeaderBuffer.FType = 2 Then PackSize := HeaderBuffer.BHdrSz;
+   If HeaderBuffer.BHdrSz = 0 Then PackSize := 0;
+   If FirstEntry Then Begin
+    FirstEntry := False;
+   End
+    Else
+   If(HeaderBuffer.FType <= 1) and (Disp <> '') and NameAllowed(Disp) Then Begin
+    DataPos := FilePosFindFiles + LongInt(HeaderBuffer.BHdrSz) + 10;
+    If HeaderBuffer.SVer > 4 Then Begin
+     Case Language of
+      _English: WriteLn('Skipping ',Disp,' : compression method ',HeaderBuffer.SVer,' not supported');
+      Else      WriteLn('Ignor',Chr(233),' ',Disp,' : m',
+               Chr(233),'thode de compression ',HeaderBuffer.SVer,
+               ' non support',Chr(233),'e');
      End;
-     PackSize:=HeaderBuffer.BHdrSz+HeaderBuffer.CSize;
-     If HeaderBuffer.FType=2Then PackSize:=HeaderBuffer.BHdrSz;
-     If HeaderBuffer.BHdrSz=0Then PackSize:=0;
-     Inc(FilePosFindFiles,PackSize+10);
-     If(FirstEntry)Then Begin
-      FirstEntry:=False;
+    End
+     Else
+    Begin
+     If TestOnly Then OutName := 'NUL'
+     Else If KeepPath Then OutName := NormSep(TargetName)
+     Else OutName := Disp;
+     AlreadyExist := False;
+     If(not TestOnly) and Sw_OnlyNew Then Begin
+      Assign(DestFile, OutName);
+      {$I-}Reset(DestFile, 1);{$I+}
+      If IoResult = 0 Then Begin AlreadyExist := True; Close(DestFile); End;
+     End;
+     If AlreadyExist Then Begin
       Case Language of
-       _English:Begin
-        WriteLn('Processing archive: ',TargetName);
-        Write('Archive date:       ');
-       End;
-       Else Begin
-        WriteLn('Traitement d''archive : ',TargetName);
-        Write('Archive date : ');
-       End;
+       _English: WriteLn('Skipping existing: ',OutName);
+       Else      WriteLn('Existe d',Chr(233),'j',Chr(224),' : ',OutName);
       End;
-      UnpackTime(HeaderBuffer.DosDT,DT);
-      Write(DT.Year:4,'-',PadZeroLeft(DT.Month,2),'-',PadZeroLeft(DT.Day,2),' ');
-      Write(DT.Hour:2,':',PadZeroLeft(DT.Min,2),':',PadZeroLeft(DT.Sec,2));
-      WriteLn;
-      Case Language of
-       _English:WriteLn(PadRight('Filename',12),' ',
-                        PadRight('Original',10),' ',
-                        PadRight('Compressed',10),' ',
-                        PadRight('Ratio',5),' ',
-                        PadRight('DateTime',8),' ',
-                        PadRight('modified',8),' ',
-                        PadRight('CRC-32',8),' ',
-                        'AttrBTPMGVX');
-       Else WriteLn(PadRight('Nom fichier',12),' ',
-                    PadRight('Original',10),' ',
-                    PadRight('Compress�',10),' ',
-                    PadRight('Ratio',5),' ',
-                    PadRight('DateHeur',8),' ',
-                    PadRight('modifi�',8),' ',
-                    PadRight('CRC-32',8),' ',
-                    'AttrBTPMGVX');
-      End;
-      WriteLn('------------ ---------- ---------- ----- ',
-              '----------------- -------- -----------');
      End
       Else
      Begin
-      Write(PadRight(TargetName,12),' ');
-      Write(HeaderBuffer.OSize:10,' ');
-      Write(PackSize:10,' ');
-      Write(HeaderBuffer.CSize/HeaderBuffer.OSize:5:3,' ');
-      UnpackTime(HeaderBuffer.DosDT,DT);
-      Write(PadZeroLeft(DT.Year mod 100,2),'-',PadZeroLeft(DT.Month,2),
-              '-',PadZeroLeft(DT.Day,2),' ');
-      Write(DT.Hour:2,':',PadZeroLeft(DT.Min,2),':',PadZeroLeft(DT.Sec,2));
-      Write(' ',LongHex2Str(HeaderBuffer.SEFP));
-      WriteLn;
-      Inc(NumFiles);
-     End;
-    End;
-   Until HeaderBuffer.BHdrSz=0;
-   If NumFiles>0 Then Begin
-    WriteLn('------------ ---------- ---------- -----');
-    WriteLn(NumFiles:3,' fichiers');
-   End;
-   Close(SourceARJ);
-  End
-   Else
-  If(ParamStr(1)='e')or(ParamStr(1)='x')Then Begin
-   If ParamStr(2)=''Then Begin
-    WriteLn('Nom d''archive ARJ attendu');
-    Halt;
-   End;
-   {$I-}Assign(SourceARJ,ParamStr(2));
-   Reset(SourceARJ,1);{$I+}
-   If IoResult<>0Then Begin
-    WriteLn('Fichier ARJ introuvable : ',ParamStr(2));
-    Halt;
-   End;
-   NumFiles:=0;
-   FilePosFindFiles:=0;
-   FirstEntry:=True;
-   Repeat
-    Seek(SourceARJ,FilePosFindFiles);
-    FillChar(HeaderBuffer,SizeOf(HeaderBuffer),0);
-    BlockRead(SourceARJ,HeaderBuffer,SizeOf(HeaderBuffer),ByteReaded);
-    If HeaderBuffer.BHdrSz>0 Then Begin
-     B:=1;
-     TargetName:='';
-     While(B<=120)and(HeaderBuffer.NameDat[B]<>#0)do Begin
-      If HeaderBuffer.NameDat[B]='/'Then TargetName:=''
-                                    Else TargetName:=TargetName+HeaderBuffer.NameDat[B];
-      Inc(B);
-     End;
-     PackSize:=LongInt(HeaderBuffer.BHdrSz)+HeaderBuffer.CSize;
-     If HeaderBuffer.FType=2Then PackSize:=HeaderBuffer.BHdrSz;
-     If HeaderBuffer.BHdrSz=0Then PackSize:=0;
-     If FirstEntry Then Begin
-      FirstEntry:=False;
-     End
-      Else
-     If(HeaderBuffer.FType<=1)and(TargetName<>'')Then Begin
-      DataPos:=FilePosFindFiles+LongInt(HeaderBuffer.BHdrSz)+10;
-      If(HeaderBuffer.SVer>4)Then Begin
-       Case Language of
-        _English:WriteLn('Skipping ',TargetName,
-                         ' : compression method ',HeaderBuffer.SVer,
-                         ' not supported');
-        Else WriteLn('Ignor� ',TargetName,
-                     ' : m�thode de compression ',HeaderBuffer.SVer,
-                     ' non support�e');
-       End;
+      Seek(SourceARJ, DataPos);
+      If(not TestOnly) and KeepPath then MakeDirs(OutName);
+      {$I-}Assign(DestFile, OutName);
+      Rewrite(DestFile, 1);{$I+}
+      If IoResult <> 0 Then Begin
+       WriteLn('Impossible de cr',Chr(233),'er : ',OutName);
       End
        Else
       Begin
-       Seek(SourceARJ,DataPos);
-       {$I-}Assign(DestFile,TargetName);
-       Rewrite(DestFile,1);{$I+}
-       If IoResult<>0 Then Begin
-        WriteLn('Impossible de cr�er : ',TargetName);
+       OkExtract := DecompressOne(HeaderBuffer, ResCRC);
+       Close(DestFile);
+       If not OkExtract Then Begin
+        Case Language of
+         _English: WriteLn('Error extracting: ',Disp);
+         Else      WriteLn('Erreur d''extraction : ',Disp);
+        End;
+       End
+        Else
+       If ResCRC <> ExpCRC Then Begin
+        Case Language of
+         _English: WriteLn('CRC mismatch on: ',Disp,' (expected ',LongHex2Str(ExpCRC),', got ',LongHex2Str(ResCRC),')');
+         Else      WriteLn('CRC incorrect : ',Disp,' (attendu ',LongHex2Str(ExpCRC),', obtenu ',LongHex2Str(ResCRC),')');
+        End;
+        Inc(NumFiles);
        End
         Else
        Begin
-        ExpCRC:=HeaderBuffer.SEFP;
-        OkExtract:=True;
-        If HeaderBuffer.SVer=0 Then Begin
-         { M�thode 0 : copie sans compression }
-         D_InitCRC;
-         ResCRC:=LongInt($FFFFFFFF);
-         Remaining:=HeaderBuffer.OSize;
-         While Remaining>0 Do Begin
-          If Remaining>4096 Then ToRead:=4096 Else ToRead:=Remaining;
-          BlockRead(SourceARJ,ExtractBuf,ToRead,Got);
-          If Got<=0 Then Begin OkExtract:=False; Break; End;
-          BlockWrite(DestFile,ExtractBuf,Got);
-          For B:=0 To Got-1 Do
-           ResCRC:=D_UpdateCRC(ResCRC,ExtractBuf[B]);
-          Dec(Remaining,Got);
+        If TestOnly Then Begin
+         Case Language of
+          _English: WriteLn('Tested: ',Disp,' (',HeaderBuffer.OSize,' bytes)');
+          Else      WriteLn('Test',Chr(233),' : ',Disp,' (',HeaderBuffer.OSize,' octets)');
          End;
-         ResCRC:=ResCRC xor LongInt($FFFFFFFF);
-        End
-         Else
-        If HeaderBuffer.SVer=4 Then Begin
-         { M�thode 4 : LZ77 + codes unaires (sans Huffman) }
-         OkExtract:=D_DecompressF(HeaderBuffer.CSize,
-                                  HeaderBuffer.OSize,
-                                  ExpCRC,ResCRC);
-        End
-         Else
-        Begin
-         { M�thodes 1,2,3 : LZ77 + Huffman dynamique }
-         OkExtract:=D_Decompress(HeaderBuffer.CSize,
-                                 HeaderBuffer.OSize,
-                                 ExpCRC,ResCRC);
+        End Else Begin
+         Case Language of
+          _English: WriteLn('Extracted: ',OutName,' (',HeaderBuffer.OSize,' bytes)');
+          Else      WriteLn('Extrait : ',OutName,' (',HeaderBuffer.OSize,' octets)');
+         End;
         End;
-        Close(DestFile);
-        If Not OkExtract Then Begin
-         Case Language of
-          _English:WriteLn('Error extracting: ',TargetName);
-          Else WriteLn('Erreur d''extraction : ',TargetName);
-         End;
-        End
-         Else
-        If ResCRC<>ExpCRC Then Begin
-         Case Language of
-          _English:WriteLn('CRC mismatch on: ',TargetName,
-                           ' (expected ',LongHex2Str(ExpCRC),
-                           ', got ',LongHex2Str(ResCRC),')');
-          Else WriteLn('CRC incorrect : ',TargetName,
-                       ' (attendu ',LongHex2Str(ExpCRC),
-                       ', obtenu ',LongHex2Str(ResCRC),')');
-         End;
-         Inc(NumFiles);
-        End
-         Else
-        Begin
-         Case Language of
-          _English:WriteLn('Extracted: ',TargetName,' (',HeaderBuffer.OSize,' bytes)');
-          Else WriteLn('Extrait : ',TargetName,' (',HeaderBuffer.OSize,' octets)');
-         End;
-         Inc(NumFiles);
-        End;
+        Inc(NumFiles);
        End;
       End;
      End;
-     Inc(FilePosFindFiles,PackSize+10);
     End;
-   Until HeaderBuffer.BHdrSz=0;
-   Case Language of
-    _English:WriteLn(NumFiles,' file(s) extracted');
-    Else WriteLn(NumFiles,' fichier(s) extrait(s)');
    End;
-   Close(SourceARJ);
-  End
-   Else
-  If ParamStr(1)='a'Then Begin
-   Method := 0;
-   ArcName := '';
-   FirstFileIdx := 0;
-   { Scan parameters: classify switches (-m<N>, /m<N>) and positionals.
-     First positional = archive name; subsequent positionals = files. }
-   ParamIdx := 2;
-   While ParamStr(ParamIdx) <> '' Do Begin
-    SwArg := ParamStr(ParamIdx);
-    If(Length(SwArg) >= 2)and((SwArg[1]='-')or(SwArg[1]='/'))Then Begin
-     If(Length(SwArg) >= 3)and((SwArg[2]='m')or(SwArg[2]='M'))Then Begin
-      If(SwArg[3] in ['0'..'4'])and(Length(SwArg) = 3)Then Begin
-       Method := Ord(SwArg[3]) - Ord('0');
-      End
-       Else
-      Begin
-       WriteLn('Valeur invalide pour le switch -m : ',SwArg);
-       Halt;
-      End;
-     End
-      Else
-     Begin
-      WriteLn('Switch non reconnu : ',SwArg);
-      Halt;
-     End;
-    End
-     Else
-    Begin
-     If ArcName = '' Then ArcName := SwArg
-     Else If FirstFileIdx = 0 Then FirstFileIdx := ParamIdx;
-    End;
-    Inc(ParamIdx);
-   End;
-   If ArcName = '' Then Begin
-    WriteLn('Nom d''archive ARJ attendu');
-    Halt;
-   End;
-   If FirstFileIdx = 0 Then Begin
-    WriteLn('Au moins un fichier source est requis');
-    Halt;
-   End;
-   Assign(SourceARJ,ArcName);
-   {$I-}Reset(SourceARJ,1);{$I+}
-   ArchiveExists := IoResult = 0;
-   If ArchiveExists Then Begin
-    EOAOff := FindEndOfArchive(SourceARJ);
-    If EOAOff < 0 Then Begin
-     Close(SourceARJ);
-     WriteLn('Archive ARJ corrompue ou non valide : ',ArcName);
-     Halt;
-    End;
-    Seek(SourceARJ, EOAOff);
-    Truncate(SourceARJ);
-   End
-    Else
-   Begin
-    {$I-}Rewrite(SourceARJ,1);{$I+}
-    If IoResult <> 0 Then Begin
-     WriteLn('Impossible de cr�er l''archive : ',ArcName);
-     Halt;
-    End;
-    GetFTime(SourceARJ, SrcDosDT);
-    If SrcDosDT = 0 Then Begin
-     GetDate(DT.Year, DT.Month, DT.Day, DowDummy);
-     GetTime(DT.Hour, DT.Min, DT.Sec, DowDummy);
-     PackTime(DT, SrcDosDT);
-    End;
-    WriteArjHeader(SourceARJ, 2, 0, SrcDosDT, 0, 0, 0,
-                   StripPath(ArcName), '');
-   End;
-   NumFiles := 0;
-   ParamIdx := FirstFileIdx;
-   While ParamStr(ParamIdx) <> '' Do Begin
-    SrcName := ParamStr(ParamIdx);
-    If(SrcName[1]='-')or(SrcName[1]='/')Then Begin
-     Inc(ParamIdx);
-     Continue;
-    End;
-    {$I-}Assign(SrcFile, SrcName);
-    Reset(SrcFile, 1);{$I+}
-    If IoResult <> 0 Then Begin
-     WriteLn('Fichier introuvable : ',SrcName);
-    End
-     Else
-    Begin
-     SrcSize := FileSize(SrcFile);
-     GetFTime(SrcFile, SrcDosDT);
-     StoredName := StripPath(SrcName);
-     If Method = 0 Then Begin
-      SrcCRC := CRC32OfFile(SrcFile, SrcSize);
-      Seek(SrcFile, 0);
-      WriteArjHeader(SourceARJ, 0, 0, SrcDosDT, SrcSize, SrcSize, SrcCRC,
-                     StoredName, '');
-      Remaining := SrcSize;
-      While Remaining > 0 Do Begin
-       If Remaining > 4096 Then ToRead := 4096 Else ToRead := Remaining;
-       BlockRead(SrcFile, ExtractBuf, ToRead, Got);
-       If Got <= 0 Then Break;
-       BlockWrite(SourceARJ, ExtractBuf, Got);
-       Dec(Remaining, Got);
-      End;
-      Case Language of
-       _English:WriteLn('Adding: ',StoredName,' (',SrcSize,' bytes, stored)');
-       Else WriteLn('Ajout : ',StoredName,' (',SrcSize,' octets, stock�)');
-      End;
-     End
-      Else
-     Begin
-      { Methods 1..3: write header with placeholder, compress, patch CSize. }
-      E_SetMethod(Method);
-      HeaderStart := FilePos(SourceARJ);
-      WriteArjHeader(SourceARJ, 0, Method, SrcDosDT, 0, SrcSize, 0,
-                     StoredName, '');
-      DataEnd := FilePos(SourceARJ);
-      CompressedSize := E_CompressFile(SrcFile, SrcSize, SrcCRC);
-      DataEnd := FilePos(SourceARJ);
-      Seek(SourceARJ, HeaderStart);
-      WriteArjHeader(SourceARJ, 0, Method, SrcDosDT, CompressedSize, SrcSize,
-                     SrcCRC, StoredName, '');
-      Seek(SourceARJ, DataEnd);
-      Case Language of
-       _English:WriteLn('Adding: ',StoredName,' (',SrcSize,' -> ',
-                        CompressedSize,' bytes, method ',Method,')');
-       Else WriteLn('Ajout : ',StoredName,' (',SrcSize,' -> ',
-                    CompressedSize,' octets, m�thode ',Method,')');
-      End;
-     End;
-     Close(SrcFile);
-     Inc(NumFiles);
-    End;
-    Inc(ParamIdx);
-   End;
-   WriteEndMarker(SourceARJ);
-   Close(SourceARJ);
-   Case Language of
-    _English:WriteLn(NumFiles,' file(s) added');
-    Else WriteLn(NumFiles,' fichier(s) ajout�(s)');
-   End;
-  End
-   Else
-  WriteLn('Param�tre non reconnu');
+   Inc(FilePosFindFiles, PackSize + 10);
+  End;
+ Until HeaderBuffer.BHdrSz = 0;
+ Case Language of
+  _English: If TestOnly Then WriteLn(NumFiles,' file(s) tested') Else WriteLn(NumFiles,' file(s) extracted');
+  Else      If TestOnly Then WriteLn(NumFiles,' fichier(s) test',
+                  Chr(233),'(s)') Else WriteLn(NumFiles,' fichier(s) extrait(s)');
+ End;
+ Close(SourceARJ);
+End;
+
+{ ============================================================ }
+{ === Helpers for add / update / freshen / move           === }
+{ ============================================================ }
+
+Procedure LoadArchiveEntries(Var F: File);
+{ Scan the open archive F and populate ArcEnt_Names/DTs. Restores position
+  to start when done. Safe to call before Truncate-at-EOA. }
+Var FPos, PSz, Sz: LongInt; HBuf: ArjHeader; ByR: Integer;
+    HDisp: String; BB: Integer; FirstSeen: Boolean;
+Begin
+ ArcEnt_Count := 0;
+ FPos := 0; FirstSeen := False;
+ Sz := FileSize(F);
+ While FPos < Sz Do Begin
+  Seek(F, FPos);
+  FillChar(HBuf, SizeOf(HBuf), 0);
+  BlockRead(F, HBuf, SizeOf(HBuf), ByR);
+  If HBuf.BHdrSz = 0 Then Break;
+  PSz := LongInt(HBuf.BHdrSz) + HBuf.CSize;
+  If HBuf.FType = 2 Then PSz := HBuf.BHdrSz;
+  HDisp := ''; BB := 1;
+  While(BB <= 120) and (HBuf.NameDat[BB] <> #0) Do Begin
+   If(HBuf.NameDat[BB]='/') or (HBuf.NameDat[BB]='\') Then HDisp := ''
+   Else HDisp := HDisp + HBuf.NameDat[BB];
+   Inc(BB);
+  End;
+  If FirstSeen and (HBuf.FType <= 1) and (HDisp <> '') and
+     (ArcEnt_Count < MAX_ENTRIES) Then Begin
+   Inc(ArcEnt_Count);
+   ArcEnt_Names^[ArcEnt_Count] := HDisp;
+   ArcEnt_DTs^[ArcEnt_Count] := HBuf.DosDT;
+  End;
+  FirstSeen := True;
+  Inc(FPos, PSz + 10);
+ End;
+ Seek(F, 0);
+End;
+
+Function ArchiveHas(Disp: String; Var EntryDT: LongInt): Boolean;
+Var K: Integer; U: String;
+Begin
+ ArchiveHas := False; EntryDT := 0;
+ U := StrToUpper(Disp);
+ For K := 1 To ArcEnt_Count Do
+  If StrToUpper(ArcEnt_Names^[K]) = U Then Begin
+   ArchiveHas := True;
+   EntryDT := ArcEnt_DTs^[K];
+   Exit;
+  End;
+End;
+
+Procedure AddOneFile(Path: String);
+Var EntryDT: LongInt; Existing, ShouldSkip: Boolean; M: Byte; Disp: String;
+Begin
+ {$I-}Assign(SrcFile, Path); Reset(SrcFile, 1);{$I+}
+ If IoResult <> 0 Then Begin
+  WriteLn('Fichier introuvable : ', Path); Exit;
+ End;
+ SrcSize := FileSize(SrcFile);
+ GetFTime(SrcFile, SrcDosDT);
+
+ If Sw_ExclPath Then Disp := StripPath(Path) Else Disp := Path;
+ If not NameAllowed(StripPath(Path)) Then Begin Close(SrcFile); Exit; End;
+
+ Existing := ArchiveHas(StripPath(Path), EntryDT);
+
+ ShouldSkip := False;
+ If Sw_Freshen Then Begin
+  If not Existing Then ShouldSkip := True
+  Else If (not Sw_SkipTime) and (SrcDosDT <= EntryDT) Then ShouldSkip := True;
+ End Else If Sw_Update Then Begin
+  If Existing and (not Sw_SkipTime) and (SrcDosDT <= EntryDT) Then ShouldSkip := True;
+ End Else If Sw_OnlyNew Then Begin
+  If Existing Then ShouldSkip := True;
+ End Else If Existing Then Begin
+  Case Language of
+   _English: WriteLn('Already in archive (skipped): ', Disp);
+   Else      WriteLn('D',Chr(233),'j',Chr(224),' dans l''archive (ignor',Chr(233),') : ', Disp);
+  End;
+  ShouldSkip := True;
+ End;
+ If ShouldSkip Then Begin Close(SrcFile); Exit; End;
+
+ StoredName := Disp;
+ M := Sw_Method;
+ If M = 0 Then Begin
+  SrcCRC := CRC32OfFile(SrcFile, SrcSize);
+  Seek(SrcFile, 0);
+  WriteArjHeader(SourceARJ, 0, 0, SrcDosDT, SrcSize, SrcSize, SrcCRC, StoredName, '');
+  Remaining := SrcSize;
+  While Remaining > 0 Do Begin
+   If Remaining > 4096 Then ToRead := 4096 Else ToRead := Remaining;
+   BlockRead(SrcFile, ExtractBuf, ToRead, Got);
+   If Got <= 0 Then Break;
+   BlockWrite(SourceARJ, ExtractBuf, Got);
+   Dec(Remaining, Got);
+  End;
+  Case Language of
+   _English: WriteLn('Adding: ',StoredName,' (',SrcSize,' bytes, stored)');
+   Else      WriteLn('Ajout : ',StoredName,' (',SrcSize,' octets, stock',Chr(233),')');
+  End;
  End
   Else
- WriteLn('Param�tre requis');
+ Begin
+  E_SetMethod(M);
+  HeaderStart := FilePos(SourceARJ);
+  WriteArjHeader(SourceARJ, 0, M, SrcDosDT, 0, SrcSize, 0, StoredName, '');
+  DataEnd := FilePos(SourceARJ);
+  CompressedSize := E_CompressFile(SrcFile, SrcSize, SrcCRC);
+  DataEnd := FilePos(SourceARJ);
+  Seek(SourceARJ, HeaderStart);
+  WriteArjHeader(SourceARJ, 0, M, SrcDosDT, CompressedSize, SrcSize, SrcCRC, StoredName, '');
+  Seek(SourceARJ, DataEnd);
+  Case Language of
+   _English: WriteLn('Adding: ',StoredName,' (',SrcSize,' -> ',CompressedSize,' bytes, method ',M,')');
+   Else      WriteLn('Ajout : ',StoredName,' (',SrcSize,' -> ',CompressedSize,' octets, m',Chr(233),'thode ',M,')');
+  End;
+ End;
+ Close(SrcFile);
+ If Sw_DelAfter Then Begin
+  Assign(SrcFile, Path);
+  {$I-}Erase(SrcFile);{$I+}
+  If IoResult <> 0 Then ;
+ End;
+ Inc(NumFiles);
+End;
+
+Procedure AddPattern(Base, Dir: String);
+Var SR2: SearchRec; FullPath: String;
+Begin
+ FindFirst(Dir + Base, AnyFile, SR2);
+ While DosError = 0 Do Begin
+  If(SR2.Attr and Directory) = 0 Then Begin
+   FullPath := Dir + SR2.Name;
+   AddOneFile(FullPath);
+  End;
+  FindNext(SR2);
+ End;
+ {$IFDEF FPC}
+ FindClose(SR2);
+ {$ENDIF}
+End;
+
+Procedure RecurseAdd(Dir, Base: String);
+Var SR2: SearchRec; Sub: String;
+Begin
+ If(Dir <> '') and (Dir[Length(Dir)] <> '\') and (Dir[Length(Dir)] <> '/')
+  and (Dir[Length(Dir)] <> ':')
+  Then Dir := Dir + '\';
+ FindFirst(Dir + '*.*', Directory, SR2);
+ While DosError = 0 Do Begin
+  If(SR2.Name <> '.') and (SR2.Name <> '..')
+     and ((SR2.Attr and Directory) <> 0) Then Begin
+   Sub := Dir + SR2.Name + '\';
+   AddPattern(Base, Sub);
+   RecurseAdd(Sub, Base);
+  End;
+  FindNext(SR2);
+ End;
+ {$IFDEF FPC}
+  FindClose(SR2);
+ {$ENDIF}
+End;
+
+Procedure CmdAdd;
+Var I, J: Integer; Pat, Dir, Base: String;
+Begin
+ If Sw_ArcName = '' Then Begin
+  WriteLn('Nom d''archive ARJ attendu'); Halt;
+ End;
+ If Sw_InclCount = 0 Then Begin
+  WriteLn('Au moins un fichier source est requis'); Halt;
+ End;
+ ArcEnt_Count := 0;
+ Assign(SourceARJ, Sw_ArcName);
+ {$I-}Reset(SourceARJ, 1);{$I+}
+ ArchiveExists := IoResult = 0;
+ If ArchiveExists Then Begin
+  EOAOff := FindEndOfArchive(SourceARJ);
+  If EOAOff < 0 Then Begin
+   Close(SourceARJ);
+   WriteLn('Archive ARJ corrompue ou non valide : ', Sw_ArcName); Halt;
+  End;
+  LoadArchiveEntries(SourceARJ);
+  Seek(SourceARJ, EOAOff); Truncate(SourceARJ);
+ End
+  Else
+ Begin
+  {$I-}Rewrite(SourceARJ, 1);{$I+}
+  If IoResult <> 0 Then Begin
+   WriteLn('Impossible de cr',Chr(233),'er l''archive : ', Sw_ArcName); Halt;
+  End;
+  GetFTime(SourceARJ, SrcDosDT);
+  If SrcDosDT = 0 Then Begin
+   GetDate(DT.Year, DT.Month, DT.Day, DowDummy);
+   GetTime(DT.Hour, DT.Min, DT.Sec, DowDummy);
+   PackTime(DT, SrcDosDT);
+  End;
+  WriteArjHeader(SourceARJ, 2, 0, SrcDosDT, 0, 0, 0,
+                 StripPath(Sw_ArcName), '');
+ End;
+ NumFiles := 0;
+ For I := 1 To Sw_InclCount Do Begin
+  Pat := Sw_InclPat[I];
+  J := Length(Pat); Dir := ''; Base := Pat;
+  While(J >= 1) and (Pat[J] <> '\') and (Pat[J] <> '/') and (Pat[J] <> ':')
+   Do Dec(J);
+  If J >= 1 Then Begin
+   Dir := Copy(Pat, 1, J); Base := Copy(Pat, J+1, 255);
+  End;
+  AddPattern(Base, Dir);
+  If Sw_Recurse Then RecurseAdd(Dir, Base);
+ End;
+ WriteEndMarker(SourceARJ);
+ Close(SourceARJ);
+ Case Language of
+  _English: WriteLn(NumFiles,' file(s) added');
+  Else      WriteLn(NumFiles,' fichier(s) ajout',Chr(233),'(s)');
+ End;
+End;
+
+{ ============================================================ }
+{ === Command: delete (d)                                 === }
+{ ============================================================ }
+
+Procedure CmdDelete;
+Var TmpName, Disp: String; TmpF: File; FPos, BlkSz, Sz, Avail: LongInt;
+    HBuf: ArjHeader; ByR, GotL: Integer; CopyBuf: Array[0..4095] of Byte;
+    BB: Integer; Deleted: LongInt; ToRd: LongInt;
+Begin
+ If Sw_ArcName = '' Then Begin WriteLn('Nom d''archive ARJ attendu'); Halt; End;
+ If Sw_InclCount = 0 Then Begin
+  WriteLn('Au moins un patron de fichier requis'); Halt;
+ End;
+ If not OpenArchiveRead Then Halt;
+ TmpName := Sw_ArcName + '.$$$';
+ Assign(TmpF, TmpName);
+ {$I-}Rewrite(TmpF, 1);{$I+}
+ If IoResult <> 0 Then Begin
+  Close(SourceARJ); WriteLn('Impossible de cr',Chr(233),'er le fichier temporaire'); Halt;
+ End;
+ FPos := 0; Deleted := 0; FirstEntry := True;
+ Sz := FileSize(SourceARJ);
+ Repeat
+  Seek(SourceARJ, FPos);
+  FillChar(HBuf, SizeOf(HBuf), 0);
+  BlockRead(SourceARJ, HBuf, SizeOf(HBuf), ByR);
+  If HBuf.BHdrSz = 0 Then Break;
+  BlkSz := LongInt(HBuf.BHdrSz) + HBuf.CSize;
+  If HBuf.FType = 2 Then BlkSz := HBuf.BHdrSz;
+  BlkSz := BlkSz + 10;
+  Disp := ''; BB := 1;
+  While(BB <= 120) and (HBuf.NameDat[BB] <> #0) Do Begin
+   If(HBuf.NameDat[BB]='/') or (HBuf.NameDat[BB]='\') Then Disp := ''
+   Else Disp := Disp + HBuf.NameDat[BB];
+   Inc(BB);
+  End;
+  If FirstEntry or (HBuf.FType = 2) or (not NameAllowed(Disp)) Then Begin
+   Seek(SourceARJ, FPos); Avail := BlkSz;
+   While Avail > 0 Do Begin
+    If Avail > 4096 Then ToRd := 4096 Else ToRd := Avail;
+    BlockRead(SourceARJ, CopyBuf, ToRd, GotL);
+    If GotL <= 0 Then Break;
+    BlockWrite(TmpF, CopyBuf, GotL);
+    Dec(Avail, GotL);
+   End;
+   FirstEntry := False;
+  End Else Begin
+   Case Language of
+    _English: WriteLn('Deleting: ', Disp);
+    Else      WriteLn('Suppression : ', Disp);
+   End;
+   Inc(Deleted);
+  End;
+  Inc(FPos, BlkSz);
+ Until FPos >= Sz;
+ WriteEndMarker(TmpF);
+ Close(TmpF);
+ Close(SourceARJ);
+ Assign(SourceARJ, Sw_ArcName);
+ {$I-}Erase(SourceARJ);{$I+}
+ If IoResult <> 0 Then ;
+ Assign(TmpF, TmpName);
+ {$I-}Rename(TmpF, Sw_ArcName);{$I+}
+ If IoResult <> 0 Then
+  WriteLn('Erreur lors du renommage du fichier temporaire');
+ Case Language of
+  _English: WriteLn(Deleted,' file(s) deleted');
+  Else      WriteLn(Deleted,' fichier(s) supprim',Chr(233),'(s)');
+ End;
+End;
+
+{ ============================================================ }
+{ === Main                                                === }
+{ ============================================================ }
+
+BEGIN
+ New(D_InBuf); New(D_CTable); New(D_LeftT); New(D_RightT);
+ New(D_Dict); New(D_CRCTab); New(E_OutBuf); New(E_BlkSym);
+ New(E_BlkDst); New(E_HuffParent); New(E_HuffNF); New(E_InBuf);
+ New(E_HashH); New(E_HashP);
+ New(ArcEnt_Names); New(ArcEnt_DTs);
+ Language := _French;
+ TmpLanguage := GetEnv('LANGUAGE');
+ If TmpLanguage <> '' Then Begin
+  If TmpLanguage[1] = '"' Then TmpLanguage := Copy(TmpLanguage, 2, 255);
+  If StrToUpper(Copy(TmpLanguage,1,2)) = 'EN' Then Language := _English Else
+  If StrToUpper(Copy(TmpLanguage,1,2)) = 'GR' Then Language := _Germany Else
+  If StrToUpper(Copy(TmpLanguage,1,2)) = 'IT' Then Language := _Italian Else
+  If StrToUpper(Copy(TmpLanguage,1,2)) = 'SP' Then Language := _Spain;
+ End;
+ If(ParamStr(1)='/?') or (ParamStr(1)='--help') or (ParamStr(1)='-h') Then Begin
+  WriteLn('ARJ : outil de gestion d''archives ARJ.');
+  WriteLn;
+  WriteLn('Syntaxe : ARJ <cmd> [-<switches>] archive.arj [fichier(s)/patron(s)]');
+  WriteLn;
+  WriteLn('Commandes :');
+  WriteLn('  a : Add     Ajouter des fichiers ',Chr(224),' l''archive');
+  WriteLn('  d : Delete  Supprimer des fichiers de l''archive');
+  WriteLn('  e : Extract Extraire les fichiers (sans le chemin)');
+  WriteLn('  f : Freshen Rafra',Chr(238),'chir les fichiers existants');
+  WriteLn('  l : List    Lister le contenu de l''archive');
+  WriteLn('  m : Move    Ajouter puis supprimer les sources');
+  WriteLn('  t : Test    Tester l''int',Chr(233),'grit',Chr(233),' de l''archive');
+  WriteLn('  u : Update  Mettre ',Chr(224),' jour (nouveaux + plus r',Chr(233),'cents)');
+  WriteLn('  v : Verbose Lister avec d',Chr(233),'tails suppl',Chr(233),'mentaires');
+  WriteLn('  x : eXtract Extraire avec le chemin stock',Chr(233));
+  WriteLn;
+  WriteLn('Switches :');
+  WriteLn('  -c           Ignorer la v',Chr(233),'rification d''horodatage');
+  WriteLn('  -d           Supprimer les sources apr',Chr(232),'s ajout');
+  WriteLn('  -e           Exclure les chemins des noms');
+  WriteLn('  -f           Ne rafra',Chr(238),'chir que les fichiers existants');
+  WriteLn('  -g<mdp>      Chiffrement par mot de passe (non support',Chr(233),')');
+  WriteLn('  -i           Pas d''indicateur de progression');
+  WriteLn('  -m<N>        M',Chr(233),'thode de compression (0..4)');
+  WriteLn('  -n           Seulement les nouveaux fichiers');
+  WriteLn('  -r           R',Chr(233),'cursion dans les sous-r',Chr(233),'pertoires');
+  WriteLn('  -u           Seulement nouveaux et plus r',Chr(233),'cents');
+  WriteLn('  -v           Volumes multiples (non support',Chr(233),')');
+  WriteLn('  -w<dir>      R',Chr(233),'pertoire de travail');
+  WriteLn('  -x<patron>   Exclure les fichiers correspondant au patron');
+  WriteLn('  -y           R',Chr(233),'pondre Oui ',Chr(224),' toutes les questions');
+  Halt;
+ End;
+ If ParamCount = 0 Then Begin
+  Case Language of
+   _English: WriteLn('Parameter required');
+   Else      WriteLn('Param',Chr(232),'tre requis');
+  End;
+  Halt;
+ End;
+
+ ParseArgs;
+
+ If Sw_WorkDir <> '' Then Begin
+  {$I-}ChDir(Sw_WorkDir);{$I+}
+  If IoResult <> 0 Then ;
+ End;
+ If Sw_Volumes Then
+  WriteLn('Avertissement : volumes multiples (-v) non support',Chr(233));
+ If Sw_Password <> '' Then
+  WriteLn('Avertissement : chiffrement (-g) non support',Chr(233));
+
+ Case Sw_Cmd of
+  'l': CmdList(False);
+  'v': CmdList(True);
+  'e': CmdExtract(False, False);
+  'x': CmdExtract(True, False);
+  't': CmdExtract(False, True);
+  'a': CmdAdd;
+  'u': Begin Sw_Update := True; CmdAdd; End;
+  'f': Begin Sw_Freshen := True; CmdAdd; End;
+  'm': Begin Sw_DelAfter := True; CmdAdd; End;
+  'd': CmdDelete;
+ Else
+  Case Language of
+   _English: WriteLn('Unknown command: ', Sw_Cmd);
+   Else      WriteLn('Commande inconnue : ', Sw_Cmd);
+  End;
+ End;
 END.
