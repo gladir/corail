@@ -692,7 +692,22 @@ Begin
  WriteLn;
  WriteLn(' ':2,'Partition    Etat   Type   Nom du volume    Mo  Syst�me    Utilis�');
  ReadPartitionRecord;
- { Total des secteurs occupes par toutes les partitions = taille du disque }
+ { Verifie la signature MBR $55AA. Sinon, image disquette ou secteur non
+   partitionne : ne rien afficher pour eviter erreurs d'overflow. }
+ If(Buffer[510]<>$55)Or(Buffer[511]<>$AA)Then Begin
+  WriteLn;
+  WriteLn(' ':2,'Aucune table de partition (image disquette ou secteur vide ?).');
+  Exit;
+ End;
+ { Detection d'un secteur de boot FAT (commence par JMP EB/E9) : ce n'est
+   pas un MBR meme si la signature $55AA est presente. }
+ If(Buffer[0]=$EB)Or(Buffer[0]=$E9)Then Begin
+  WriteLn;
+  WriteLn(' ':2,'Aucune table de partition (secteur de boot FAT detecte).');
+  Exit;
+ End;
+ { Total des secteurs occupes par toutes les partitions = taille du disque.
+   Filtre les entrees aberrantes (PartType inconnu et NumSec absurde). }
  TotSec:=0;
  For I:=0 to 3 do
   If Partition.PartTable[I].PartType<>0Then
