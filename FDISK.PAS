@@ -249,6 +249,182 @@ Begin
  Else ReadSector:=ReadDiskLBA(LBA,Buf);
 End;
 
+{ Recupere le nom de volume d'une partition FAT12/16/32, HPFS ou NTFS.
+  Retourne une chaine vide si introuvable. }
+Function GetVolumeLabel(Const PE:PartEntry):String;
+Var
+ Sec:Array[0..511] of Byte;
+ BytesPerSec,RsvdSec,RootEntCnt,SecPerClus:Word;
+ SecPerFAT,TotSec:LongInt;
+ NumFATs:Byte;
+ FATType:Byte;
+ DataSec,TotClus,RootStart,RootSecs:LongInt;
+ RootClus:LongInt;
+ FirstDataSec:LongInt;
+ I,J,K,LblOfs:Word;
+ Lbl:String;
+ Found:Boolean;
+ MftLCN,RecSize,MftLBA:LongInt;
+ ClPerRec:ShortInt;
+ RecSizeSec:LongInt;
+ UsaOfs,AttrOfs,ContentOfs,ContentLen:Word;
+ AttrLen:Word;
+ AttrType:LongInt;
+ NonRes,C:Byte;
+Begin
+ GetVolumeLabel:='';
+ If Not ReadSector(PE.SecOfs,Sec) Then Exit;
+
+ { ----- NTFS : signature 'NTFS    ' a l'offset 3 ----- }
+ If(Sec[3]=$4E)And(Sec[4]=$54)And(Sec[5]=$46)And(Sec[6]=$53)Then Begin
+  BytesPerSec:=Word(Sec[11])Or(Word(Sec[12])Shl 8);
+  SecPerClus:=Sec[13];
+  If(BytesPerSec=0)Or(SecPerClus=0)Then Exit;
+  { MFT LCN @ offset 48 (8 octets, on prend les 32 bits bas) }
+  MftLCN:=LongInt(Sec[48])Or(LongInt(Sec[49])Shl 8)
+        Or(LongInt(Sec[50])Shl 16)Or(LongInt(Sec[51])Shl 24);
+  { Octets/clusters par enregistrement MFT @ offset 64 (octet signe) }
+  ClPerRec:=ShortInt(Sec[64]);
+  If ClPerRec>=0 Then
+   RecSize:=LongInt(ClPerRec)*SecPerClus*BytesPerSec
+  Else
+   RecSize:=LongInt(1)Shl(-ClPerRec);
+  If(RecSize<512)Or(BytesPerSec=0)Then Exit;
+  RecSizeSec:=RecSize Div BytesPerSec;
+  { Enregistrement MFT n3 = $Volume }
+  MftLBA:=PE.SecOfs+MftLCN*SecPerClus+3*RecSizeSec;
+  If Not ReadSector(MftLBA,Sec) Then Exit;
+  { Magic 'FILE' }
+  If(Sec[0]<>$46)Or(Sec[1]<>$49)Or(Sec[2]<>$4C)Or(Sec[3]<>$45)Then Exit;
+  { Fixup du 1er secteur : USA @ offset 4 (word) ; remplacer les 2 derniers
+    octets du secteur par USA[1] (les 2 octets juste apres le USN). }
+  UsaOfs:=Word(Sec[4])Or(Word(Sec[5])Shl 8);
+  If UsaOfs+4<=510 Then Begin
+   Sec[510]:=Sec[UsaOfs+2];
+   Sec[511]:=Sec[UsaOfs+3];
+  End;
+  { Premier attribut @ offset $14 (word) }
+  AttrOfs:=Word(Sec[$14])Or(Word(Sec[$15])Shl 8);
+  While AttrOfs+8<512 Do Begin
+   AttrType:=LongInt(Sec[AttrOfs])Or(LongInt(Sec[AttrOfs+1])Shl 8)
+           Or(LongInt(Sec[AttrOfs+2])Shl 16)Or(LongInt(Sec[AttrOfs+3])Shl 24);
+   If AttrType=-1 Then Exit;  { fin de la liste d'attributs }
+   AttrLen:=Word(Sec[AttrOfs+4])Or(Word(Sec[AttrOfs+5])Shl 8);
+   If AttrLen=0 Then Exit;
+   If AttrType=$60 Then Begin
+    { $VOLUME_NAME : resident attendu }
+    NonRes:=Sec[AttrOfs+8];
+    If NonRes=0 Then Begin
+     ContentLen:=Word(Sec[AttrOfs+16])Or(Word(Sec[AttrOfs+17])Shl 8);
+     ContentOfs:=Word(Sec[AttrOfs+20])Or(Word(Sec[AttrOfs+21])Shl 8);
+     { Contenu = UTF-16LE, on prend seulement le byte bas (ASCII) }
+     Lbl:='';
+     I:=0;
+     While(I<ContentLen)And(AttrOfs+ContentOfs+I+1<512)Do Begin
+      C:=Sec[AttrOfs+ContentOfs+I];
+      If C>=32 Then Lbl:=Lbl+Chr(C);
+      Inc(I,2);
+     End;
+     GetVolumeLabel:=Lbl;
+    End;
+    Exit;
+   End;
+   Inc(AttrOfs,AttrLen);
+  End;
+  Exit;
+ End;
+
+ { ----- HPFS : signature au superbloc, LBA partition + 16 ----- }
+ If ReadSector(PE.SecOfs+16,Sec) Then Begin
+  If(Sec[0]=$49)And(Sec[1]=$E8)And(Sec[2]=$95)And(Sec[3]=$F9)Then Begin
+   { SuperBlock HPFS, volume name @ offset $0C, 32 octets max, null-term }
+   Lbl:='';
+   For I:=$0C To $0C+31 Do Begin
+    If Sec[I]=0 Then Break;
+    Lbl:=Lbl+Chr(Sec[I]);
+   End;
+   While(Length(Lbl)>0)And(Lbl[Length(Lbl)]=' ')Do
+    Lbl:=Copy(Lbl,1,Length(Lbl)-1);
+   GetVolumeLabel:=Lbl;
+   Exit;
+  End;
+ End;
+
+ { Relire le boot sector FAT }
+ If Not ReadSector(PE.SecOfs,Sec) Then Exit;
+ If(Sec[510]<>$55)Or(Sec[511]<>$AA)Then Exit;
+ BytesPerSec:=Word(Sec[11])Or(Word(Sec[12])Shl 8);
+ SecPerClus:=Sec[13];
+ RsvdSec:=Word(Sec[14])Or(Word(Sec[15])Shl 8);
+ NumFATs:=Sec[16];
+ RootEntCnt:=Word(Sec[17])Or(Word(Sec[18])Shl 8);
+ TotSec:=Word(Sec[19])Or(Word(Sec[20])Shl 8);
+ If TotSec=0 Then
+  TotSec:=LongInt(Sec[32])Or(LongInt(Sec[33])Shl 8)
+        Or(LongInt(Sec[34])Shl 16)Or(LongInt(Sec[35])Shl 24);
+ SecPerFAT:=Word(Sec[22])Or(Word(Sec[23])Shl 8);
+ If SecPerFAT=0 Then
+  SecPerFAT:=LongInt(Sec[36])Or(LongInt(Sec[37])Shl 8)
+           Or(LongInt(Sec[38])Shl 16)Or(LongInt(Sec[39])Shl 24);
+ If(BytesPerSec<>512)Or(SecPerClus=0)Or(NumFATs=0)Or(SecPerFAT=0)Then Exit;
+ DataSec:=TotSec-(RsvdSec+LongInt(NumFATs)*SecPerFAT
+                  +((LongInt(RootEntCnt)*32+BytesPerSec-1)Div BytesPerSec));
+ If DataSec<=0 Then Exit;
+ TotClus:=DataSec Div SecPerClus;
+ If TotClus<4085 Then FATType:=12
+ Else If TotClus<65525 Then FATType:=16
+ Else FATType:=32;
+
+ { 1) Essayer le label de l'extended BPB }
+ If FATType=32 Then LblOfs:=71 Else LblOfs:=43;
+ { Verifier la signature etendue BS_BootSig=$29 }
+ If((FATType=32)And(Sec[66]=$29))Or
+   ((FATType<>32)And(Sec[38]=$29))Then Begin
+  Lbl:='';
+  For I:=LblOfs To LblOfs+10 Do Lbl:=Lbl+Chr(Sec[I]);
+  While(Length(Lbl)>0)And(Lbl[Length(Lbl)]=' ')Do
+   Lbl:=Copy(Lbl,1,Length(Lbl)-1);
+  If(Lbl<>'')And(Lbl<>'NO NAME')Then Begin
+   GetVolumeLabel:=Lbl;
+   Exit;
+  End;
+ End;
+
+ { 2) Scanner le repertoire racine pour une entree avec attr=$08 }
+ If FATType=32 Then Begin
+  RootClus:=LongInt(Sec[44])Or(LongInt(Sec[45])Shl 8)
+          Or(LongInt(Sec[46])Shl 16)Or(LongInt(Sec[47])Shl 24);
+  FirstDataSec:=RsvdSec+LongInt(NumFATs)*SecPerFAT;
+  RootStart:=PE.SecOfs+FirstDataSec+(RootClus-2)*SecPerClus;
+  RootSecs:=SecPerClus;  { un seul cluster suffit pour l'entree volume }
+ End Else Begin
+  RootStart:=PE.SecOfs+RsvdSec+LongInt(NumFATs)*SecPerFAT;
+  RootSecs:=(LongInt(RootEntCnt)*32+BytesPerSec-1)Div BytesPerSec;
+ End;
+ Found:=False;
+ J:=0;
+ While(J<RootSecs)And Not Found Do Begin
+  If Not ReadSector(RootStart+J,Sec) Then Exit;
+  K:=0;
+  While(K<512)And Not Found Do Begin
+   If Sec[K]=0 Then Exit;   { fin du repertoire }
+   { attr=$08 (volume), pas $0F (LFN), pas supprime ($E5) }
+   If(Sec[K+11]=$08)And(Sec[K]<>$E5)Then Begin
+    Lbl:='';
+    For I:=0 To 10 Do Lbl:=Lbl+Chr(Sec[K+I]);
+    While(Length(Lbl)>0)And(Lbl[Length(Lbl)]=' ')Do
+     Lbl:=Copy(Lbl,1,Length(Lbl)-1);
+    If Lbl<>'' Then Begin
+     GetVolumeLabel:=Lbl;
+     Found:=True;
+    End;
+   End;
+   Inc(K,32);
+  End;
+  Inc(J);
+ End;
+End;
+
 { Calcule le % UTILISE d'une partition FAT en parcourant sa FAT.
   Renvoie -1 si impossible (type non supporte, lecture echouee, etc.). }
 Function PartUsagePct(Const PE:PartEntry):Integer;
@@ -389,8 +565,18 @@ Begin
   If Partition.PartTable[I].Status=$80 Then Write('A')
                                        Else Write(' ');
   Write(' ':4);
-  Write('PRI DOS',' ':2);
-  Write('NOLABEL',' ':7);
+  { Colonne Type : PRI/EXT + nature du systeme (DOS, non-DOS ou autre) }
+  Case Partition.PartTable[I].PartType Of
+   $05,$0F:Write('EXT     ');     { Partition etendue }
+   $01,$04,$06,$0B,$0C,
+   $0E,$11,$12,$14,$16,
+   $1B,$1C,$1E,$24:Write('PRI DOS ');   { DOS/FAT }
+   Else Write('PRI     ');                 { Autre OS / non-DOS }
+  End;
+  { Nom de volume : lu via FAT BPB/racine ou HPFS }
+  TypeName:=GetVolumeLabel(Partition.PartTable[I]);
+  If TypeName='' Then TypeName:='NOLABEL';
+  Write(PadRight(TypeName,14));
   { Taille en Mo = NumSec * 512 / (1024*1024) = NumSec / 2048 }
   Write((Partition.PartTable[I].NumSec + 1024) Div 2048:6,' ':3);
   Case Partition.PartTable[I].PartType of
@@ -699,6 +885,7 @@ Function ParsePartType(S:String;Default:Byte):Byte;
 Var
  V,Code:Integer;
  L:LongInt;
+ U:String;
 Begin
  ParsePartType:=Default;
  If S='' Then Exit;
@@ -712,6 +899,24 @@ Begin
  If S='3' Then Begin ParsePartType:=$06; Exit; End;
  If S='4' Then Begin ParsePartType:=$0B; Exit; End;
  If S='5' Then Begin ParsePartType:=$0C; Exit; End;
+ If S='6' Then Begin ParsePartType:=$07; Exit; End;
+ If S='7' Then Begin ParsePartType:=$0A; Exit; End;  { OS/2 Boot Manager }
+ If S='8' Then Begin ParsePartType:=$02; Exit; End;  { XENIX root }
+ If S='9' Then Begin ParsePartType:=$03; Exit; End;  { XENIX /usr }
+ If S='10'Then Begin ParsePartType:=$08; Exit; End;  { AIX boot }
+ If S='11'Then Begin ParsePartType:=$09; Exit; End;  { AIX data }
+ If S='12'Then Begin ParsePartType:=$24; Exit; End;  { NEC DOS }
+ If S='13'Then Begin ParsePartType:=$35; Exit; End;  { JFS }
+ U:=StrToUpper(S);
+ If(U='HPFS')Or(U='NTFS')Then Begin ParsePartType:=$07; Exit; End;
+ If U='OS2BM'    Then Begin ParsePartType:=$0A; Exit; End;
+ If U='OS/2BM'   Then Begin ParsePartType:=$0A; Exit; End;
+ If U='XENIX'    Then Begin ParsePartType:=$02; Exit; End;
+ If U='XENIXUSR' Then Begin ParsePartType:=$03; Exit; End;
+ If U='AIX'      Then Begin ParsePartType:=$08; Exit; End;
+ If U='AIXDATA'  Then Begin ParsePartType:=$09; Exit; End;
+ If U='NECDOS'   Then Begin ParsePartType:=$24; Exit; End;
+ If U='JFS'      Then Begin ParsePartType:=$35; Exit; End;
  Val('$'+S,L,Code);
  If Code=0 Then Begin
   If(L>=1)And(L<=255)Then ParsePartType:=Byte(L);
@@ -744,7 +949,7 @@ Var
  Tot,MaxMB,SizeMB,NumSec,SecOfs:LongInt;
  PType:Byte;
  PE:PartEntry;
- Ch:Char;
+ TypeS:String;
 Begin
  ClrScr;
  WriteLn;
@@ -796,20 +1001,29 @@ Begin
 
  WriteLn;
  WriteLn('Type de partition :');
- WriteLn('  1. FAT12');
- WriteLn('  2. FAT16 (<32 Mo)');
- WriteLn('  3. FAT16 (BIGDOS)');
- WriteLn('  4. FAT32');
- WriteLn('  5. FAT32 LBA');
- Write('Choix [4] : ');
- Ch:=ReadKey; WriteLn(Ch);
- Case Ch Of
-  '1':PType:=$01;
-  '2':PType:=$04;
-  '3':PType:=$06;
-  '5':PType:=$0C;
-  Else PType:=$0B;
+ WriteLn('   1. FAT12               8. XENIX root');
+ WriteLn('   2. FAT16 (<32 Mo)      9. XENIX /usr');
+ WriteLn('   3. FAT16 (BIGDOS)     10. AIX boot');
+ WriteLn('   4. FAT32              11. AIX data');
+ WriteLn('   5. FAT32 LBA          12. NEC DOS');
+ WriteLn('   6. HPFS / NTFS        13. JFS');
+ WriteLn('   7. OS/2 Boot Manager');
+ Write('Choix [4], Q/X/E pour annuler : ');
+ ReadLn(TypeS);
+ { Annulation : touches Q, X, E (quit/exit) }
+ If(TypeS<>'')Then Begin
+  TypeS:=StrToUpper(TypeS);
+  If(TypeS='Q')Or(TypeS='X')Or(TypeS='E')Or
+    (TypeS='QUIT')Or(TypeS='EXIT')Or(TypeS='ANNULER')Then Begin
+   WriteLn;
+   WriteLn('Creation annulee.');
+   Write('Appuyez sur une touche...');
+   ReadKey;
+   Exit;
+  End;
  End;
+ If TypeS='' Then PType:=$0B
+ Else PType:=ParsePartType(TypeS,$0B);
 
  { Construire l'entree }
  FillChar(PE,SizeOf(PE),0);
@@ -1236,6 +1450,10 @@ BEGIN
   WriteLn('                             taille : Mo (defaut/MAX = espace libre).');
   WriteLn('                             type   : 1=FAT12 2=FAT16<32M 3=BIGDOS');
   WriteLn('                                      4=FAT32 (defaut) 5=FAT32LBA');
+  WriteLn('                                      6=HPFS/NTFS 7=OS/2BM');
+  WriteLn('                                      8=XENIX 9=XENIX/usr');
+  WriteLn('                                      10=AIX 11=AIXdata');
+  WriteLn('                                      12=NECDOS 13=JFS');
   WriteLn('                                      ou $XX hexa (ex. $07 NTFS).');
   WriteLn('  delete <n>                 Supprime la partition n (1..4).');
   WriteLn('  activate <n>               Marque la partition n comme active.');
