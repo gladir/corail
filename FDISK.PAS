@@ -41,6 +41,12 @@ Var
  Buffer:Array[0..1023]of Byte;
  CliI:Byte;
  CliJ,CliCode:Integer;
+ { Format d'image detecte : raw (par defaut), VHD fixe ou VHD dynamique. }
+ VHDKind:(_VHDNone,_VHDFixed,_VHDDynamic);
+ VHDDiskSec:LongInt;        { Taille virtuelle en secteurs }
+ VHDBlockSizeSec:LongInt;   { Sectors per block (dynamique) }
+ VHDBitmapSecs:LongInt;     { Secteurs occupes par le bitmap de bloc }
+ VHDBATFileOfs:LongInt;     { Offset fichier de la BAT (octets) }
 
 Procedure DiskReset;
 {$IFDEF Windows}
@@ -117,44 +123,6 @@ Function WriteTrack(Lecteur,Face,Piste,Start,Nombre:Byte;Var Buffer):Byte;
  End;
 {$ENDIF}
 
-Procedure ReadPartitionRecord;
-Var
- Partition:File;
- ByteReaded:Word;
-Begin
- If(IsDisk)Then Begin
-  ReadTrack($80+CurrentDisk-1,0,0,1,1,Buffer);
- End
-  Else
- If FileName<>''Then Begin
-  {$I-}Assign(Partition,FileName);
-  Reset(Partition,1);{$I+}
-  If IOResult=0 Then Begin
-   BlockRead(Partition,Buffer,512,ByteReaded);
-   Close(Partition);
-  End;
- End;
-End;
-
-Procedure WritePartitionRecord;
-Var
- Partition:File;
- ByteReaded:Word;
-Begin
- If(IsDisk)Then Begin
-  WriteTrack($80+CurrentDisk-1,0,0,1,1,Buffer);
- End
-  Else
- If FileName<>''Then Begin
-  {$I-}Assign(Partition,FileName);
-  Reset(Partition,1);{$I+}
-  If IOResult=0 Then Begin
-   BlockWrite(Partition,Buffer,512,ByteReaded);
-   Close(Partition);
-  End;
- End;
-End;
-
 Function StrToUpper(S:String):String;
 Var
  I:Byte;
@@ -178,22 +146,201 @@ Procedure WriteLnCenter(S:String);Begin
  WriteLn(S);
 End;
 
+{ Detecte le format de l'image (raw, VHD fixe, VHD dynamique).
+  Met a jour VHDKind, VHDDiskSec, et pour dynamique : VHDBlockSizeSec,
+  VHDBitmapSecs, VHDBATFileOfs. A appeler apres chaque changement de
+  FileName. }
+Procedure DetectImageFormat;
+Var
+ F:File;
+ Sec:Array[0..511]of Byte;
+ BR:Word;
+ Sz,BlockSize,BAToff,CurSize:LongInt;
+ DiskType:LongInt;
+Begin
+ VHDKind:=_VHDNone;
+ VHDDiskSec:=0;
+ VHDBlockSizeSec:=0;
+ VHDBitmapSecs:=0;
+ VHDBATFileOfs:=0;
+ If FileName='' Then Exit;
+ {$I-}Assign(F,FileName);Reset(F,1);{$I+}
+ If IOResult<>0 Then Exit;
+ Sz:=FileSize(F);
+ If Sz<1024 Then Begin Close(F); Exit; End;
+ { Footer VHD aux 512 derniers octets }
+ {$I-}Seek(F,Sz-512);{$I+}
+ If IOResult<>0 Then Begin Close(F); Exit; End;
+ {$I-}BlockRead(F,Sec,512,BR);{$I+}
+ If(IOResult<>0)Or(BR<>512)Then Begin Close(F); Exit; End;
+ { Cookie 'conectix' }
+ If(Sec[0]<>$63)Or(Sec[1]<>$6F)Or(Sec[2]<>$6E)Or(Sec[3]<>$65)Or
+   (Sec[4]<>$63)Or(Sec[5]<>$74)Or(Sec[6]<>$69)Or(Sec[7]<>$78)Then Begin
+  Close(F); Exit;
+ End;
+ { DiskType (4 BE) @ +60 : 2=fixe, 3=dynamique, 4=differencing }
+ DiskType:=(LongInt(Sec[60])Shl 24)Or(LongInt(Sec[61])Shl 16)
+          Or(LongInt(Sec[62])Shl 8)Or LongInt(Sec[63]);
+ { CurrentSize (8 BE) @ +48 : on prend les 32 bits bas (offset +52..+55) }
+ CurSize:=(LongInt(Sec[52])Shl 24)Or(LongInt(Sec[53])Shl 16)
+         Or(LongInt(Sec[54])Shl 8)Or LongInt(Sec[55]);
+ VHDDiskSec:=CurSize Div 512;
+ Case DiskType Of
+  2:Begin VHDKind:=_VHDFixed; Close(F); Exit; End;
+  3,4:Begin
+   { Dynamic header @ offset 512 }
+   {$I-}Seek(F,512);{$I+}
+   If IOResult<>0 Then Begin Close(F); Exit; End;
+   {$I-}BlockRead(F,Sec,512,BR);{$I+}
+   If(IOResult<>0)Or(BR<>512)Then Begin Close(F); Exit; End;
+   { Cookie 'cxsparse' }
+   If(Sec[0]<>$63)Or(Sec[1]<>$78)Or(Sec[2]<>$73)Or(Sec[3]<>$70)Or
+     (Sec[4]<>$61)Or(Sec[5]<>$72)Or(Sec[6]<>$73)Or(Sec[7]<>$65)Then Begin
+    Close(F); Exit;
+   End;
+   { TableOffset (8 BE) @ +16, low 32 bits @ +20..+23 }
+   BAToff:=(LongInt(Sec[20])Shl 24)Or(LongInt(Sec[21])Shl 16)
+          Or(LongInt(Sec[22])Shl 8)Or LongInt(Sec[23]);
+   { BlockSize (4 BE) @ +32 (typique : 2 MB = 2097152) }
+   BlockSize:=(LongInt(Sec[32])Shl 24)Or(LongInt(Sec[33])Shl 16)
+             Or(LongInt(Sec[34])Shl 8)Or LongInt(Sec[35]);
+   If(BlockSize=0)Or(BlockSize Mod 512<>0)Then Begin Close(F); Exit; End;
+   VHDBlockSizeSec:=BlockSize Div 512;
+   { Bitmap = block_size/512 bits, rounded up to secteur entier }
+   VHDBitmapSecs:=((VHDBlockSizeSec Div 8)+511)Div 512;
+   If VHDBitmapSecs<1 Then VHDBitmapSecs:=1;
+   VHDBATFileOfs:=BAToff;
+   VHDKind:=_VHDDynamic;
+   Close(F); Exit;
+  End;
+ End;
+ Close(F);
+End;
+
+{ Traduit un LBA virtuel en offset fichier (octets) selon le format.
+  Pour un bloc VHD dynamique non alloue : retourne -1 (lecture = zeros). }
+Function VHDFileOffset(LBA:LongInt):LongInt;
+Var
+ F:File;
+ BR:Word;
+ BlockIdx,OfsInBlock,BATEntry:LongInt;
+ BATBuf:Array[0..3]of Byte;
+Begin
+ If VHDKind<>_VHDDynamic Then Begin
+  VHDFileOffset:=LBA*512;
+  Exit;
+ End;
+ VHDFileOffset:=-1;
+ BlockIdx:=LBA Div VHDBlockSizeSec;
+ OfsInBlock:=LBA Mod VHDBlockSizeSec;
+ {$I-}Assign(F,FileName);Reset(F,1);{$I+}
+ If IOResult<>0 Then Exit;
+ {$I-}Seek(F,VHDBATFileOfs+BlockIdx*4);{$I+}
+ If IOResult<>0 Then Begin Close(F); Exit; End;
+ {$I-}BlockRead(F,BATBuf,4,BR);{$I+}
+ Close(F);
+ If(BR<>4)Then Exit;
+ BATEntry:=(LongInt(BATBuf[0])Shl 24)Or(LongInt(BATBuf[1])Shl 16)
+          Or(LongInt(BATBuf[2])Shl 8)Or LongInt(BATBuf[3]);
+ If BATEntry=-1 Then Exit;   { bloc non alloue }
+ VHDFileOffset:=(BATEntry+VHDBitmapSecs)*512+OfsInBlock*512;
+End;
+
 { Lit un secteur (512 octets) depuis l'image fichier.
   Retourne True si OK. Buf doit contenir au moins 512 octets. }
 Function ReadImgSector(LBA:LongInt;Var Buf):Boolean;
 Var
  F:File;
  BR:Word;
+ FileOfs:LongInt;
 Begin
  ReadImgSector:=False;
  If FileName='' Then Exit;
+ FileOfs:=VHDFileOffset(LBA);
+ If FileOfs=-1 Then Begin
+  { VHD dynamique : bloc non alloue, secteur virtuel = zeros }
+  FillChar(Buf,512,0);
+  ReadImgSector:=True;
+  Exit;
+ End;
  {$I-}Assign(F,FileName);Reset(F,1);{$I+}
  If IOResult<>0 Then Exit;
- {$I-}Seek(F,LBA*512);{$I+}
+ {$I-}Seek(F,FileOfs);{$I+}
  If IOResult<>0 Then Begin Close(F);Exit;End;
  {$I-}BlockRead(F,Buf,512,BR);{$I+}
  Close(F);
  ReadImgSector:=(IOResult=0)And(BR=512);
+End;
+
+{ Ecrit un secteur (512 octets) dans l'image fichier.
+  Pour VHD dynamique : echoue si le bloc n'est pas alloue (allocation
+  non implementee). Retourne True si OK. }
+Function WriteImgSector(LBA:LongInt;Var Buf):Boolean;
+Var
+ F:File;
+ BW:Word;
+ FileOfs:LongInt;
+Begin
+ WriteImgSector:=False;
+ If FileName='' Then Exit;
+ FileOfs:=VHDFileOffset(LBA);
+ If FileOfs=-1 Then Exit;  { bloc VHD non alloue : ne pas reecrire }
+ {$I-}Assign(F,FileName);Reset(F,1);{$I+}
+ If IOResult<>0 Then Exit;
+ {$I-}Seek(F,FileOfs);{$I+}
+ If IOResult<>0 Then Begin Close(F);Exit;End;
+ {$I-}BlockWrite(F,Buf,512,BW);{$I+}
+ Close(F);
+ WriteImgSector:=(IOResult=0)And(BW=512);
+End;
+
+Procedure ReadPartitionRecord;
+Var
+ Partition:File;
+ ByteReaded:Word;
+Begin
+ If(IsDisk)Then Begin
+  ReadTrack($80+CurrentDisk-1,0,0,1,1,Buffer);
+ End
+  Else
+ If FileName<>''Then Begin
+  { VHD ou raw : passer par ReadImgSector qui gere la traduction }
+  If VHDKind<>_VHDNone Then Begin
+   ReadImgSector(0,Buffer);
+   Exit;
+  End;
+  {$I-}Assign(Partition,FileName);
+  Reset(Partition,1);{$I+}
+  If IOResult=0 Then Begin
+   BlockRead(Partition,Buffer,512,ByteReaded);
+   Close(Partition);
+  End;
+ End;
+End;
+
+Procedure WritePartitionRecord;
+Var
+ Partition:File;
+ ByteReaded:Word;
+Begin
+ If(IsDisk)Then Begin
+  WriteTrack($80+CurrentDisk-1,0,0,1,1,Buffer);
+ End
+  Else
+ If FileName<>''Then Begin
+  { VHD ou raw : passer par WriteImgSector qui gere la traduction }
+  If VHDKind<>_VHDNone Then Begin
+   If Not WriteImgSector(0,Buffer)Then
+    WriteLn('Erreur : ecriture VHD echouee (bloc non alloue ?).');
+   Exit;
+  End;
+  {$I-}Assign(Partition,FileName);
+  Reset(Partition,1);{$I+}
+  If IOResult=0 Then Begin
+   BlockWrite(Partition,Buffer,512,ByteReaded);
+   Close(Partition);
+  End;
+ End;
 End;
 
 { Geometrie du disque physique courant (caches une fois lue). }
@@ -639,6 +786,11 @@ Var
 Begin
  TotalSectors:=0;
  If FileName<>'' Then Begin
+  { VHD : utiliser la taille virtuelle, pas la taille du fichier hote }
+  If VHDDiskSec>0 Then Begin
+   TotalSectors:=VHDDiskSec;
+   Exit;
+  End;
   {$I-}Assign(F,FileName);Reset(F,1);{$I+}
   If IOResult=0 Then Begin
    Sz:=FileSize(F);
@@ -877,6 +1029,7 @@ Begin
  { Bascule sur la nouvelle image }
  FileName:=FName;
  IsDisk:=False;
+ DetectImageFormat;
  DoCreateImage:=True;
 End;
 
@@ -1485,6 +1638,7 @@ BEGIN
      (TmpLanguage<>'INIT')And(TmpLanguage<>'IMAGE')Then Begin
     FileName:=ParamStr(1);
     IsDisk:=False;
+    DetectImageFormat;
    End;
   End;
   { Determiner l'index du parametre commande }
