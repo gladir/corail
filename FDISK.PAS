@@ -895,15 +895,77 @@ Procedure ShowPartition;Begin
  ReadKey;
 End;
 
-Procedure SelectFixedDisk;Begin
+{ Compte les disques durs physiques presents via Int 13h AH=08h.
+  Retourne 0 sous Windows (stub) ou si BIOS indisponible. }
+Function CountFixedDisks:Byte;
+{$IFDEF Windows}
+ Begin CountFixedDisks:=0; End;
+{$ELSE}
+Var
+ Regs:Registers;
+ D,N:Byte;
+Begin
+ N:=0;
+ For D:=0 To 7 Do Begin
+  Regs.AH:=$08;
+  Regs.DL:=$80+D;
+  Regs.ES:=0;
+  Regs.DI:=0;
+  Intr($13,Regs);
+  If(Regs.Flags and FCarry)<>0 Then Break;
+  Inc(N);
+ End;
+ CountFixedDisks:=N;
+End;
+{$ENDIF}
+
+Procedure SelectFixedDisk;
+Var
+ NumDisks:Byte;
+Begin
  ClrScr;
- WriteLn('Cette fonctionnalit� n''est pas implement� !');
- Write(' ':2,'Appuyez sur ');
- HighVideo;
- Write('ECHAP');
- LowVideo;
- Write(' pour quitter FDISK');
+ WriteLn;
+ WriteLnCenter('Selection du prochain disque dur fixe');
+ WriteLn;
+ If FileName<>'' Then Begin
+  WriteLn(' ':2,'FDISK travaille sur le fichier image : ',FileName);
+  WriteLn(' ':2,'La selection de disque n''est disponible que pour les');
+  WriteLn(' ':2,'disques physiques (sans argument fichier).');
+  WriteLn;
+  Write(' ':2,'Appuyez sur une touche...');
+  ReadKey;
+  Exit;
+ End;
+{$IFDEF Windows}
+ WriteLn(' ':2,'Acces BIOS Int 13h indisponible sous Windows.');
+ WriteLn(' ':2,'Cette fonction n''est utilisable qu''en DOS reel.');
+ WriteLn;
+ Write(' ':2,'Appuyez sur une touche...');
  ReadKey;
+{$ELSE}
+ NumDisks:=CountFixedDisks;
+ If NumDisks<=1 Then Begin
+  WriteLn(' ':2,'Un seul disque dur fixe detecte (disque ',CurrentDisk,').');
+  WriteLn(' ':2,'Aucun autre disque a selectionner.');
+  WriteLn;
+  Write(' ':2,'Appuyez sur une touche...');
+  ReadKey;
+  Exit;
+ End;
+ WriteLn(' ':2,NumDisks,' disques durs fixes detectes.');
+ WriteLn(' ':2,'Disque courant : ',CurrentDisk);
+ { Passer au disque suivant en boucle (1..NumDisks) }
+ If CurrentDisk>=NumDisks Then CurrentDisk:=1
+                          Else Inc(CurrentDisk);
+ { Invalider la geometrie cachee, elle sera relue au prochain acces }
+ GeoValid:=False;
+ GeoHeads:=0;
+ GeoSPT:=0;
+ WriteLn(' ':2,'Nouveau disque actif : ',CurrentDisk);
+ WriteLn;
+ Write(' ':2,'Appuyez sur une touche...');
+ ReadKey;
+{$ENDIF}
 End;
 
 Function ShowMainMenu:Byte;
@@ -915,9 +977,7 @@ Begin
  TextBackground(0);
  TextColor(7);
  ClrScr;
- WriteLnCenter('Ensemble Corail');
  WriteLnCenter('FDISK');
- WriteLnCenter('Gladir.com licence MIT 2022');
  WriteLn;
  HighVideo;
  Case Language of
