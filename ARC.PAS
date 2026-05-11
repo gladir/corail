@@ -67,6 +67,7 @@ Const
 Type
  {$IFNDEF FPC}
   SmallInt=Integer;
+  LongWord=LongInt;
  {$ENDIF}
  Str13  = String[13];
  Str80  = String[80];
@@ -131,9 +132,10 @@ Var
  LZW_NextCode: LongInt;
  LZW_PrevCode: LongInt;
  LZW_FinChar: Byte;
- LZW_BitBuf : LongInt;
+ LZW_BitBuf : LongWord;
  LZW_BitCnt : Byte;
  LZW_First  : Boolean;
+ LZW_CodeCount : LongInt;
 
  { RLE state (decode) }
  RLE_LastByte : Byte;
@@ -445,6 +447,7 @@ Begin
  LZW_BitCnt := 0;
  LZW_StackP := 0;
  LZW_First := True;
+ LZW_CodeCount := 0;
  LZW_PrevCode := 0;
  LZW_FinChar := 0;
  For I := 0 To 255 Do Begin
@@ -457,13 +460,23 @@ Function LZW_ReadCode: LongInt;
 Var C: LongInt;
 Begin
  While LZW_BitCnt < LZW_Bits Do Begin
-  LZW_BitBuf := LZW_BitBuf Or (LongInt(InGetByte) Shl LZW_BitCnt);
+  LZW_BitBuf := LZW_BitBuf Or (LongWord(InGetByte) Shl LZW_BitCnt);
   Inc(LZW_BitCnt, 8);
  End;
  C := LZW_BitBuf And ((LongInt(1) Shl LZW_Bits) - 1);
  LZW_BitBuf := LZW_BitBuf Shr LZW_Bits;
  Dec(LZW_BitCnt, LZW_Bits);
+ Inc(LZW_CodeCount);
  LZW_ReadCode := C;
+End;
+
+Procedure LZW_BumpBits;
+Var Dummy: LongInt;
+Begin
+ While (LZW_CodeCount And 7) <> 0 Do
+  Dummy := LZW_ReadCode;
+ Inc(LZW_Bits);
+ LZW_CodeCount := 0;
 End;
 
 Procedure LZW_OutByteDispatch(B: Byte; UseRLE: Boolean);
@@ -474,23 +487,27 @@ End;
 { Decompression LZW generique. UseRLE = vrai pour 6,7,8 ; faux pour 5,9.
   Static = vrai pour 5,6,7 (12 bits fixe, table statique sans extension de
   largeur de code) ; faux pour 8,9 (largeur dynamique 9..maxbits).         }
-Procedure D_LZW(MaxBits: Byte; UseRLE, StaticBits: Boolean);
+Procedure D_LZW(MaxBits: Byte; UseRLE, StaticBits: Boolean;
+                CompSize, OrigSize: LongInt);
 Var
  Code, InCode: LongInt;
  K: Byte;
- I: Word;
+ InStart: LongInt;
 Begin
  LZW_InitState(MaxBits);
  If UseRLE Then RLEReset;
  If StaticBits Then LZW_Bits := MaxBits;
+ InStart := InByteCount;
 
  While Not InEnd Do Begin
+  If (OutSize >= OrigSize) And (Not UseRLE) Then Break;
+  If (InByteCount - InStart) >= CompSize Then Break;
   Code := LZW_ReadCode;
   If InEnd Then Break;
   If Code = LZW_CLEAR Then Begin
    { Reset (rare en ARC) }
    LZW_NextCode := LZW_FIRST_CODE;
-   If Not StaticBits Then LZW_Bits := LZW_INIT_BITS;
+   If Not StaticBits Then Begin LZW_Bits := LZW_INIT_BITS; LZW_CodeCount := 0; End;
    LZW_First := True;
    Continue;
   End;
@@ -534,7 +551,7 @@ Begin
    Inc(LZW_NextCode);
    If (Not StaticBits) And (LZW_NextCode = (LongInt(1) Shl LZW_Bits))
       And (LZW_Bits < LZW_MaxBits) Then
-    Inc(LZW_Bits);
+    LZW_BumpBits;
   End;
   LZW_PrevCode := InCode;
  End;
@@ -557,10 +574,10 @@ Begin
   M_OLD, M_STORE : D_Stored(Hdr.CompSize);
   M_PACK         : D_Pack(Hdr.CompSize);
   M_SQ           : D_Squeeze(Hdr.CompSize);
-  M_CR5          : D_LZW(LZW_MAX_CR, False, True);
-  M_CR6, M_CR7   : D_LZW(LZW_MAX_CR, True,  True);
-  M_CR8          : D_LZW(LZW_MAX_CR, True,  False);
-  M_SQUASH       : D_LZW(LZW_MAX_SQUASH, False, False);
+  M_CR5          : D_LZW(LZW_MAX_CR, False, True,  Hdr.CompSize, Hdr.OrigSize);
+  M_CR6, M_CR7   : D_LZW(LZW_MAX_CR, True,  True,  Hdr.CompSize, Hdr.OrigSize);
+  M_CR8          : D_LZW(LZW_MAX_CR, True,  False, Hdr.CompSize, Hdr.OrigSize);
+  M_SQUASH       : D_LZW(LZW_MAX_SQUASH, False, False, Hdr.CompSize, Hdr.OrigSize);
  Else
   Warn('methode inconnue : ' + LongStr(Hdr.Method));
   Decompress := False;
@@ -742,23 +759,19 @@ Var Cnt: Word;
 Begin
  If Not RLEEnc_HasLast Then Exit;
  If (RLEEnc_Run < 4) And (RLEEnc_Last <> DLE_MARK) Then Begin
-  { Emettre tel quel }
   Cnt := RLEEnc_Run;
   While Cnt > 0 Do Begin
-   UpdCRC(RLEEnc_Last);
    WrByteCipher(RLEEnc_Last);
    Inc(Hdr.CompSize);
    Dec(Cnt);
   End;
  End Else Begin
-  { Emettre 1 fois (sauf si Last == DLE) + DLE + count }
   If RLEEnc_Last <> DLE_MARK Then Begin
-   UpdCRC(RLEEnc_Last);
    WrByteCipher(RLEEnc_Last);
    Inc(Hdr.CompSize);
   End;
-  UpdCRC(DLE_MARK); WrByteCipher(DLE_MARK); Inc(Hdr.CompSize);
-  UpdCRC(Byte(RLEEnc_Run And $FF)); WrByteCipher(Byte(RLEEnc_Run And $FF));
+  WrByteCipher(DLE_MARK); Inc(Hdr.CompSize);
+  WrByteCipher(Byte(RLEEnc_Run And $FF));
   Inc(Hdr.CompSize);
  End;
 End;
@@ -775,12 +788,13 @@ Begin
 
  While SrcGetByte(B) Do Begin
   Inc(Hdr.OrigSize);
+  UpdCRC(B);
   { Cas special : DLE litteral => emit RLE_LastByte run, puis DLE+0 }
   If B = DLE_MARK Then Begin
    RLEEncEmit(Hdr);
    RLEEnc_HasLast := False;
-   UpdCRC(DLE_MARK); WrByteCipher(DLE_MARK); Inc(Hdr.CompSize);
-   UpdCRC(0); WrByteCipher(0); Inc(Hdr.CompSize);
+   WrByteCipher(DLE_MARK); Inc(Hdr.CompSize);
+   WrByteCipher(0); Inc(Hdr.CompSize);
    Continue;
   End;
   If RLEEnc_HasLast And (B = RLEEnc_Last) And (RLEEnc_Run < 255) Then
@@ -807,19 +821,20 @@ Var
  LZWE_Code : Array[0..LZWENC_HASHSIZE-1] of Word;
  LZWE_FreeEnt : LongInt;
  LZWE_Ent     : LongInt;
- LZWE_BitBuf  : LongInt;
+ LZWE_BitBuf  : LongWord;
  LZWE_BitCnt  : Byte;
  LZWE_Bits    : Byte;
  LZWE_MaxBits : Byte;
  LZWE_MaxCode : LongInt;
  LZWE_First   : Boolean;
+ LZWE_CodeCount : LongInt; { codes emis au n_bits courant, pour padding }
 
 Procedure LZWE_OutBits(Code: LongInt; Var Hdr: TFileHdr);
 Begin
- LZWE_BitBuf := LZWE_BitBuf Or (Code Shl LZWE_BitCnt);
+ LZWE_BitBuf := LZWE_BitBuf Or (LongWord(Code) Shl LZWE_BitCnt);
  Inc(LZWE_BitCnt, LZWE_Bits);
+ Inc(LZWE_CodeCount);
  While LZWE_BitCnt >= 8 Do Begin
-  UpdCRC(Byte(LZWE_BitBuf And $FF));
   WrByteCipher(Byte(LZWE_BitBuf And $FF));
   Inc(Hdr.CompSize);
   LZWE_BitBuf := LZWE_BitBuf Shr 8;
@@ -827,10 +842,17 @@ Begin
  End;
 End;
 
+Procedure LZWE_BumpBits(Var Hdr: TFileHdr);
+Begin
+ While (LZWE_CodeCount And 7) <> 0 Do
+  LZWE_OutBits(0, Hdr);
+ Inc(LZWE_Bits);
+ LZWE_CodeCount := 0;
+End;
+
 Procedure LZWE_FlushBits(Var Hdr: TFileHdr);
 Begin
  While LZWE_BitCnt > 0 Do Begin
-  UpdCRC(Byte(LZWE_BitBuf And $FF));
   WrByteCipher(Byte(LZWE_BitBuf And $FF));
   Inc(Hdr.CompSize);
   LZWE_BitBuf := LZWE_BitBuf Shr 8;
@@ -847,6 +869,7 @@ Begin
  LZWE_FreeEnt := LZW_FIRST_CODE;
  LZWE_BitBuf := 0;
  LZWE_BitCnt := 0;
+ LZWE_CodeCount := 0;
  LZWE_First := True;
  For I := 0 To LZWENC_HASHSIZE - 1 Do LZWE_Hash[I] := -1;
 End;
@@ -866,8 +889,8 @@ Begin
   If LZWE_Hash[Hash] = FCode Then Begin
    LZWE_Lookup := LZWE_Code[Hash]; Exit;
   End;
-  Disp := LZWENC_HASHSIZE - Hash;
-  If Disp <= 0 Then Disp := 1;
+  If Hash = 0 Then Disp := 1
+              Else Disp := LZWENC_HASHSIZE - Hash;
   Hash := Hash - Disp;
   If Hash < 0 Then Hash := Hash + LZWENC_HASHSIZE;
  Until False;
@@ -889,9 +912,15 @@ Begin
    LZWE_Hash[-R - 1] := (LongInt(B) Shl LZWE_MaxBits) Or LZWE_Ent;
    LZWE_Code[-R - 1] := LZWE_FreeEnt;
    Inc(LZWE_FreeEnt);
-   If (LZWE_FreeEnt > ((LongInt(1) Shl LZWE_Bits) - 1)) And
+   { Bump : aligne avec le decodeur. ncompress encoder bumpe a
+     free_ent >= extcode = MAXCODE(n_bits)+1, ce qui equivaut a
+     free_ent > (1 shl n_bits). Le decodeur bumpe a free_ent > maxcode
+     = (1 shl n_bits)-1 mais decale d'un code par le premier-iter-skip ;
+     les deux convergent vers un bump apres 256/512/1024... codes au
+     n_bits courant (toujours multiple de 8). }
+   If (LZWE_FreeEnt > (LongInt(1) Shl LZWE_Bits)) And
       (LZWE_Bits < LZWE_MaxBits) Then
-    Inc(LZWE_Bits);
+    LZWE_BumpBits(Hdr);
   End;
   LZWE_Ent := B;
  End;
@@ -943,6 +972,7 @@ Begin
 
  While SrcGetByte(B) Do Begin
   Inc(Hdr.OrigSize);
+  UpdCRC(B);
   If B = DLE_MARK Then Begin
    RLEPreEmit(Hdr);
    RLEPre_HasLast := False;
@@ -995,6 +1025,7 @@ Begin
  Hdr.Date := (Word(DT.Year - 1980) Shl 9) Or (Word(DT.Month) Shl 5) Or Word(DT.Day);
  Hdr.Time := (Word(DT.Hour) Shl 11) Or (Word(DT.Min) Shl 5) Or (Word(DT.Sec) Shr 1);
 
+ WrFlush;             { vider tout buffer en attente avant FilePos }
  BasePos := FilePos(WrF);
  WriteHeader(Hdr);  { placeholder }
  WrFlush;
@@ -1025,6 +1056,10 @@ Begin
    Reset(Src, 1);
    WrCryptIdx := 0;
    E_Store(Hdr);
+   WrFlush;
+   { Tronquer pour eliminer la fin de la tentative comprimee qui depassait }
+   Seek(WrF, TryPos + Hdr.CompSize);
+   Truncate(WrF);
    BestM := M_STORE;
    BestSize := Hdr.CompSize;
   End;
@@ -1038,7 +1073,7 @@ Begin
  Seek(WrF, BasePos);
  WriteHeader(TryHdr);
  WrFlush;
- Seek(WrF, FileSize(WrF));
+ Seek(WrF, TryPos + Hdr.CompSize);
  BestM := BestM; { evite avertissement variable inutilisee }
 End;
 
@@ -1077,7 +1112,7 @@ End;
 
 { ===== Commandes ======================================================= }
 
-Const MAX_NAMES = 64;
+Const MAX_NAMES = 256;
 
 Var
  ArgNames : Array[1..MAX_NAMES] of Str13;
@@ -1344,7 +1379,7 @@ Procedure CmdAddLike(Mode: Char);
 Var Hdr: TFileHdr; SrcName: Str13; AddIt: Boolean;
     SrcFT, ArcFT: LongInt;
     InArc: Array[1..MAX_NAMES] of Boolean;
-    I: Byte;
+    I: Word;
     NewHdr: TFileHdr;
 Begin
  For I := 1 To MAX_NAMES Do InArc[I] := False;
@@ -1555,6 +1590,9 @@ Begin
  For J := 3 To ParamCount Do Begin
   If ArgCount < MAX_NAMES Then Begin
    Inc(ArgCount); ArgNames[ArgCount] := UpStr(ParamStr(J));
+  End Else Begin
+   Warn('trop d''arguments (max ' + LongStr(MAX_NAMES) + ')');
+   Break;
   End;
  End;
 End;
