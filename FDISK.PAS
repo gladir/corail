@@ -26,8 +26,8 @@ Type
   SecOfs,NumSec:LongInt;
  End;
 
- PartSec=Record { d‚crit le secteur de partition }
-  BootCode:Array[0..$1BD]of Byte;    { Code de d‚marrage du disque dur }
+ PartSec=Record { dï¿½crit le secteur de partition }
+  BootCode:Array[0..$1BD]of Byte;    { Code de dï¿½marrage du disque dur }
   PartTable:Array[0..3]of PartEntry; { Table des partitions de disque dur }
   IdCode:Word;                       { Signature: AA55h }
  End;
@@ -176,12 +176,188 @@ Procedure WriteLnCenter(S:String);Begin
  WriteLn(S);
 End;
 
+{ Lit un secteur (512 octets) depuis l'image fichier.
+  Retourne True si OK. Buf doit contenir au moins 512 octets. }
+Function ReadImgSector(LBA:LongInt;Var Buf):Boolean;
+Var
+ F:File;
+ BR:Word;
+Begin
+ ReadImgSector:=False;
+ If FileName='' Then Exit;
+ {$I-}Assign(F,FileName);Reset(F,1);{$I+}
+ If IOResult<>0 Then Exit;
+ {$I-}Seek(F,LBA*512);{$I+}
+ If IOResult<>0 Then Begin Close(F);Exit;End;
+ {$I-}BlockRead(F,Buf,512,BR);{$I+}
+ Close(F);
+ ReadImgSector:=(IOResult=0)And(BR=512);
+End;
+
+{ Geometrie du disque physique courant (caches une fois lue). }
+Var
+ GeoValid:Boolean;
+ GeoHeads,GeoSPT:Word;
+
+{$IFNDEF Windows}
+Procedure FetchGeometry;
+Var Regs:Registers;
+Begin
+ If GeoValid Then Exit;
+ Regs.AH:=$08;
+ Regs.DL:=$80+CurrentDisk-1;
+ Intr($13,Regs);
+ If(Regs.Flags and FCarry)=0 Then Begin
+  GeoHeads:=Regs.DH+1;
+  GeoSPT:=Regs.CL and $3F;
+  If(GeoHeads>0)And(GeoSPT>0)Then GeoValid:=True;
+ End;
+End;
+{$ENDIF}
+
+{ Lit un secteur (512 octets) en LBA depuis le disque physique courant.
+  Retourne True si OK. }
+Function ReadDiskLBA(LBA:LongInt;Var Buf):Boolean;
+{$IFDEF Windows}
+ Begin ReadDiskLBA:=False; End;
+{$ELSE}
+Var
+ Cyl,Head,Sect:Word;
+ Tmp:LongInt;
+ Status:Byte;
+Begin
+ ReadDiskLBA:=False;
+ FetchGeometry;
+ If Not GeoValid Then Exit;
+ { LBA = ((Cyl*Heads) + Head) * SPT + Sect - 1 }
+ Sect:=Word(LBA Mod GeoSPT)+1;
+ Tmp:=LBA Div GeoSPT;
+ Head:=Word(Tmp Mod GeoHeads);
+ Cyl:=Word(Tmp Div GeoHeads);
+ If Cyl>1023 Then Exit;  { au-dela de la limite CHS BIOS }
+ Status:=ReadTrack($80+CurrentDisk-1,Head,Byte(Cyl),Byte(Sect),1,Buf);
+ ReadDiskLBA:=(Status=0);
+End;
+{$ENDIF}
+
+{ Lit un secteur depuis l'image OU le disque selon le mode courant. }
+Function ReadSector(LBA:LongInt;Var Buf):Boolean;
+Begin
+ If FileName<>'' Then ReadSector:=ReadImgSector(LBA,Buf)
+ Else ReadSector:=ReadDiskLBA(LBA,Buf);
+End;
+
+{ Calcule le % UTILISE d'une partition FAT en parcourant sa FAT.
+  Renvoie -1 si impossible (type non supporte, lecture echouee, etc.). }
+Function PartUsagePct(Const PE:PartEntry):Integer;
+Var
+ Sec:Array[0..511] of Byte;
+ BytesPerSec,RsvdSec,RootEntCnt,SecPerClus:Word;
+ SecPerFAT,TotSec:LongInt;
+ NumFATs:Byte;
+ FATType:Byte;       { 12, 16 ou 32 }
+ DataSec,TotClus:LongInt;
+ FATStart:LongInt;
+ BytesInFAT:LongInt;
+ FATBuf:Array[0..511] of Byte;
+ CurFATSec:LongInt;
+ LastFATSec:LongInt;
+ ClusIdx:LongInt;
+ Ofs:LongInt;
+ V12:Word;
+ V16:Word;
+ V32:LongInt;
+ Free:LongInt;
+ Used:LongInt;
+Begin
+ PartUsagePct:=-1;
+ If Not ReadSector(PE.SecOfs,Sec) Then Exit;
+ { Verifier signature de boot sector }
+ If(Sec[510]<>$55)Or(Sec[511]<>$AA)Then Exit;
+ BytesPerSec:=Word(Sec[11])Or(Word(Sec[12])Shl 8);
+ SecPerClus:=Sec[13];
+ RsvdSec:=Word(Sec[14])Or(Word(Sec[15])Shl 8);
+ NumFATs:=Sec[16];
+ RootEntCnt:=Word(Sec[17])Or(Word(Sec[18])Shl 8);
+ TotSec:=Word(Sec[19])Or(Word(Sec[20])Shl 8);
+ If TotSec=0 Then
+  TotSec:=LongInt(Sec[32])Or(LongInt(Sec[33])Shl 8)
+        Or(LongInt(Sec[34])Shl 16)Or(LongInt(Sec[35])Shl 24);
+ SecPerFAT:=Word(Sec[22])Or(Word(Sec[23])Shl 8);
+ If SecPerFAT=0 Then
+  SecPerFAT:=LongInt(Sec[36])Or(LongInt(Sec[37])Shl 8)
+           Or(LongInt(Sec[38])Shl 16)Or(LongInt(Sec[39])Shl 24);
+ If(BytesPerSec<>512)Or(SecPerClus=0)Or(NumFATs=0)Or(SecPerFAT=0)Then Exit;
+ { Calcul du nombre de clusters de donnees }
+ DataSec:=TotSec-(RsvdSec+LongInt(NumFATs)*SecPerFAT
+                  +((LongInt(RootEntCnt)*32+BytesPerSec-1)Div BytesPerSec));
+ If DataSec<=0 Then Exit;
+ TotClus:=DataSec Div SecPerClus;
+ If TotClus<4085 Then FATType:=12
+ Else If TotClus<65525 Then FATType:=16
+ Else FATType:=32;
+ FATStart:=PE.SecOfs+RsvdSec;
+ BytesInFAT:=LongInt(SecPerFAT)*BytesPerSec;
+ { Scanner FAT, compter clusters libres (entree=0) }
+ CurFATSec:=-1;
+ LastFATSec:=-1;
+ Free:=0;
+ { Clusters valides : 2..TotClus+1 }
+ For ClusIdx:=2 To TotClus+1 Do Begin
+  Case FATType Of
+   12:Ofs:=ClusIdx+(ClusIdx Shr 1);
+   16:Ofs:=ClusIdx Shl 1;
+   Else Ofs:=ClusIdx Shl 2;
+  End;
+  If Ofs>=BytesInFAT Then Break;
+  CurFATSec:=FATStart+(Ofs Div BytesPerSec);
+  If CurFATSec<>LastFATSec Then Begin
+   If Not ReadSector(CurFATSec,FATBuf) Then Exit;
+   LastFATSec:=CurFATSec;
+  End;
+  Ofs:=Ofs Mod BytesPerSec;
+  Case FATType Of
+   12:Begin
+    { Cas frontiere : entree de 12 bits a cheval sur deux secteurs }
+    If Ofs=BytesPerSec-1 Then Begin
+     V12:=FATBuf[Ofs];
+     If Not ReadSector(CurFATSec+1,FATBuf) Then Exit;
+     LastFATSec:=CurFATSec+1;
+     V12:=V12 Or(Word(FATBuf[0])Shl 8);
+    End Else
+     V12:=Word(FATBuf[Ofs])Or(Word(FATBuf[Ofs+1])Shl 8);
+    If(ClusIdx And 1)=0 Then V12:=V12 And $0FFF
+                        Else V12:=V12 Shr 4;
+    If V12=0 Then Inc(Free);
+   End;
+   16:Begin
+    V16:=Word(FATBuf[Ofs])Or(Word(FATBuf[Ofs+1])Shl 8);
+    If V16=0 Then Inc(Free);
+   End;
+   Else Begin
+    V32:=LongInt(FATBuf[Ofs])Or(LongInt(FATBuf[Ofs+1])Shl 8)
+        Or(LongInt(FATBuf[Ofs+2])Shl 16)Or(LongInt(FATBuf[Ofs+3])Shl 24);
+    V32:=V32 And $0FFFFFFF;
+    If V32=0 Then Inc(Free);
+   End;
+  End;
+ End;
+ Used:=TotClus-Free;
+ If Used<0 Then Used:=0;
+ If TotClus>0 Then
+  PartUsagePct:=Integer((Used*100+TotClus Div 2)Div TotClus)
+ Else
+  PartUsagePct:=0;
+End;
+
 Procedure WriteListPartition;
 Var
  Partition:PartSec Absolute Buffer;
  I:Byte;
  Letter:Char;
  TypeName:String;
+ TotSec:LongInt;
+ Pct:Integer;
 Begin
  Write(' ':2,'Lecteur de disque dur en cours : ');
  HighVideo;
@@ -189,8 +365,13 @@ Begin
                 Else WriteLn(CurrentDisk);
  LowVideo;
  WriteLn;
- WriteLn(' ':2,'Partition    Etat   Type   Nom du volume    Mo  SystŠme    Utilis‚');
+ WriteLn(' ':2,'Partition    Etat   Type   Nom du volume    Mo  Systï¿½me    Utilisï¿½');
  ReadPartitionRecord;
+ { Total des secteurs occupes par toutes les partitions = taille du disque }
+ TotSec:=0;
+ For I:=0 to 3 do
+  If Partition.PartTable[I].PartType<>0Then
+   Inc(TotSec,Partition.PartTable[I].NumSec);
  Letter:='C';
  For I:=0 to 3 do If Partition.PartTable[I].PartType<>0Then Begin
   Write(' ':3);
@@ -208,25 +389,26 @@ Begin
   Write(' ':4);
   Write('PRI DOS',' ':2);
   Write('NOLABEL',' ':7);
-  Write(2048,' ':3);
+  { Taille en Mo = NumSec * 512 / (1024*1024) = NumSec / 2048 }
+  Write((Partition.PartTable[I].NumSec + 1024) Div 2048:6,' ':3);
   Case Partition.PartTable[I].PartType of
-   $00:TypeName:='Entr‚e vide';
+   $00:TypeName:='Entrï¿½e vide';
    $01:TypeName:='FAT12';
    $02:TypeName:='XENIX root';
    $03:TypeName:='XENIX /usr';
    $04,$05,$06:TypeName:='FAT16';
    $07:TypeName:='NTFS ou HPFS';
-   $08:TypeName:='D‚marrage AIX';
-   $09:TypeName:='Donn‚es AIX';
+   $08:TypeName:='Dï¿½marrage AIX';
+   $09:TypeName:='Donnï¿½es AIX';
    $0A:TypeName:='OS/2 Boot Manager';
    $0B,$0C:TypeName:='FAT32';
    $0D:TypeName:='SILICON SAFE';
    $0E,$0F:TypeName:='FAT16/WIN95';
-   $11,$14,$16:TypeName:='FAT12 cach‚';
+   $11,$14,$16:TypeName:='FAT12 cachï¿½';
    $12:TypeName:='Partition de configuration';
-   $17:TypeName:='IFS cach‚';
+   $17:TypeName:='IFS cachï¿½';
    $18:TypeName:='AST SmartSleep';
-   $1B:TypeName:='FAT32 cach‚';
+   $1B:TypeName:='FAT32 cachï¿½';
    $1C:TypeName:='FAT32';
    $1E:TypeName:='FAT16/WIN95';
    $24:TypeName:='NEC DOS';
@@ -238,14 +420,24 @@ Begin
    Else TypeName:='Inconnu';
   End;
   Write(PadRight(TypeName,11));
-  Write(100,'%');
+  { % d'occupation reel via scan FAT (image fichier ou disque physique) }
+  Pct:=PartUsagePct(Partition.PartTable[I]);
+  If Pct<0 Then
+   { Fallback : % du disque physique occupe par cette partition }
+   If TotSec>0 Then
+    Write(Integer((LongInt(Partition.PartTable[I].NumSec)*100+TotSec Div 2)
+                  Div TotSec),'%')
+   Else
+    Write('  ? ')
+  Else
+   Write(Pct,'%');
   WriteLn;
  End;
 End;
 
 Procedure CreatePartition;Begin
  ClrScr;
- WriteLn('Cette fonctionnalit‚ n''est pas implement‚ !');
+ WriteLn('Cette fonctionnalitï¿½ n''est pas implementï¿½ !');
  ReadKey;
 End;
 
@@ -264,7 +456,7 @@ Begin
  WriteLn;
  WriteLn;
  WriteLn;
- Write(' ':2,'Entrez le num‚ro de la partition que vous voulez activer...: ');
+ Write(' ':2,'Entrez le numï¿½ro de la partition que vous voulez activer...: ');
  HighVideo;
  CurrActive:=0;
  For I:=0 to 3 do Begin
@@ -308,7 +500,7 @@ End;
 
 Procedure DeletePartition;Begin
  ClrScr;
- WriteLn('Cette fonctionnalit‚ n''est pas implement‚ !');
+ WriteLn('Cette fonctionnalitï¿½ n''est pas implementï¿½ !');
  Write(' ':2,'Appuyez sur ');
  HighVideo;
  Write('ECHAP');
@@ -336,7 +528,7 @@ End;
 
 Procedure SelectFixedDisk;Begin
  ClrScr;
- WriteLn('Cette fonctionnalit‚ n''est pas implement‚ !');
+ WriteLn('Cette fonctionnalitï¿½ n''est pas implementï¿½ !');
  Write(' ':2,'Appuyez sur ');
  HighVideo;
  Write('ECHAP');
@@ -384,7 +576,7 @@ Begin
  LowVideo;
  Case Language of
   _English: WriteLn('Create DOS Partition');
-  Else WriteLn('Cr‚ation d''une partition ou lecteur logique DOS');
+  Else WriteLn('Crï¿½ation d''une partition ou lecteur logique DOS');
  End;
  HighVideo;
  Write(' ':4,'2. ');
@@ -412,7 +604,7 @@ Begin
  LowVideo;
  Case Language of
   _English:WriteLn('Select Next Fixed Disk Drive');
-  Else WriteLn('S‚lectionne le prochain unit‚ de disque dur');
+  Else WriteLn('Sï¿½lectionne le prochain unitï¿½ de disque dur');
  End;
  WriteLn;
  WriteLn;
@@ -492,7 +684,7 @@ BEGIN
   Else
  Begin
   If SizeOf(PartSec)<>512 Then Begin
-   WriteLn('Mauvaise directive de compilation. Les enregistrements ne doivent pas ˆtre align‚s');
+   WriteLn('Mauvaise directive de compilation. Les enregistrements ne doivent pas ï¿½tre alignï¿½s');
    Halt;
   End;
   FileName:='';
