@@ -39,6 +39,8 @@ Var
  IsDisk:Boolean;
  FileName:String;
  Buffer:Array[0..1023]of Byte;
+ CliI:Byte;
+ CliJ,CliCode:Integer;
 
 Procedure DiskReset;
 {$IFDEF Windows}
@@ -435,9 +437,333 @@ Begin
  End;
 End;
 
-Procedure CreatePartition;Begin
+{ ===== Creation de partition ============================================ }
+
+Function HexByteStr(B:Byte):String;
+Const HC:Array[0..15]of Char='0123456789ABCDEF';
+Begin
+ HexByteStr:=HC[B Shr 4]+HC[B And $0F];
+End;
+
+{ Taille totale (en secteurs) du support : fichier image ou disque physique. }
+Function TotalSectors:LongInt;
+Var
+ F:File;
+ Sz:LongInt;
+Begin
+ TotalSectors:=0;
+ If FileName<>'' Then Begin
+  {$I-}Assign(F,FileName);Reset(F,1);{$I+}
+  If IOResult=0 Then Begin
+   Sz:=FileSize(F);
+   Close(F);
+   TotalSectors:=Sz Div 512;
+  End;
+ End Else Begin
+{$IFNDEF Windows}
+  FetchGeometry;
+  If GeoValid Then
+   { On suppose 1024 cylindres (limite CHS classique). Approximation. }
+   TotalSectors:=LongInt(1024)*GeoHeads*GeoSPT;
+{$ENDIF}
+ End;
+End;
+
+{ Convertit un LBA en CHS pour stockage dans la table de partition.
+  Si le LBA depasse la limite CHS (cyl>1023), stocke (1023,254,63). }
+Procedure LBAtoCHS(LBA:LongInt;Var SP:SecPosType);
+Var
+ Cyl,Head,Sect:Word;
+ Tmp:LongInt;
+ H,S:Word;
+Begin
+ H:=255; S:=63;   { defauts si geometrie inconnue }
+{$IFNDEF Windows}
+ If(FileName='')Then Begin
+  FetchGeometry;
+  If GeoValid Then Begin H:=GeoHeads; S:=GeoSPT; End;
+ End;
+{$ENDIF}
+ Sect:=Word(LBA Mod S)+1;
+ Tmp:=LBA Div S;
+ If(Tmp Div H)>1023 Then Begin
+  Cyl:=1023; Head:=H-1; Sect:=S;
+ End Else Begin
+  Head:=Word(Tmp Mod H);
+  Cyl:=Word(Tmp Div H);
+ End;
+ SP.Head:=Byte(Head);
+ SP.SectTrack:=(Sect And $3F)Or((Cyl And $300)Shr 2)Or((Cyl And $FF)Shl 8);
+End;
+
+Function ReadIntLine(Default:LongInt):LongInt;
+Var
+ S:String;
+ V,Code:Integer;
+ L:LongInt;
+Begin
+ ReadLn(S);
+ If S='' Then Begin ReadIntLine:=Default; Exit; End;
+ Val(S,L,Code);
+ If Code<>0 Then Begin
+  Val(S,V,Code);
+  If Code=0 Then L:=V Else L:=Default;
+ End;
+ ReadIntLine:=L;
+End;
+
+{ ----- Operations non-interactives (utilisables en CLI) ----------------- }
+
+{ Cree une partition primaire dans le premier slot libre.
+  SizeMB = taille demandee, ou 0/-1 = utiliser tout l'espace libre.
+  PType  = type de partition ($01,$04,$06,$0B,$0C, etc.).
+  Retourne True si la partition a ete creee et ecrite sur disque/image. }
+Function DoCreatePartition(SizeMB:LongInt;PType:Byte;Verbose:Boolean):Boolean;
+Var
+ Partition:PartSec Absolute Buffer;
+ I,Slot:Byte;
+ FreeStart,UsedEnd,Tot,MaxMB,NumSec,SecOfs:LongInt;
+ PE:PartEntry;
+Begin
+ DoCreatePartition:=False;
+ ReadPartitionRecord;
+ Slot:=255;
+ For I:=0 To 3 Do
+  If(Partition.PartTable[I].PartType=0)And(Slot=255)Then Slot:=I;
+ If Slot=255 Then Begin
+  If Verbose Then WriteLn('Erreur : aucun emplacement libre.');
+  Exit;
+ End;
+ UsedEnd:=0;
+ For I:=0 To 3 Do
+  If Partition.PartTable[I].PartType<>0 Then Begin
+   FreeStart:=Partition.PartTable[I].SecOfs+Partition.PartTable[I].NumSec;
+   If FreeStart>UsedEnd Then UsedEnd:=FreeStart;
+  End;
+ If UsedEnd=0 Then UsedEnd:=63;
+ SecOfs:=UsedEnd;
+ Tot:=TotalSectors;
+ If Tot<=SecOfs Then Begin
+  If Verbose Then WriteLn('Erreur : espace insuffisant (total=',Tot,').');
+  Exit;
+ End;
+ MaxMB:=(Tot-SecOfs) Div 2048;
+ If MaxMB<1 Then MaxMB:=1;
+ If SizeMB<=0 Then SizeMB:=MaxMB;
+ If SizeMB>MaxMB Then SizeMB:=MaxMB;
+ NumSec:=SizeMB*2048;
+ If SecOfs+NumSec>Tot Then NumSec:=Tot-SecOfs;
+ If PType=0 Then PType:=$0B;
+ FillChar(PE,SizeOf(PE),0);
+ PE.Status:=$00;
+ PE.PartType:=PType;
+ PE.SecOfs:=SecOfs;
+ PE.NumSec:=NumSec;
+ LBAtoCHS(SecOfs,PE.StartSec);
+ LBAtoCHS(SecOfs+NumSec-1,PE.EndSec);
+ Partition.PartTable[Slot]:=PE;
+ Partition.IdCode:=$AA55;
+ WritePartitionRecord;
+ If Verbose Then
+  WriteLn('Partition ',Slot+1,' creee : LBA ',SecOfs,'..',SecOfs+NumSec-1,
+          ' (',SizeMB,' Mo, type $',HexByteStr(PType),')');
+ DoCreatePartition:=True;
+End;
+
+{ Supprime la partition du slot indique (1..4). }
+Function DoDeletePartition(Slot:Byte;Verbose:Boolean):Boolean;
+Var
+ Partition:PartSec Absolute Buffer;
+Begin
+ DoDeletePartition:=False;
+ If(Slot<1)Or(Slot>4)Then Begin
+  If Verbose Then WriteLn('Erreur : numero de partition invalide (1..4).');
+  Exit;
+ End;
+ ReadPartitionRecord;
+ If Partition.PartTable[Slot-1].PartType=0 Then Begin
+  If Verbose Then WriteLn('Erreur : partition ',Slot,' vide.');
+  Exit;
+ End;
+ FillChar(Partition.PartTable[Slot-1],SizeOf(PartEntry),0);
+ Partition.IdCode:=$AA55;
+ WritePartitionRecord;
+ If Verbose Then WriteLn('Partition ',Slot,' supprimee.');
+ DoDeletePartition:=True;
+End;
+
+{ Marque la partition Slot (1..4) comme active (bootable). }
+Function DoActivatePartition(Slot:Byte;Verbose:Boolean):Boolean;
+Var
+ Partition:PartSec Absolute Buffer;
+ I:Byte;
+Begin
+ DoActivatePartition:=False;
+ If(Slot<1)Or(Slot>4)Then Begin
+  If Verbose Then WriteLn('Erreur : numero de partition invalide (1..4).');
+  Exit;
+ End;
+ ReadPartitionRecord;
+ If Partition.PartTable[Slot-1].PartType=0 Then Begin
+  If Verbose Then WriteLn('Erreur : partition ',Slot,' vide.');
+  Exit;
+ End;
+ For I:=0 To 3 Do Partition.PartTable[I].Status:=$00;
+ Partition.PartTable[Slot-1].Status:=$80;
+ Partition.IdCode:=$AA55;
+ WritePartitionRecord;
+ If Verbose Then WriteLn('Partition ',Slot,' marquee active.');
+ DoActivatePartition:=True;
+End;
+
+{ Efface la table de partitions (4 entrees a zero) et ecrit la signature. }
+Function DoInitMBR(Verbose:Boolean):Boolean;
+Var
+ Partition:PartSec Absolute Buffer;
+ I:Byte;
+Begin
+ ReadPartitionRecord;
+ For I:=0 To 3 Do FillChar(Partition.PartTable[I],SizeOf(PartEntry),0);
+ Partition.IdCode:=$AA55;
+ WritePartitionRecord;
+ If Verbose Then WriteLn('Table de partitions reinitialisee.');
+ DoInitMBR:=True;
+End;
+
+{ Convertit une chaine en type de partition (1..5 ou $XX hexa ou XX decimal). }
+Function ParsePartType(S:String;Default:Byte):Byte;
+Var
+ V,Code:Integer;
+ L:LongInt;
+Begin
+ ParsePartType:=Default;
+ If S='' Then Exit;
+ If(S[1]='$')Or(S[1]='x')Or(S[1]='X')Then S[1]:=' ';
+ If(Length(S)>=2)And(S[1]='0')And((S[2]='x')Or(S[2]='X'))Then Begin
+  S[1]:=' '; S[2]:=' ';
+ End;
+ While(Length(S)>0)And(S[1]=' ')Do Delete(S,1,1);
+ If S='1' Then Begin ParsePartType:=$01; Exit; End;
+ If S='2' Then Begin ParsePartType:=$04; Exit; End;
+ If S='3' Then Begin ParsePartType:=$06; Exit; End;
+ If S='4' Then Begin ParsePartType:=$0B; Exit; End;
+ If S='5' Then Begin ParsePartType:=$0C; Exit; End;
+ Val('$'+S,L,Code);
+ If Code=0 Then Begin
+  If(L>=1)And(L<=255)Then ParsePartType:=Byte(L);
+  Exit;
+ End;
+ Val(S,V,Code);
+ If(Code=0)And(V>=1)And(V<=255)Then ParsePartType:=Byte(V);
+End;
+
+{ Convertit une chaine taille (Mo ou 'MAX'/'ALL') en Mo. 0 = MAX. }
+Function ParseSizeMB(S:String):LongInt;
+Var
+ V,Code:Integer;
+ L:LongInt;
+ U:String;
+Begin
+ U:=StrToUpper(S);
+ If(U='MAX')Or(U='ALL')Or(U='*')Or(U='')Then Begin ParseSizeMB:=0; Exit; End;
+ Val(S,L,Code);
+ If Code=0 Then Begin ParseSizeMB:=L; Exit; End;
+ Val(S,V,Code);
+ If Code=0 Then ParseSizeMB:=V Else ParseSizeMB:=-1;
+End;
+
+Procedure CreatePartition;
+Var
+ Partition:PartSec Absolute Buffer;
+ I,Slot:Byte;
+ FreeStart,UsedEnd:LongInt;
+ Tot,MaxMB,SizeMB,NumSec,SecOfs:LongInt;
+ PType:Byte;
+ PE:PartEntry;
+ Ch:Char;
+Begin
  ClrScr;
- WriteLn('Cette fonctionnalit� n''est pas implement� !');
+ WriteLn;
+ WriteLnCenter('Creation d''une partition primaire DOS');
+ WriteLn;
+ ReadPartitionRecord;
+ WriteListPartition;
+ WriteLn;
+
+ { Trouver le premier slot libre }
+ Slot:=255;
+ For I:=0 To 3 Do
+  If(Partition.PartTable[I].PartType=0)And(Slot=255)Then Slot:=I;
+ If Slot=255 Then Begin
+  WriteLn('Aucun emplacement libre. Appuyez sur une touche.');
+  ReadKey;
+  Exit;
+ End;
+
+ { Calculer le debut de l'espace libre = max(EndLBA des partitions existantes)+1 }
+ UsedEnd:=0;
+ For I:=0 To 3 Do
+  If Partition.PartTable[I].PartType<>0 Then Begin
+   FreeStart:=Partition.PartTable[I].SecOfs+Partition.PartTable[I].NumSec;
+   If FreeStart>UsedEnd Then UsedEnd:=FreeStart;
+  End;
+ If UsedEnd=0 Then UsedEnd:=63;  { laisser la 1re piste pour MBR }
+ SecOfs:=UsedEnd;
+
+ Tot:=TotalSectors;
+ If Tot<=SecOfs Then Begin
+  WriteLn('Espace insuffisant. Appuyez sur une touche.');
+  ReadKey;
+  Exit;
+ End;
+ MaxMB:=(Tot-SecOfs) Div 2048;
+ If MaxMB<1 Then MaxMB:=1;
+
+ WriteLn('Emplacement libre : ',Slot+1);
+ WriteLn('Debut LBA         : ',SecOfs);
+ WriteLn('Taille maximale   : ',MaxMB,' Mo');
+ WriteLn;
+ Write('Taille de la partition en Mo [',MaxMB,'] : ');
+ SizeMB:=ReadIntLine(MaxMB);
+ If SizeMB<1 Then SizeMB:=1;
+ If SizeMB>MaxMB Then SizeMB:=MaxMB;
+ NumSec:=SizeMB*2048;
+ If SecOfs+NumSec>Tot Then NumSec:=Tot-SecOfs;
+
+ WriteLn;
+ WriteLn('Type de partition :');
+ WriteLn('  1. FAT12');
+ WriteLn('  2. FAT16 (<32 Mo)');
+ WriteLn('  3. FAT16 (BIGDOS)');
+ WriteLn('  4. FAT32');
+ WriteLn('  5. FAT32 LBA');
+ Write('Choix [4] : ');
+ Ch:=ReadKey; WriteLn(Ch);
+ Case Ch Of
+  '1':PType:=$01;
+  '2':PType:=$04;
+  '3':PType:=$06;
+  '5':PType:=$0C;
+  Else PType:=$0B;
+ End;
+
+ { Construire l'entree }
+ FillChar(PE,SizeOf(PE),0);
+ PE.Status:=$00;
+ PE.PartType:=PType;
+ PE.SecOfs:=SecOfs;
+ PE.NumSec:=NumSec;
+ LBAtoCHS(SecOfs,PE.StartSec);
+ LBAtoCHS(SecOfs+NumSec-1,PE.EndSec);
+
+ Partition.PartTable[Slot]:=PE;
+ Partition.IdCode:=$AA55;
+
+ WritePartitionRecord;
+ WriteLn;
+ WriteLn('Partition ',Slot+1,' creee : LBA ',SecOfs,'..',SecOfs+NumSec-1,
+         ' (',SizeMB,' Mo, type $',HexByteStr(PType),')');
+ Write('Appuyez sur une touche...');
  ReadKey;
 End;
 
@@ -677,9 +1003,28 @@ BEGIN
   If StrToUpper(Copy(TmpLanguage,1,2))='SP'Then Language:=_Spain;
  End;
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')Then Begin
-  WriteLn('FDISK : Cette commande permet d''effectuer la gestion d''un disque dur.');
+  WriteLn('FDISK : Cette commande permet d''effectuer la gestion des partitions d''un disque dur.');
   WriteLn;
-  WriteLn('Syntaxe : FDISK [fichier]');
+  WriteLn('Syntaxe : FDISK [fichier] [commande [arguments...]]');
+  WriteLn;
+  WriteLn('Sans commande : interface menu interactive.');
+  WriteLn;
+  WriteLn('Commandes (non-interactives) :');
+  WriteLn('  list                       Liste les partitions et quitte.');
+  WriteLn('  create [taille] [type]     Cree une partition primaire.');
+  WriteLn('                             taille : Mo (defaut/MAX = espace libre).');
+  WriteLn('                             type   : 1=FAT12 2=FAT16<32M 3=BIGDOS');
+  WriteLn('                                      4=FAT32 (defaut) 5=FAT32LBA');
+  WriteLn('                                      ou $XX hexa (ex. $07 NTFS).');
+  WriteLn('  delete <n>                 Supprime la partition n (1..4).');
+  WriteLn('  activate <n>               Marque la partition n comme active.');
+  WriteLn('  init                       Efface la table de partitions.');
+  WriteLn;
+  WriteLn('Exemples :');
+  WriteLn('  FDISK disk.img create 64 4       Cree FAT32 de 64 Mo.');
+  WriteLn('  FDISK disk.img create MAX 6      Utilise tout l''espace, BIGDOS.');
+  WriteLn('  FDISK disk.img activate 1');
+  WriteLn('  FDISK disk.img list');
  End
   Else
  Begin
@@ -690,20 +1035,59 @@ BEGIN
   FileName:='';
   CurrentDisk:=1;
   IsDisk:=True;
-  If ParamStr(1)<>''Then Begin
-   FileName:=ParamStr(1);
-   IsDisk:=False;
-  End;
-  Repeat
-   Case ShowMainMenu of
-    0:Break;
-    1:CreatePartition;
-    2:ActivePartition;
-    3:DeletePartition;
-    4:ShowPartition;
-    5:SelectFixedDisk;
+  TmpLanguage:=ParamStr(1);
+  If(TmpLanguage<>'')And(TmpLanguage[1]<>'-')And(TmpLanguage[1]<>'/')Then Begin
+   { Si ParamStr(1) est une commande connue, on travaille sur disque physique. }
+   TmpLanguage:=StrToUpper(TmpLanguage);
+   If(TmpLanguage<>'CREATE')And(TmpLanguage<>'DELETE')And
+     (TmpLanguage<>'ACTIVATE')And(TmpLanguage<>'LIST')And
+     (TmpLanguage<>'INIT')Then Begin
+    FileName:=ParamStr(1);
+    IsDisk:=False;
    End;
-  Until False;
-  ClrScr;
+  End;
+  { Determiner l'index du parametre commande }
+  If FileName='' Then CliI:=1 Else CliI:=2;
+  TmpLanguage:=StrToUpper(ParamStr(CliI));
+  If TmpLanguage<>'' Then Begin
+   { Mode CLI non-interactif }
+   If TmpLanguage='LIST' Then Begin
+    ReadPartitionRecord;
+    WriteListPartition;
+   End Else
+   If TmpLanguage='CREATE' Then Begin
+    If Not DoCreatePartition(ParseSizeMB(ParamStr(CliI+1)),
+                             ParsePartType(ParamStr(CliI+2),$0B),
+                             True)Then Halt(1);
+   End Else
+   If TmpLanguage='DELETE' Then Begin
+    Val(ParamStr(CliI+1),CliJ,CliCode);
+    If(CliCode<>0)Or Not DoDeletePartition(Byte(CliJ),True)Then Halt(1);
+   End Else
+   If TmpLanguage='ACTIVATE' Then Begin
+    Val(ParamStr(CliI+1),CliJ,CliCode);
+    If(CliCode<>0)Or Not DoActivatePartition(Byte(CliJ),True)Then Halt(1);
+   End Else
+   If TmpLanguage='INIT' Then Begin
+    If Not DoInitMBR(True)Then Halt(1);
+   End Else Begin
+    WriteLn('Commande inconnue : ',ParamStr(CliI));
+    WriteLn('Utilisez FDISK /? pour l''aide.');
+    Halt(1);
+   End;
+  End Else Begin
+   { Mode menu interactif }
+   Repeat
+    Case ShowMainMenu of
+     0:Break;
+     1:CreatePartition;
+     2:ActivePartition;
+     3:DeletePartition;
+     4:ShowPartition;
+     5:SelectFixedDisk;
+    End;
+   Until False;
+   ClrScr;
+  End;
  End;
 END.
