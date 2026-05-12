@@ -1,7 +1,7 @@
 { @author: Sylvain Maltais (support@gladir.com)
   @created: 2026
   @website(https://www.gladir.com/corail)
-  @abstract(Target: Turbo Pascal 7, Free Pascal)
+  @abstract(Target: Turbo Pascal 7, Free Pascal 3.2)
 }
 
 Program UNDISKPC;
@@ -52,6 +52,9 @@ Var
  FATCachedLBA:LongInt;
  FATCachedBuf:TSector;
  TempImgName:String;
+ Verbose:Boolean;
+ ArgIdx:Integer;
+ ArgStr:String;
 
 Function UpStr(S:String):String;
 Var
@@ -668,8 +671,9 @@ Begin
   Else If ClusterCount<65525 Then FATType:=16
   Else FATType:=32;
  If(FATType=32)and(RootCluster<2)Then RootCluster:=2;
- WriteLn('FAT',FATType,'  secteurs=',TotalSectors,
-  '  cluster=',SectorsPerCluster,'  racine=',RootEntries);
+ If Verbose Then
+  WriteLn('FAT',FATType,'  secteurs=',TotalSectors,
+   '  cluster=',SectorsPerCluster,'  racine=',RootEntries);
 End;
 
 Procedure ReadBoot;
@@ -833,7 +837,7 @@ Begin
  Close(F);
  SetFileDate(OutName,T,D);
  Inc(FilesExtracted);
- WriteLn(OutName);
+ If Verbose Then WriteLn(OutName);
 End;
 
 Procedure ProcessDir(StartCl:LongInt;Path:String;IsRoot:Boolean);Forward;
@@ -917,16 +921,19 @@ End;
 
 Procedure Help;Begin
  WriteLn('UNDISKPC : Cette commande permet d''extraire les fichiers ',
-         'd''une image disque PC FAT12/FAT16/FAT32.');
+         'd''une image disque PC (FAT12, FAT16, FAT32 ou HPFS).');
  WriteLn;
- WriteLn('Syntaxe : UNDISKPC image.img [destination]');
+ WriteLn('Syntaxe : UNDISKPC image.img [destination] [/V]');
  WriteLn;
- WriteLn(' images.img     Ce parametre permet d''indiquer l''image ',
+ WriteLn(' images.img     Ce paramŠtre permet d''indiquer l''image ',
          'disque (Brute IMG, TeleDisk (TD0,...), VirtualBox ou VMWare)');
- WriteLn(' destination    Ce parametre permet d''indiquer le r‚pertoire cible');
+ WriteLn(' destination    Ce paramŠtre permet d''indiquer le r‚pertoire cible');
+ WriteLn(' /V             Mode verbeux : affiche chaque fichier extrait,');
+ WriteLn('                le format d‚tect‚, les partitions, le BPB FAT et');
+ WriteLn('                le dump diagnostique du r‚pertoire racine HPFS.');
  WriteLn;
  WriteLn('Supporte les images disquette FAT12 et les disques avec MBR/FAT.');
- WriteLn('Les noms longs VFAT sont ignores; les noms 8.3 DOS sont utilises.');
+ WriteLn('Les noms longs VFAT sont ignor‚s; les noms 8.3 DOS sont utilis‚s.');
  WriteLn('Les partitions HPFS (OS/2, type $07) sont aussi extraites en lecture.');
 End;
 
@@ -1123,6 +1130,7 @@ Begin
  If HPFSRunOverflow Then
   WriteLn('Avert: ',OutName,' depasse ',MaxHPFSRuns,' runs (peut etre tronque).');
  Inc(FilesExtracted);
+ If Verbose Then WriteLn(OutName);
 End;
 
 Procedure HPFSProcessDirBlk(DirBlkLBA:LongInt;Path:String);Forward;
@@ -1159,23 +1167,11 @@ Begin
   Move(Sec1,DBuf[I*512],512);
  End;
  If(DBuf[0]<>$AE)Or(DBuf[1]<>$0A)Or(DBuf[2]<>$E4)Or(DBuf[3]<>$77)Then Begin
-  WriteLn('DIRBLK invalide @',DirBlkLBA);
+  If Verbose Then WriteLn('DIRBLK invalide @',DirBlkLBA);
   Dec(HPFSDepth);
   Exit;
  End;
- If HPFSDepth=1 Then Begin
-  WriteLn('DIRBLK @',DirBlkLBA,' (premier 256 oct) :');
-  For I:=0 to 15 do Begin
-   Write('  ',I*16:3,': ');
-   For J:=0 to 15 do Write(HexByte(DBuf[I*16+J]),' ');
-   Write(' | ');
-   For J:=0 to 15 do
-    If(DBuf[I*16+J]>=32)And(DBuf[I*16+J]<127)Then Write(Chr(DBuf[I*16+J]))
-                                                Else Write('.');
-   WriteLn;
-  End;
- End;
- If HPFSDepth=1 Then Begin
+ If Verbose And(HPFSDepth=1)Then Begin
   WriteLn('DIRBLK @',DirBlkLBA,' (premier 256 oct) :');
   For I:=0 to 15 do Begin
    Write('  ',I*16:3,': ');
@@ -1251,7 +1247,8 @@ Begin
   Exit;
  End;
  RootFNode:=GetLE32B(SBBuf,12);
- WriteLn('Volume HPFS (Root FNode LBA partition-relatif=',RootFNode,').');
+ If Verbose Then
+  WriteLn('Volume HPFS (Root FNode LBA partition-relatif=',RootFNode,').');
  MakePath(DestPath);
  HPFSProcessDirFNode(RootFNode,DestPath);
 End;
@@ -1276,7 +1273,8 @@ Var
  Begin
   Str(N,S);
   PartPath:=JoinPath(DestDir,'PART'+S);
-  WriteLn('Partition ',N,' type=$',HexByte(T),' LBA=',LBA,' secteurs=',SZ);
+  If Verbose Then
+   WriteLn('Partition ',N,' type=$',HexByte(T),' LBA=',LBA,' secteurs=',SZ);
   If IsHPFSPartitionType(T)And IsHPFSVolume(LBA)Then Begin
    HPFSPartSize:=SZ;
    ExtractHPFSVolume(LBA,PartPath);
@@ -1359,14 +1357,19 @@ Begin
 End;
 
 Begin
- If(ParamCount<1)or(ParamStr(1)='/?')or(ParamStr(1)='-h')or
-   (ParamStr(1)='--help') Then Begin
-  Help;
-  Halt;
+ Verbose:=False;
+ ImgName:='';
+ DestDir:='';
+ For ArgIdx:=1 to ParamCount do Begin
+  ArgStr:=ParamStr(ArgIdx);
+  If(ArgStr='/?')or(ArgStr='-h')or(ArgStr='--help')Then Begin Help; Halt; End
+   Else If(UpStr(ArgStr)='/V')or(UpStr(ArgStr)='-V')or
+          (UpStr(ArgStr)='--VERBOSE')Then Verbose:=True
+   Else If ImgName=''Then ImgName:=ArgStr
+   Else If DestDir=''Then DestDir:=ArgStr;
  End;
- ImgName:=ParamStr(1);
- If ParamCount>=2 Then DestDir:=ParamStr(2)
-                 Else DestDir:=Path2Name(ImgName);
+ If ImgName=''Then Begin Help; Halt; End;
+ If DestDir=''Then DestDir:=Path2Name(ImgName);
  Assign(Img,ImgName);
  FileMode:=0;
  {$I-}Reset(Img,1);{$I+}
@@ -1382,11 +1385,12 @@ Begin
  HPFSProcessed:=False;
  HPFSDepth:=0;
  DetectImageFormat;
- Case ImgKind Of
-  1:WriteLn('Format detecte : VHD fixe (',VirtualSectors,' secteurs virtuels).');
-  2:WriteLn('Format detecte : VHD dynamique (',VirtualSectors,' secteurs virtuels).');
-  3:WriteLn('Format detecte : VMDK sparse (',VirtualSectors,' secteurs virtuels).');
- End;
+ If Verbose Then
+  Case ImgKind Of
+   1:WriteLn('Format detecte : VHD fixe (',VirtualSectors,' secteurs virtuels).');
+   2:WriteLn('Format detecte : VHD dynamique (',VirtualSectors,' secteurs virtuels).');
+   3:WriteLn('Format detecte : VMDK sparse (',VirtualSectors,' secteurs virtuels).');
+  End;
  MakePath(DestDir);
  ReadSector(0);
  IsHardDiskImage:=(VirtualSectors>16)and
