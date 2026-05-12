@@ -2108,6 +2108,7 @@ SET LANGUAGE=EN
 <h3>Remarques</h3>
 <ul>
 	<li>Les commandes DISKCOMP, DISKCOPY, FDISK et FORMAT on été amélioré par rapport à la version originale de Microsoft en proposant d'appliquer les changements sur un fichier d'image disque plutôt que directement sur un unité de disque.</li>
+	<li>La comamnde "FDISK" supporte les fichiers d'images disques brutes, VirtualBox et VMWare.</li>
 	<li>La commande "VOL" a été bonifié du paramètre "/IMG:" permettant la recherche d'un nom de volume à partir d'un fichier d'image disque.</li>
 	<li>La commande "CKCMOS" a été bonifié de la commande /AMDEK pour rechercher sur les micro-ordinateurs <a href="https://www.gladir.com/LEXIQUE/SYSTEM/amdeksystem88.htm">Admek System/88</a>.</li>
 	<li>La commande" CPUTEST.PAS" a été bonifié du paramètre /CYRIX pour permettre la détection du microprocesseur Cyrix.</li>
