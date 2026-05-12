@@ -36,6 +36,20 @@ Var
  FATType:Integer;
  RootCluster:LongInt;
  BPBOffset:Integer;
+ { Support VHD/VMDK. ImgKind : 0=raw, 1=VHD fixe, 2=VHD dynamique,
+   3=VMDK sparse. Pour 2/3 : VHDBlockSizeSec = secteurs par bloc/grain,
+   VHDBitmapSecs = secteurs de bitmap precedant chaque bloc (VHD seulement),
+   VHDBATFileOfs = offset dans le fichier de la BAT (ou GD pour VMDK),
+   VMDKGTEsPerGT = entrees par grain-table (VMDK).
+   VirtDiskSec = nombre total de secteurs virtuels. }
+ ImgKind:Byte;
+ VirtDiskSec:LongInt;
+ VHDBlockSizeSec:LongInt;
+ VHDBitmapSecs:LongInt;
+ VHDBATFileOfs:LongInt;
+ VMDKGTEsPerGT:LongInt;
+ FATCachedLBA:LongInt;
+ FATCachedBuf:TSector;
 
 Function UpStr(S:String):String;
 Var
@@ -86,8 +100,41 @@ End;
 Procedure ReadSector(LBA:LongInt);
 Var
  R:Word;
+ Ofs,BlockIdx,OfsInBlock,BATEntry,GrainNum,GTIdx,GTOff,GTSec,GrainSec:LongInt;
+ Buf4:Array[0..3]of Byte;
 Begin
- Seek(Img,LBA*SectorSize);
+ If(ImgKind=0)or(ImgKind=1)Then Ofs:=LBA*SectorSize Else
+ If ImgKind=2 Then Begin
+  BlockIdx:=LBA Div VHDBlockSizeSec;
+  OfsInBlock:=LBA Mod VHDBlockSizeSec;
+  Seek(Img,VHDBATFileOfs+BlockIdx*4);
+  BlockRead(Img,Buf4,4,R);
+  If R<>4 Then Begin FillChar(Sec,SectorSize,0); Exit; End;
+  BATEntry:=(LongInt(Buf4[0])Shl 24)Or(LongInt(Buf4[1])Shl 16)
+           Or(LongInt(Buf4[2])Shl 8)Or LongInt(Buf4[3]);
+  If BATEntry=-1 Then Begin FillChar(Sec,SectorSize,0); Exit; End;
+  Ofs:=(BATEntry+VHDBitmapSecs)*512+OfsInBlock*512;
+ End Else
+ If ImgKind=3 Then Begin
+  GrainNum:=LBA Div VHDBlockSizeSec;
+  GTIdx:=GrainNum Div VMDKGTEsPerGT;
+  GTOff:=GrainNum Mod VMDKGTEsPerGT;
+  OfsInBlock:=LBA Mod VHDBlockSizeSec;
+  Seek(Img,VHDBATFileOfs+GTIdx*4);
+  BlockRead(Img,Buf4,4,R);
+  If R<>4 Then Begin FillChar(Sec,SectorSize,0); Exit; End;
+  GTSec:=LongInt(Buf4[0])Or(LongInt(Buf4[1])Shl 8)
+        Or(LongInt(Buf4[2])Shl 16)Or(LongInt(Buf4[3])Shl 24);
+  If GTSec=0 Then Begin FillChar(Sec,SectorSize,0); Exit; End;
+  Seek(Img,GTSec*512+GTOff*4);
+  BlockRead(Img,Buf4,4,R);
+  If R<>4 Then Begin FillChar(Sec,SectorSize,0); Exit; End;
+  GrainSec:=LongInt(Buf4[0])Or(LongInt(Buf4[1])Shl 8)
+           Or(LongInt(Buf4[2])Shl 16)Or(LongInt(Buf4[3])Shl 24);
+  If GrainSec=0 Then Begin FillChar(Sec,SectorSize,0); Exit; End;
+  Ofs:=GrainSec*512+OfsInBlock*512;
+ End Else Ofs:=LBA*SectorSize;
+ Seek(Img,Ofs);
  BlockRead(Img,Sec,SectorSize,R);
  If R<>SectorSize Then Begin
   WriteLn('Lecture secteur impossible: ',LBA);
@@ -95,11 +142,64 @@ Begin
  End;
 End;
 
+Function LBAToFileOfs(LBA:LongInt):LongInt;
+Var
+ R:Word;
+ BlockIdx,OfsInBlock,BATEntry,GrainNum,GTIdx,GTOff,GTSec,GrainSec:LongInt;
+ Buf4:Array[0..3]of Byte;
+Begin
+ LBAToFileOfs:=-1;
+ If(ImgKind=0)or(ImgKind=1)Then Begin
+  LBAToFileOfs:=LBA*SectorSize;
+  Exit;
+ End;
+ If ImgKind=2 Then Begin
+  BlockIdx:=LBA Div VHDBlockSizeSec;
+  OfsInBlock:=LBA Mod VHDBlockSizeSec;
+  Seek(Img,VHDBATFileOfs+BlockIdx*4);
+  BlockRead(Img,Buf4,4,R);
+  If R<>4 Then Exit;
+  BATEntry:=(LongInt(Buf4[0])Shl 24)Or(LongInt(Buf4[1])Shl 16)
+           Or(LongInt(Buf4[2])Shl 8)Or LongInt(Buf4[3]);
+  If BATEntry=-1 Then Exit;
+  LBAToFileOfs:=(BATEntry+VHDBitmapSecs)*512+OfsInBlock*512;
+  Exit;
+ End;
+ If ImgKind=3 Then Begin
+  GrainNum:=LBA Div VHDBlockSizeSec;
+  GTIdx:=GrainNum Div VMDKGTEsPerGT;
+  GTOff:=GrainNum Mod VMDKGTEsPerGT;
+  OfsInBlock:=LBA Mod VHDBlockSizeSec;
+  Seek(Img,VHDBATFileOfs+GTIdx*4);
+  BlockRead(Img,Buf4,4,R);
+  If R<>4 Then Exit;
+  GTSec:=LongInt(Buf4[0])Or(LongInt(Buf4[1])Shl 8)
+        Or(LongInt(Buf4[2])Shl 16)Or(LongInt(Buf4[3])Shl 24);
+  If GTSec=0 Then Exit;
+  Seek(Img,GTSec*512+GTOff*4);
+  BlockRead(Img,Buf4,4,R);
+  If R<>4 Then Exit;
+  GrainSec:=LongInt(Buf4[0])Or(LongInt(Buf4[1])Shl 8)
+        Or(LongInt(Buf4[2])Shl 16)Or(LongInt(Buf4[3])Shl 24);
+  If GrainSec=0 Then Exit;
+  LBAToFileOfs:=GrainSec*512+OfsInBlock*512;
+ End;
+End;
+
 Procedure WriteSector(LBA:LongInt);
 Var
  W:Word;
+ Ofs:LongInt;
 Begin
- Seek(Img,LBA*SectorSize);
+ Ofs:=LBAToFileOfs(LBA);
+ If Ofs<0 Then Begin
+  WriteLn('Ecriture impossible : bloc non alloue dans l''image ',
+          'VHD dynamique/VMDK sparse (LBA ',LBA,').');
+  WriteLn('Cette commande supporte les ecritures sur images brutes ',
+          'et VHD fixes uniquement.');
+  Halt(1);
+ End;
+ Seek(Img,Ofs);
  BlockWrite(Img,Sec,SectorSize,W);
  If W<>SectorSize Then Begin
   WriteLn('Ecriture secteur impossible: ',LBA);
@@ -107,22 +207,347 @@ Begin
  End;
 End;
 
+Function VirtualSectors:LongInt;
+Begin
+ If VirtDiskSec>0 Then VirtualSectors:=VirtDiskSec
+                  Else VirtualSectors:=FileSize(Img)div SectorSize;
+End;
+
+Procedure DecodeTeleDisk;
+{ Decode une image TeleDisk *.TD0 non compressee (signature 'TD' en
+  majuscules) vers un fichier brut <image>.tdraw, puis rouvre Img sur
+  ce fichier. Comme DISKPC modifie l'image, le .tdraw est conserve
+  apres execution (l'original .TD0 reste intact). }
+Var
+ Hdr:Array[0..11]of Byte;
+ R,W:Word;
+ Stepping:Byte;
+ Sides,Heads:Byte;
+ CmtHdr:Array[0..9]of Byte;
+ CommentLen:LongInt;
+ Skipped:LongInt;
+ ChunkLen:Integer;
+ SkipBuf:Array[0..255]of Byte;
+ TrackHdr:Array[0..3]of Byte;
+ SecHdr:Array[0..5]of Byte;
+ NumSec,Cyl,Head,SecID,SizeCode,Flags:Byte;
+ SecSize:Word;
+ DataLen:Word;
+ Method:Byte;
+ EncBuf:Array[0..16383]of Byte;
+ DecBuf:Array[0..16383]of Byte;
+ TmpF:File;
+ SPT:Byte;
+ LBA:LongInt;
+ I,K:Integer;
+ P,Q,Cnt:LongInt;
+ BlockSize:Integer;
+ Code,PatLen:Byte;
+ NewName:String;
+Begin
+ Seek(Img,0);
+ BlockRead(Img,Hdr,12,R);
+ If R<12 Then Exit;
+ If(Hdr[0]=Ord('t'))and(Hdr[1]=Ord('d'))Then Begin
+  WriteLn('TeleDisk compresse (signature "td" minuscule, LZHUF) non supporte.');
+  Halt(1);
+ End;
+ If Not((Hdr[0]=Ord('T'))and(Hdr[1]=Ord('D')))Then Exit;
+ Stepping:=Hdr[7];
+ Sides:=Hdr[9];
+ If(Sides=0)or(Sides>2)Then Sides:=2;
+ Heads:=Sides;
+ If(Stepping and $80)<>0 Then Begin
+  BlockRead(Img,CmtHdr,10,R);
+  If R<10 Then Exit;
+  CommentLen:=LongInt(CmtHdr[2])or(LongInt(CmtHdr[3])shl 8);
+  Skipped:=0;
+  While Skipped<CommentLen do Begin
+   If CommentLen-Skipped>SizeOf(SkipBuf)Then ChunkLen:=SizeOf(SkipBuf)
+                                        Else ChunkLen:=CommentLen-Skipped;
+   BlockRead(Img,SkipBuf,ChunkLen,R);
+   If R=0 Then Break;
+   Inc(Skipped,R);
+  End;
+ End;
+ NewName:=ImgName+'.tdraw';
+ Assign(TmpF,NewName);
+ {$I-}Rewrite(TmpF,1);{$I+}
+ If IoResult<>0 Then Begin
+  WriteLn('Impossible de creer le fichier temporaire ',NewName);
+  Halt(1);
+ End;
+ SPT:=0;
+ While True do Begin
+  BlockRead(Img,TrackHdr,4,R);
+  If R<4 Then Break;
+  NumSec:=TrackHdr[0];
+  If NumSec=$FF Then Break;
+  Cyl:=TrackHdr[1];
+  Head:=TrackHdr[2] and $7F;
+  For I:=1 to NumSec do Begin
+   BlockRead(Img,SecHdr,6,R);
+   If R<6 Then Begin Close(TmpF); Exit; End;
+   SecID:=SecHdr[2];
+   SizeCode:=SecHdr[3];
+   Flags:=SecHdr[4];
+   If SizeCode>4 Then SizeCode:=2;
+   SecSize:=128;
+   For K:=1 to SizeCode do SecSize:=SecSize shl 1;
+   FillChar(DecBuf,SizeOf(DecBuf),0);
+   If(Flags and $30)=0 Then Begin
+    BlockRead(Img,EncBuf,2,R);
+    If R<2 Then Begin Close(TmpF); Exit; End;
+    DataLen:=Word(EncBuf[0])or(Word(EncBuf[1])shl 8);
+    If DataLen=0 Then Continue;
+    BlockRead(Img,Method,1,R);
+    If R<1 Then Begin Close(TmpF); Exit; End;
+    If DataLen-1>SizeOf(EncBuf)Then Begin
+     Close(TmpF);
+     WriteLn('Bloc TeleDisk trop grand : ',DataLen-1);
+     Halt(1);
+    End;
+    BlockRead(Img,EncBuf,DataLen-1,R);
+    If R<DataLen-1 Then Begin Close(TmpF); Exit; End;
+    Case Method of
+     0:Begin
+        If SecSize<=R Then Move(EncBuf,DecBuf,SecSize)
+                      Else Move(EncBuf,DecBuf,R);
+       End;
+     1:Begin
+        Cnt:=Word(EncBuf[0])or(Word(EncBuf[1])shl 8);
+        Q:=0;
+        For K:=1 to Cnt do Begin
+         If Q+1<SecSize Then Begin
+          DecBuf[Q]:=EncBuf[2];
+          DecBuf[Q+1]:=EncBuf[3];
+         End;
+         Inc(Q,2);
+        End;
+       End;
+     2:Begin
+        P:=0; Q:=0;
+        While(Q<SecSize)and(P<LongInt(DataLen)-1)do Begin
+         Code:=EncBuf[P]; Inc(P);
+         If Code=0 Then Begin
+          PatLen:=EncBuf[P]; Inc(P);
+          If Q+PatLen<=SecSize Then Move(EncBuf[P],DecBuf[Q],PatLen);
+          Inc(P,PatLen); Inc(Q,PatLen);
+         End Else Begin
+          PatLen:=EncBuf[P]; Inc(P);
+          BlockSize:=1;
+          For K:=1 to Code do BlockSize:=BlockSize shl 1;
+          For K:=1 to PatLen do Begin
+           If Q+BlockSize<=SecSize Then Move(EncBuf[P],DecBuf[Q],BlockSize);
+           Inc(Q,BlockSize);
+          End;
+          Inc(P,BlockSize);
+         End;
+        End;
+       End;
+    End;
+   End;
+   If(SecID<1)or(SecID>63)or((Flags and $40)<>0)Then Continue;
+   If(Cyl=0)and(Head=0)and(SecID>SPT)Then SPT:=SecID;
+   If SPT=0 Then SPT:=1;
+   LBA:=(LongInt(Cyl)*Heads+Head)*LongInt(SPT)+(LongInt(SecID)-1);
+   If LBA>=0 Then Begin
+    Seek(TmpF,LBA*512);
+    BlockWrite(TmpF,DecBuf,SecSize,W);
+   End;
+  End;
+ End;
+ Close(TmpF);
+ Close(Img);
+ WriteLn('Format TeleDisk decode vers ',NewName,' (image .TD0 inchangee).');
+ ImgName:=NewName;
+ Assign(Img,ImgName);
+ {$I-}Reset(Img,1);{$I+}
+ If IoResult<>0 Then Begin
+  WriteLn('Impossible de rouvrir le fichier decode ',ImgName);
+  Halt(1);
+ End;
+End;
+
+Procedure DetectImageFormat;
+Var
+ Raw:TSector;
+ R:Word;
+ FSize,FtrOfs,DT,CurSz:LongInt;
+ HdrOfs,BAToff,BlockSz:LongInt;
+ Capacity,GrainSize,GDOffset,NumGTEs:LongInt;
+ I,J,K:LongInt;
+ S,Line,FlatName,Token:String;
+ FlatOfs:LongInt;
+ ValCode:Integer;
+ Ch:Char;
+ NewName:String;
+
+ Function ReadLE32At(Pos:LongInt):LongInt;
+ Var
+  Buf:Array[0..3]of Byte;
+  RR:Word;
+ Begin
+  Seek(Img,Pos);
+  BlockRead(Img,Buf,4,RR);
+  ReadLE32At:=LongInt(Buf[0])Or(LongInt(Buf[1])Shl 8)
+             Or(LongInt(Buf[2])Shl 16)Or(LongInt(Buf[3])Shl 24);
+ End;
+
+Begin
+ ImgKind:=0;
+ VirtDiskSec:=0;
+ FSize:=FileSize(Img);
+ If FSize<512 Then Exit;
+ Seek(Img,0);
+ BlockRead(Img,Raw,SectorSize,R);
+ If R<512 Then Begin
+  { Tres petit fichier : essayons quand meme texte descriptor }
+ End;
+ { TeleDisk : signature 'TD' ou 'td' a l'offset 0 }
+ If((Raw[0]=Ord('T'))and(Raw[1]=Ord('D')))or
+   ((Raw[0]=Ord('t'))and(Raw[1]=Ord('d')))Then Begin
+  DecodeTeleDisk;
+  Exit;
+ End;
+ { VMDK sparse : 'KDMV' a l'offset 0 }
+ If(Raw[0]=$4B)and(Raw[1]=$44)and(Raw[2]=$4D)and(Raw[3]=$56)Then Begin
+  Capacity:=ReadLE32At(12);
+  GrainSize:=ReadLE32At(20);
+  GDOffset:=ReadLE32At(56);
+  NumGTEs:=ReadLE32At(44);
+  If(GrainSize>0)and(NumGTEs>0)and(GDOffset>0)Then Begin
+   ImgKind:=3;
+   VirtDiskSec:=Capacity;
+   VHDBlockSizeSec:=GrainSize;
+   VMDKGTEsPerGT:=NumGTEs;
+   VHDBATFileOfs:=GDOffset*512;
+   WriteLn('Format detecte : VMDK sparse (',VirtDiskSec,' secteurs virtuels).');
+   Exit;
+  End;
+ End;
+ { VMDK descriptor texte }
+ S:='';
+ For I:=0 to 511 do
+  If Raw[I]<>0 Then S:=S+Chr(Raw[I]);
+ If(Pos('# Disk DescriptorFile',S)>0)or(Pos('createType=',S)>0)or
+   (Pos('# Disk Descriptor',S)>0)Then Begin
+  { Cherche ligne 'RW <N> FLAT "name" <offset>' }
+  I:=Pos(' FLAT ',S);
+  If I>0 Then Begin
+   J:=I;
+   While(J>1)and(S[J]<>Chr(10))and(S[J]<>Chr(13))do Dec(J);
+   K:=I;
+   While(K<=Length(S))and(S[K]<>Chr(10))and(S[K]<>Chr(13))do Inc(K);
+   Line:=Copy(S,J+1,K-J-1);
+   I:=Pos('"',Line);
+   If I>0 Then Begin
+    J:=Pos('"',Copy(Line,I+1,Length(Line)));
+    If J>0 Then Begin
+     FlatName:=Copy(Line,I+1,J-1);
+     Token:='';
+     K:=I+J+1;
+     While(K<=Length(Line))and(Line[K]=' ')do Inc(K);
+     While(K<=Length(Line))and(Line[K]<>' ')and
+          (Line[K]<>Chr(13))and(Line[K]<>Chr(10))do Begin
+      Token:=Token+Line[K];
+      Inc(K);
+     End;
+     Val(Token,FlatOfs,ValCode);
+     If ValCode<>0 Then FlatOfs:=0;
+     { Reouverture sur le fichier flat }
+     Close(Img);
+     NewName:=FlatName;
+     { Si chemin relatif, prefixer avec repertoire de l'image }
+     If(Pos(':',NewName)=0)and(NewName<>'')and
+       (NewName[1]<>'\')and(NewName[1]<>'/')Then Begin
+      I:=Length(ImgName);
+      While(I>0)and(ImgName[I]<>'\')and(ImgName[I]<>'/')do Dec(I);
+      If I>0 Then NewName:=Copy(ImgName,1,I)+FlatName;
+     End;
+     WriteLn('VMDK descripteur : redirige vers ',NewName);
+     Assign(Img,NewName);
+     {$I-}Reset(Img,1);{$I+}
+     If IoResult<>0 Then Begin
+      WriteLn('Impossible d''ouvrir le fichier flat ',NewName);
+      Halt(1);
+     End;
+     ImgName:=NewName;
+     DetectImageFormat;
+     Exit;
+    End;
+   End;
+  End;
+ End;
+ { VHD footer (512 derniers octets) }
+ If FSize>=1024 Then Begin
+  FtrOfs:=FSize-512;
+  Seek(Img,FtrOfs);
+  BlockRead(Img,Raw,512,R);
+  If(R=512)and(Raw[0]=$63)and(Raw[1]=$6F)and(Raw[2]=$6E)and
+    (Raw[3]=$65)and(Raw[4]=$63)and(Raw[5]=$74)and(Raw[6]=$69)and
+    (Raw[7]=$78)Then Begin
+   { Big-endian : DiskType @60, CurrentSize @48 }
+   DT:=(LongInt(Raw[60])Shl 24)Or(LongInt(Raw[61])Shl 16)
+       Or(LongInt(Raw[62])Shl 8)Or LongInt(Raw[63]);
+   CurSz:=(LongInt(Raw[48])Shl 24)Or(LongInt(Raw[49])Shl 16)
+         Or(LongInt(Raw[50])Shl 8)Or LongInt(Raw[51]);
+   { Note: CurSz est sur 8 octets (40..47=high, 48..55=low). On suppose
+     que la partie haute est nulle pour les disques <4Go. Pour les
+     disques plus grands, on calcule depuis FSize. }
+   If CurSz<=0 Then CurSz:=(FSize-512);
+   VirtDiskSec:=CurSz Div 512;
+   If DT=2 Then Begin
+    ImgKind:=1;
+    WriteLn('Format detecte : VHD fixe (',VirtDiskSec,' secteurs virtuels).');
+    Exit;
+   End;
+   If(DT=3)or(DT=4)Then Begin
+    { Dynamic. Lire entete dynamique (offset = LongLong @16 BE). }
+    HdrOfs:=(LongInt(Raw[20])Shl 24)Or(LongInt(Raw[21])Shl 16)
+           Or(LongInt(Raw[22])Shl 8)Or LongInt(Raw[23]);
+    Seek(Img,HdrOfs);
+    BlockRead(Img,Raw,512,R);
+    If(R=512)and(Raw[0]=$63)and(Raw[1]=$78)and(Raw[2]=$73)and
+      (Raw[3]=$70)and(Raw[4]=$61)and(Raw[5]=$72)and(Raw[6]=$73)and
+      (Raw[7]=$65)Then Begin
+     { BAT offset @16 BE (8 octets, partie basse @20) }
+     BAToff:=(LongInt(Raw[20])Shl 24)Or(LongInt(Raw[21])Shl 16)
+            Or(LongInt(Raw[22])Shl 8)Or LongInt(Raw[23]);
+     BlockSz:=(LongInt(Raw[32])Shl 24)Or(LongInt(Raw[33])Shl 16)
+             Or(LongInt(Raw[34])Shl 8)Or LongInt(Raw[35]);
+     VHDBlockSizeSec:=BlockSz Div 512;
+     VHDBATFileOfs:=BAToff;
+     VHDBitmapSecs:=(VHDBlockSizeSec Div 4096);
+     If VHDBitmapSecs<1 Then VHDBitmapSecs:=1;
+     ImgKind:=2;
+     WriteLn('Format detecte : VHD dynamique (',VirtDiskSec,
+             ' secteurs virtuels).');
+     Exit;
+    End;
+   End;
+  End;
+ End;
+End;
+
 Function LooksLikeBPB:Boolean;
 Var
  BPS:Word;
  SPC:Byte;
+ OK:Boolean;
 Begin
  BPBOffset:=0;
  BPS:=LE16(11);
  SPC:=Sec[13];
- LooksLikeBPB:=(BPS=512)and(SPC<>0)and(Sec[16]<>0)and
+ OK:=(BPS=512)and(SPC<>0)and(Sec[16]<>0)and
   (LE16(14)<>0)and((LE16(17)<>0)or((LE16(22)=0)and(LE32(36)<>0)));
- If LooksLikeBPB Then Exit;
+ If OK Then Begin LooksLikeBPB:=True; Exit; End;
  BPS:=Word(Sec[12])or(Word(Sec[13])shl 8);
  SPC:=Sec[14];
- LooksLikeBPB:=(BPS=512)and(SPC<>0)and(Sec[17]<>0)and
+ OK:=(BPS=512)and(SPC<>0)and(Sec[17]<>0)and
   ((Word(Sec[15])or(Word(Sec[16])shl 8))<>0);
- If LooksLikeBPB Then BPBOffset:=1;
+ If OK Then BPBOffset:=1;
+ LooksLikeBPB:=OK;
 End;
 
 Function IsFATPartitionType(T:Byte):Boolean;
@@ -162,7 +587,7 @@ Var
  Sectors:LongInt;
 Begin
  InferFloppyBySize:=False;
- Sectors:=FileSize(Img)div SectorSize;
+ Sectors:=VirtualSectors;
  PartitionStart:=0;
  BytesPerSector:=SectorSize;
  ReservedSectors:=1;
@@ -267,32 +692,41 @@ End;
 
 Function FATByte(Offset:LongInt):Byte;
 Var
- R:Word;
- B:Byte;
+ LBA:LongInt;
+ Within:Word;
+ SavedSec:TSector;
 Begin
- Seek(Img,(FATStart*SectorSize)+Offset);
- BlockRead(Img,B,1,R);
- If R<>1Then Begin
-  WriteLn('Lecture FAT impossible.');
-  Halt(1);
+ LBA:=FATStart+(Offset Div SectorSize);
+ Within:=Word(Offset Mod SectorSize);
+ If LBA<>FATCachedLBA Then Begin
+  SavedSec:=Sec;
+  ReadSector(LBA);
+  FATCachedBuf:=Sec;
+  Sec:=SavedSec;
+  FATCachedLBA:=LBA;
  End;
- FATByte:=B;
+ FATByte:=FATCachedBuf[Within];
 End;
 
 Procedure SetFATByte(Offset:LongInt;B:Byte);
 Var
  F:Integer;
- W:Word;
- Pos:LongInt;
+ LBA:LongInt;
+ Within:Word;
+ SavedSec:TSector;
 Begin
+ Within:=Word(Offset Mod SectorSize);
  For F:=0 to NumFATs-1 do Begin
-  Pos:=((FATStart+LongInt(F)*SectorsPerFAT)*SectorSize)+Offset;
-  Seek(Img,Pos);
-  BlockWrite(Img,B,1,W);
-  If W<>1Then Begin
-   WriteLn('Ecriture FAT impossible.');
-   Halt(1);
+  LBA:=FATStart+LongInt(F)*SectorsPerFAT+(Offset Div SectorSize);
+  SavedSec:=Sec;
+  ReadSector(LBA);
+  Sec[Within]:=B;
+  WriteSector(LBA);
+  If F=0 Then Begin
+   FATCachedBuf:=Sec;
+   FATCachedLBA:=LBA;
   End;
+  Sec:=SavedSec;
  End;
 End;
 
@@ -753,6 +1187,57 @@ Begin
  IsSysParam:=(Copy(U,1,5)='/SYS:')or(Copy(U,1,5)='-SYS:');
 End;
 
+Function HasWildcard(S:String):Boolean;
+Var
+ I:Integer;
+Begin
+ HasWildcard:=False;
+ For I:=1 to Length(S)do
+  If(S[I]='*')or(S[I]='?')Then Begin
+   HasWildcard:=True;
+   Exit;
+  End;
+End;
+
+Procedure ExpandAndCopy(Pattern:String;SysMode:Boolean);
+Var
+ SR:SearchRec;
+ Dir:String;
+ I:Integer;
+ FullName:String;
+ Found:Boolean;
+Begin
+ Dir:='';
+ For I:=Length(Pattern)downto 1 do
+  If(Pattern[I]='\')or(Pattern[I]='/')or(Pattern[I]=':')Then Begin
+   Dir:=Copy(Pattern,1,I);
+   Break;
+  End;
+ Found:=False;
+ FindFirst(Pattern,AnyFile,SR);
+ While DosError=0 do Begin
+  If(SR.Attr and Directory)=0 Then Begin
+   FullName:=Dir+SR.Name;
+   CopyFileToImage(FullName,SysMode);
+   Found:=True;
+   If SysMode Then Begin
+    {$IFDEF FPC}
+     FindClose(SR);
+    {$ENDIF}
+    Exit;
+   End;
+  End;
+  FindNext(SR);
+ End;
+ {$IFDEF FPC}
+ FindClose(SR);
+ {$ENDIF}
+ If Not Found Then Begin
+  WriteLn('Aucun fichier ne correspond a ',Pattern);
+  Halt(1);
+ End;
+End;
+
 Var
  I:Integer;
  P:String;
@@ -770,6 +1255,8 @@ Begin
   WriteLn('Impossible d''ouvrir ',ImgName);
   Halt(1);
  End;
+ FATCachedLBA:=-1;
+ DetectImageFormat;
  ReadBoot;
  SysSeen:=False;
  For I:=2 to ParamCount do Begin
@@ -780,8 +1267,11 @@ Begin
     Halt(1);
    End;
    SysSeen:=True;
-   CopyFileToImage(Copy(P,6,Length(P)-5),True);
+   P:=Copy(P,6,Length(P)-5);
+   If HasWildcard(P)Then ExpandAndCopy(P,True)
+                    Else CopyFileToImage(P,True);
   End
+   Else If HasWildcard(P)Then ExpandAndCopy(P,False)
    Else CopyFileToImage(P,False);
  End;
  Close(Img);
