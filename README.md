@@ -1891,7 +1891,7 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 		<tr>
 			<td><b>UNDISKPC.PAS</b></td>
-			<td>Cette commande permet d'extraire les fichiers d'une image disque PC FAT12/FAT16/FAT32.</td>
+			<td>Cette commande permet d'extraire les fichiers d'une image disque PC (FAT12, FAT16, FAT32 ou HPFS).</td>
 		</tr>
 		<tr>
 			<td><b>UNEXPAND.PAS</b></td>
