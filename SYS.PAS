@@ -24,6 +24,8 @@ Const
  DOS_RXDOS  = 4;
  DOS_WIN95  = 5;
  DOS_PTSDOS = 6;
+ DOS_OS2    = 7;
+ DOS_WINNT  = 8;
 
 Type
  TSector=Array[0..SECTOR_SIZE-1] of Byte;
@@ -94,6 +96,8 @@ Var
  { Support /IMG:file - destination dans un fichier image disque }
  UseImg:Boolean;          { True si /IMG:file actif }
  NoBoot:Boolean;          { True si /NOBOOT : ne pas reecrire le secteur de boot }
+ InfoOnly:Boolean;        { True si /INFO : seulement analyser }
+ ActiveReq:Byte;          { 0=non touche, 1..4 = numero de partition a activer }
  ImgPath:String;          { Chemin du fichier image }
  ImgFile:File;            { Handle vers l'image }
  ImgKind:Byte;            { 0 = raw IMG, 1 = VHD fixe }
@@ -945,7 +949,7 @@ Begin
  While ClustersNeeded>0 do Begin
   CurClus:=AllocCluster;
   If CurClus=0 Then Begin
-   WriteLn('  Erreur: Plus de clusters libres.'); Close(F); Exit;
+   WriteLn('  Erreur: Plus d''unites d''allocation libres.'); Close(F); Exit;
   End;
   If FirstClus=0 Then FirstClus:=CurClus
   Else SetFATEntry(PrevClus,CurClus);
@@ -965,7 +969,7 @@ Begin
   End;
   LBA:=BPB.DataLBA+(LongInt(CurClus)-2)*ClusterSec+SecInClus;
   If Not ImgWriteLBA(LBA,SecBuf,1)Then Begin
-   WriteLn('  Erreur: Ecriture cluster image.'); Close(F); Exit;
+   WriteLn('  Erreur: Ecriture unite d''allocation image.'); Close(F); Exit;
   End;
   Inc(SecIdx);
   Inc(SecInClus);
@@ -1020,6 +1024,253 @@ Begin
  Else BuildSourcePath:=SourceDrive+':\'+FN;
 End;
 
+Function PartTypeName(T:Byte):String;
+Begin
+ Case T of
+  $00: PartTypeName:='Vide';
+  $01: PartTypeName:='FAT12';
+  $04: PartTypeName:='FAT16 (<32 Mo)';
+  $05: PartTypeName:='Etendue CHS';
+  $06: PartTypeName:='FAT16';
+  $07: PartTypeName:='HPFS/NTFS/exFAT';
+  $0B: PartTypeName:='FAT32 CHS';
+  $0C: PartTypeName:='FAT32 LBA';
+  $0E: PartTypeName:='FAT16 LBA';
+  $0F: PartTypeName:='Etendue LBA';
+  $82: PartTypeName:='Linux swap';
+  $83: PartTypeName:='Linux';
+  $A5: PartTypeName:='FreeBSD';
+  $EE: PartTypeName:='GPT protective';
+ Else
+  PartTypeName:='Inconnu';
+ End;
+End;
+
+Function DetectOSFromBootSec(Var Buf:TSector):String;
+Var OEM:String; J:Integer;
+Begin
+ OEM:='';
+ For J:=3 to 10 do
+  If(Buf[J]>=32)and(Buf[J]<127)Then OEM:=OEM+Chr(Buf[J])
+  Else OEM:=OEM+' ';
+ { Detection par OEM string }
+ If Pos('MSDOS5.0',OEM)>0 Then DetectOSFromBootSec:='MS-DOS 5.0+/Win9x'
+ Else If Pos('MSWIN4.1',OEM)>0 Then DetectOSFromBootSec:='Windows 98/ME'
+ Else If Pos('MSWIN4.0',OEM)>0 Then DetectOSFromBootSec:='Windows 95'
+ Else If Pos('MSDOS',OEM)>0 Then DetectOSFromBootSec:='MS-DOS'
+ Else If Pos('IBM',OEM)>0 Then DetectOSFromBootSec:='PC-DOS/IBM'
+ Else If Pos('FRDOS',OEM)>0 Then DetectOSFromBootSec:='FreeDOS'
+ Else If Pos('DRDOS',OEM)>0 Then DetectOSFromBootSec:='DR-DOS'
+ Else If(Pos('NTFS',OEM)>0)Then DetectOSFromBootSec:='Windows NT/2000/XP+ (NTFS)'
+ Else If(Pos('EXFAT',OEM)>0)Then DetectOSFromBootSec:='Windows (exFAT)'
+ Else If(Pos('OS2',OEM)>0)or(Pos('HPFS',OEM)>0)Then DetectOSFromBootSec:='OS/2 (HPFS)'
+ Else If(Pos('CORAILSY',OEM)>0)Then DetectOSFromBootSec:='Corail SYS (genere)'
+ Else If(Pos('MTOOL',OEM)>0)or(Pos('mkfs',OEM)>0)Then DetectOSFromBootSec:='Linux mkfs/mtools'
+ Else DetectOSFromBootSec:='Inconnu (OEM "'+OEM+'")';
+End;
+
+Function DetectFATFiles(Var Buf:TSector;Var FoundDOS:String):Boolean;
+{ Buf = secteur du repertoire racine. Detecte les fichiers systeme presents. }
+Var Slot,J:Integer; EntryOfs:Word; Nm:String;
+    HasIO,HasMSDOS,HasIBMBIO,HasIBMDOS,HasKERNEL,HasPTSBIO,HasRXDOSBIO,HasCMD:Boolean;
+    HasOS2BOOT,HasOS2LDR,HasOS2KRNL:Boolean;
+    HasNTLDR,HasNTDETECT,HasBOOTINI:Boolean;
+Begin
+ HasIO:=False; HasMSDOS:=False; HasIBMBIO:=False; HasIBMDOS:=False;
+ HasKERNEL:=False; HasPTSBIO:=False; HasRXDOSBIO:=False; HasCMD:=False;
+ HasOS2BOOT:=False; HasOS2LDR:=False; HasOS2KRNL:=False;
+ HasNTLDR:=False; HasNTDETECT:=False; HasBOOTINI:=False;
+ For Slot:=0 to 15 do Begin
+  EntryOfs:=Slot*32;
+  If Buf[EntryOfs]=0 Then Break;
+  If Buf[EntryOfs]=$E5 Then Continue;
+  If Buf[EntryOfs+11]=$0F Then Continue;
+  Nm:='';
+  For J:=0 to 7 do If Buf[EntryOfs+J]<>$20 Then Nm:=Nm+Chr(Buf[EntryOfs+J]);
+  Nm:=Nm+'.';
+  For J:=8 to 10 do If Buf[EntryOfs+J]<>$20 Then Nm:=Nm+Chr(Buf[EntryOfs+J]);
+  If(Length(Nm)>0)and(Nm[Length(Nm)]='.')Then Nm:=Copy(Nm,1,Length(Nm)-1);
+  If Nm='IO.SYS' Then HasIO:=True;
+  If Nm='MSDOS.SYS' Then HasMSDOS:=True;
+  If Nm='IBMBIO.COM' Then HasIBMBIO:=True;
+  If Nm='IBMDOS.COM' Then HasIBMDOS:=True;
+  If Nm='KERNEL.SYS' Then HasKERNEL:=True;
+  If Nm='PTSBIO.SYS' Then HasPTSBIO:=True;
+  If Nm='RXDOSBIO.SYS' Then HasRXDOSBIO:=True;
+  If Nm='OS2BOOT' Then HasOS2BOOT:=True;
+  If Nm='OS2LDR' Then HasOS2LDR:=True;
+  If Nm='OS2KRNL' Then HasOS2KRNL:=True;
+  If Nm='NTLDR' Then HasNTLDR:=True;
+  If Nm='NTDETECT.COM' Then HasNTDETECT:=True;
+  If Nm='BOOT.INI' Then HasBOOTINI:=True;
+  If Nm='COMMAND.COM' Then HasCMD:=True;
+ End;
+ FoundDOS:='';
+ If HasNTLDR and HasNTDETECT Then Begin
+  FoundDOS:='Windows NT/2000/XP';
+  DetectFATFiles:=True;
+  Exit;
+ End;
+ If HasOS2LDR and HasOS2KRNL Then Begin
+  FoundDOS:='OS/2';
+  DetectFATFiles:=True;
+  Exit;
+ End;
+ If HasIO and HasMSDOS Then FoundDOS:='MS-DOS / Windows 9x'
+ Else If HasIBMBIO and HasIBMDOS Then FoundDOS:='PC-DOS ou DR-DOS'
+ Else If HasKERNEL Then FoundDOS:='FreeDOS'
+ Else If HasPTSBIO Then FoundDOS:='PTS-DOS'
+ Else If HasRXDOSBIO Then FoundDOS:='RxDOS';
+ DetectFATFiles:=(FoundDOS<>'')and HasCMD;
+End;
+
+Procedure AnalyzeImage;
+Var
+ Sec0,SecBoot,RootSec:TSector;
+ J:Integer;
+ HasMBR,HasBPB:Boolean;
+ PartType:Byte;
+ PartStart,PartSize:LongInt;
+ BPS:Word;
+ SPC:Byte;
+ OSGuess,DOSGuess:String;
+ BootSig:Boolean;
+ RootLBA:LongInt;
+ TmpBPB:TBPB;
+ FATBits:Byte;
+ TotalCl:LongInt;
+Begin
+ WriteLn;
+ WriteLn('=== Analyse de l''image ',ImgPath,' ===');
+ Case ImgKind of
+  0: WriteLn('Format conteneur : IMG brute');
+  1: WriteLn('Format conteneur : VHD fixe');
+ End;
+ WriteLn('Taille image     : ',FileSize(ImgFile),' octets (',
+         FileSize(ImgFile) div 512,' secteurs)');
+
+ If Not ImgReadLBA(0,Sec0,1)Then Begin
+  WriteLn('Erreur: Lecture secteur 0.'); Exit;
+ End;
+ BootSig:=(Sec0[510]=$55)and(Sec0[511]=$AA);
+ WriteLn('Signature 55AA   : ',BootSig);
+
+ BPS:=GetLE16Buf(Sec0,11);
+ SPC:=Sec0[13];
+ HasBPB:=(BPS=512)and(SPC<>0)and((SPC and (SPC-1))=0);
+ HasMBR:=BootSig and(Not HasBPB);
+
+ If HasBPB Then Begin
+  WriteLn('Layout           : BPB direct (style disquette, pas de MBR)');
+  PartStart:=0;
+  PartSize:=FileSize(ImgFile) div 512;
+  PartType:=$00;
+  Move(Sec0,SecBoot,512);
+ End Else If HasMBR Then Begin
+  WriteLn('Layout           : MBR + table de partition');
+  WriteLn;
+  WriteLn('Partitions :');
+  For J:=0 to 3 do Begin
+   PartType:=Sec0[$1BE+J*16+4];
+   PartStart:=GetLE32Buf(Sec0,$1BE+J*16+8);
+   PartSize:=GetLE32Buf(Sec0,$1BE+J*16+12);
+   If(PartType<>0)or(PartStart<>0)Then Begin
+    WriteLn('  #',J+1,' Type=$',PartType,' (',PartTypeName(PartType),')');
+    WriteLn('       Boot=',Sec0[$1BE+J*16]=$80,
+            '  LBA=',PartStart,'  Taille=',PartSize,' sec (',
+            PartSize div 2,' Ko)');
+   End;
+  End;
+  { Analyser la premiere partition }
+  PartType:=Sec0[$1BE+4];
+  PartStart:=GetLE32Buf(Sec0,$1BE+8);
+  PartSize:=GetLE32Buf(Sec0,$1BE+12);
+  If(PartType<>0)and(PartStart<>0)Then Begin
+   If Not ImgReadLBA(PartStart,SecBoot,1)Then Begin
+    WriteLn('Erreur: Lecture secteur de boot partition #1.'); Exit;
+   End;
+  End Else Begin
+   WriteLn;
+   WriteLn('Aucune partition active : disque non partitionne ou vide.');
+   Exit;
+  End;
+ End Else Begin
+  WriteLn('Layout           : Aucun BPB ni MBR valide.');
+  WriteLn('Verdict          : Image vide ou non formatee.');
+  WriteLn('Action suggeree  : SYS /IMG:',ImgPath,' /FORMAT:FAT12 (ou FAT16) /DOS:MS-DOS');
+  Exit;
+ End;
+
+ { Analyser le BPB de la partition (ou de l'image directement) }
+ WriteLn;
+ WriteLn('--- Secteur de boot partition ---');
+ BPS:=GetLE16Buf(SecBoot,11);
+ SPC:=SecBoot[13];
+ BootSig:=(SecBoot[510]=$55)and(SecBoot[511]=$AA);
+ WriteLn('Signature 55AA   : ',BootSig);
+ WriteLn('BytesPerSec      : ',BPS);
+ WriteLn('SecPerClus       : ',SPC);
+ If(BPS<>512)or(SPC=0)or((SPC and (SPC-1))<>0)Then Begin
+  WriteLn('Verdict          : Partition non formatee (BPB invalide).');
+  WriteLn('Action suggeree  : SYS /IMG:',ImgPath,' /FORMAT:FAT12 (ou FAT16)');
+  Exit;
+ End;
+ WriteLn('ReservedSec      : ',GetLE16Buf(SecBoot,14));
+ WriteLn('NumFATs          : ',SecBoot[16]);
+ WriteLn('RootEntries      : ',GetLE16Buf(SecBoot,17));
+ WriteLn('SecPerFAT        : ',GetLE16Buf(SecBoot,22));
+ OSGuess:=DetectOSFromBootSec(SecBoot);
+ WriteLn('OEM/OS detecte   : ',OSGuess);
+
+ { Reconstituer un BPB pour lire la racine }
+ TmpBPB.PartLBA:=PartStart;
+ TmpBPB.BytesPerSec:=BPS;
+ TmpBPB.SecPerClus:=SPC;
+ TmpBPB.ReservedSec:=GetLE16Buf(SecBoot,14);
+ TmpBPB.NumFATs:=SecBoot[16];
+ TmpBPB.RootEntries:=GetLE16Buf(SecBoot,17);
+ TmpBPB.SecPerFAT:=GetLE16Buf(SecBoot,22);
+ TmpBPB.TotalSec:=GetLE16Buf(SecBoot,19);
+ If TmpBPB.TotalSec=0 Then TmpBPB.TotalSec:=GetLE32Buf(SecBoot,32);
+ If(TmpBPB.NumFATs=0)or(TmpBPB.RootEntries=0)or(TmpBPB.SecPerFAT=0)Then Begin
+  WriteLn('Verdict          : BPB FAT32 ou non-FAT (NumFATs/RootEntries/SecPerFAT nul).');
+  Exit;
+ End;
+ RootLBA:=TmpBPB.PartLBA+TmpBPB.ReservedSec+
+          LongInt(TmpBPB.NumFATs)*TmpBPB.SecPerFAT;
+ { Estimer FAT12 vs FAT16 par compte de clusters }
+ TotalCl:=(TmpBPB.TotalSec-(RootLBA-TmpBPB.PartLBA)-
+          (LongInt(TmpBPB.RootEntries)*32 div 512)) div TmpBPB.SecPerClus;
+ If TotalCl<4085 Then FATBits:=12
+ Else If TotalCl<65525 Then FATBits:=16
+ Else FATBits:=32;
+ WriteLn('Type FAT estime  : FAT',FATBits,' (',TotalCl,' unites d''allocation de donnees)');
+
+ If FATBits=32 Then Begin
+  WriteLn('Verdict          : Volume FAT32 (non supporte par SYS).');
+  Exit;
+ End;
+
+ { Lire le premier secteur du repertoire racine et y chercher les fichiers DOS }
+ If Not ImgReadLBA(RootLBA,RootSec,1)Then Begin
+  WriteLn('Erreur: Lecture repertoire racine.'); Exit;
+ End;
+ WriteLn;
+ WriteLn('--- Repertoire racine ---');
+ If DetectFATFiles(RootSec,DOSGuess)Then Begin
+  WriteLn('Fichiers systeme : presents');
+  WriteLn('DOS installe     : ',DOSGuess);
+  WriteLn('Verdict          : Disque amorcable (',DOSGuess,').');
+ End Else If DOSGuess<>''Then Begin
+  WriteLn('Fichiers systeme : partiels (',DOSGuess,' sans COMMAND.COM)');
+  WriteLn('Verdict          : Disque incomplet.');
+ End Else Begin
+  WriteLn('Fichiers systeme : aucun fichier DOS reconnu');
+  WriteLn('Verdict          : Volume formate mais sans systeme.');
+  WriteLn('Action suggeree  : SYS /IMG:',ImgPath,' /DOS:MS-DOS (ou autre)');
+ End;
+End;
+
 Procedure SetupDosFamily(Fam:Byte);
 Begin
  DosFamily:=Fam;
@@ -1067,6 +1318,21 @@ Begin
    SysFiles[3]:='COMMAND.COM';
    SysFileCount:=3;
   End;
+  DOS_OS2: Begin
+   { OS/2 (HPFS ou FAT) : amorceur OS2BOOT, loader OS2LDR, noyau OS2KRNL }
+   SysFiles[1]:='OS2BOOT';
+   SysFiles[2]:='OS2LDR';
+   SysFiles[3]:='OS2KRNL';
+   SysFileCount:=3;
+  End;
+  DOS_WINNT: Begin
+   { Windows NT/2000/XP : NTLDR charge le noyau via boot.ini, NTDETECT.COM
+     enumere le materiel. Sur FAT/FAT32 partition systeme. }
+   SysFiles[1]:='NTLDR';
+   SysFiles[2]:='NTDETECT.COM';
+   SysFiles[3]:='BOOT.INI';
+   SysFileCount:=3;
+  End;
  End;
 End;
 
@@ -1080,6 +1346,8 @@ Begin
   DOS_RXDOS:   DosFamilyName:='RxDOS';
   DOS_WIN95:   DosFamilyName:='Windows 95 (MS-DOS 7)';
   DOS_PTSDOS:  DosFamilyName:='PTS-DOS';
+  DOS_OS2:     DosFamilyName:='OS/2';
+  DOS_WINNT:   DosFamilyName:='Windows NT/2000/XP';
  Else
   DosFamilyName:='?';
  End;
@@ -1097,7 +1365,50 @@ Begin
  Else If(U='RXDOS')or(U='RX')Then Fam:=DOS_RXDOS
  Else If(U='WIN95')or(U='WIN9X')or(U='W95')or(U='MSDOS7')or(U='MS-DOS7')or(U='WINDOWS95')Then Fam:=DOS_WIN95
  Else If(U='PTS-DOS')or(U='PTSDOS')or(U='PTS')Then Fam:=DOS_PTSDOS
+ Else If(U='OS/2')or(U='OS2')or(U='IBMOS2')Then Fam:=DOS_OS2
+ Else If(U='NT')or(U='WINNT')or(U='WIN-NT')or(U='WINDOWS-NT')or(U='WINNT4')or
+   (U='WIN2K')or(U='W2K')or(U='WINXP')or(U='XP')or(U='WIN2000')Then Fam:=DOS_WINNT
  Else ParseDosFamily:=False;
+End;
+
+{ Marque la partition PartNum (1..4) comme active dans la table de partition
+  du MBR, et desactive les trois autres. Necessite un MBR valide (signature
+  55AA + au moins une entree non vide). Retourne True si succes. }
+Function SetActivePartition(PartNum:Byte):Boolean;
+Var
+ Sec0:TSector;
+ K:Integer;
+ Ofs:Word;
+ PT:Byte;
+Begin
+ SetActivePartition:=False;
+ If(PartNum<1)or(PartNum>4)Then Begin
+  WriteLn('Erreur: /ACTIVE numero de partition invalide.');
+  Exit;
+ End;
+ If Not ImgReadLBA(0,Sec0,1)Then Begin
+  WriteLn('Erreur: lecture du MBR.');
+  Exit;
+ End;
+ If(Sec0[510]<>$55)or(Sec0[511]<>$AA)Then Begin
+  WriteLn('Erreur: pas de signature MBR (55AA), impossible d''activer une partition.');
+  Exit;
+ End;
+ Ofs:=$1BE+(LongInt(PartNum)-1)*16;
+ PT:=Sec0[Ofs+4];
+ If PT=0 Then Begin
+  WriteLn('Erreur: la partition #',PartNum,' est vide (type=0).');
+  Exit;
+ End;
+ { Desactiver toutes les partitions, puis activer celle demandee }
+ For K:=0 to 3 do Sec0[$1BE+K*16]:=$00;
+ Sec0[Ofs]:=$80;
+ If Not ImgWriteLBA(0,Sec0,1)Then Begin
+  WriteLn('Erreur: ecriture du MBR.');
+  Exit;
+ End;
+ WriteLn('Partition #',PartNum,' marquee active (bootable).');
+ SetActivePartition:=True;
 End;
 
 BEGIN
@@ -1106,7 +1417,8 @@ BEGIN
   WriteLn('SYS : Cette commande permet de transferer les fichiers systemes.');
   WriteLn;
   WriteLn('Syntaxe : SYS [source:] [destination:] [/IMG:fichier]');
-  WriteLn('              [/FORMAT:FAT12|FAT16] [/DOS:famille] [/NOBOOT]');
+  WriteLn('              [/FORMAT:FAT12|FAT16] [/DOS:famille]');
+  WriteLn('              [/NOBOOT] [/ACTIVE[:N]] [/INFO]');
   WriteLn;
   WriteLn(' source:        Lecteur source des fichiers systeme (defaut: rep. courant)');
   WriteLn(' destination:   Lecteur cible (omis si /IMG: est specifie)');
@@ -1129,18 +1441,28 @@ BEGIN
   WriteLn('                  RxDOS    -> RXDOSBIO.SYS, RXDOS.SYS, COMMAND.COM');
   WriteLn('                  Win95    -> IO.SYS, MSDOS.SYS, COMMAND.COM (MS-DOS 7)');
   WriteLn('                  PTS-DOS  -> PTSBIO.SYS, PTSDOS.SYS, COMMAND.COM');
+  WriteLn('                  OS/2     -> OS2BOOT, OS2LDR, OS2KRNL');
+  WriteLn('                  WinNT    -> NTLDR, NTDETECT.COM, BOOT.INI (NT/2K/XP)');
   WriteLn(' /NOBOOT        Ne pas reecrire le secteur de boot de l''image apres');
   WriteLn('                le transfert (le /FORMAT en cree deja un correct).');
+  WriteLn(' /ACTIVE[:N]    Marque la partition N (1..4, defaut 1) comme active');
+  WriteLn('                (bootable) dans le MBR, et desactive les autres. Utile');
+  WriteLn('                pour les images de disque dur multi-partitions.');
+  WriteLn(' /INFO          Analyse l''image et affiche le type de partition,');
+  WriteLn('                le secteur de boot, le BPB, le type FAT et le DOS');
+  WriteLn('                installe. Aucune ecriture n''est effectuee.');
   WriteLn;
   WriteLn('En mode /IMG:, les fichiers IO.SYS, MSDOS.SYS et COMMAND.COM sont');
   WriteLn('lus depuis le repertoire courant (ou source: si specifie) puis ecrits');
   WriteLn('dans le repertoire racine FAT12/FAT16 de l''image, avec allocation');
-  WriteLn('correcte des clusters et mise a jour de toutes les copies de la FAT.');
+  WriteLn('correcte des unites d''allocation et mise a jour de toutes les copies de ');
+  WriteLn('la FAT.');
   Halt;
  End;
 
  { Premiere passe : detecter /IMG:fichier et collecter parametres positionnels }
- UseImg:=False; ImgPath:=''; ImgKind:=0; NoBoot:=False;
+ UseImg:=False; ImgPath:=''; ImgKind:=0; NoBoot:=False; InfoOnly:=False;
+ ActiveReq:=0;
  FormatReq:=0; { 0=non, 12=FAT12, 16=FAT16 }
  SetupDosFamily(DOS_MSDOS);  { Defaut : MS-DOS }
  SourceDrive:=#0; DestDrive:=#0;
@@ -1180,6 +1502,31 @@ BEGIN
   If(UpperStr(CurrParam)='/NOBOOT')or(UpperStr(CurrParam)='-NOBOOT')or
     (UpperStr(CurrParam)='--NOBOOT')Then NoBoot:=True
   Else
+  If(UpperStr(CurrParam)='/INFO')or(UpperStr(CurrParam)='-INFO')or
+    (UpperStr(CurrParam)='--INFO')or(UpperStr(CurrParam)='/ANALYZE')or
+    (UpperStr(CurrParam)='/ANALYSE')Then InfoOnly:=True
+  Else
+  If(UpperStr(CurrParam)='/ACTIVE')or(UpperStr(CurrParam)='-ACTIVE')or
+    (UpperStr(CurrParam)='--ACTIVE')Then ActiveReq:=1
+  Else
+  If(Length(CurrParam)>=8)and
+    ((Copy(UpperStr(CurrParam),1,8)='/ACTIVE:')or
+     (Copy(UpperStr(CurrParam),1,8)='-ACTIVE:'))Then Begin
+   Val(Copy(CurrParam,9,Length(CurrParam)-8),ActiveReq,ErrorCode);
+   If(ErrorCode<>0)or(ActiveReq<1)or(ActiveReq>4)Then Begin
+    WriteLn('Erreur: /ACTIVE attend un numero de partition entre 1 et 4.');
+    Halt(1);
+   End;
+  End
+  Else
+  If(Length(CurrParam)>=9)and(Copy(UpperStr(CurrParam),1,9)='--ACTIVE:')Then Begin
+   Val(Copy(CurrParam,10,Length(CurrParam)-9),ActiveReq,ErrorCode);
+   If(ErrorCode<>0)or(ActiveReq<1)or(ActiveReq>4)Then Begin
+    WriteLn('Erreur: /ACTIVE attend un numero de partition entre 1 et 4.');
+    Halt(1);
+   End;
+  End
+  Else
   If(Length(CurrParam)>0)and(CurrParam[1]<>'/')and(CurrParam[1]<>'-')Then Begin
    If SourceDrive=#0 Then SourceDrive:=CurrParam[1]
    Else If DestDrive=#0 Then DestDrive:=CurrParam[1];
@@ -1196,6 +1543,11 @@ BEGIN
   Case ImgKind of
    0: WriteLn('Image: ',ImgPath,' (IMG brute)');
    1: WriteLn('Image: ',ImgPath,' (VHD fixe)');
+  End;
+  If InfoOnly Then Begin
+   AnalyzeImage;
+   Close(ImgFile);
+   Halt;
   End;
   GetMem(FATBuf,MAX_FAT_BYTES);
   If FATBuf=Nil Then Begin
@@ -1214,7 +1566,7 @@ BEGIN
     FreeMem(FATBuf,MAX_FAT_BYTES); Close(ImgFile); Halt(1);
    End;
    WriteLn('  FAT', BPB.FATBits, ': ', BPB.TotalClusters,
-           ' clusters, ', BPB.SecPerClus, ' secteur(s)/cluster, ',
+           ' unites d''allocation, ', BPB.SecPerClus, ' secteur(s)/unite d''allocation, ',
            BPB.RootEntries, ' entrees racine.');
   End;
   If Not LoadFAT Then Begin
@@ -1239,6 +1591,9 @@ BEGIN
    End Else If Not NoBoot Then Begin
     If WriteMinimalBootSector Then WriteLn('Secteur de boot minimal ecrit.')
     Else WriteLn('Avertissement: Ecriture du secteur de boot echouee.');
+   End;
+   If Success and(ActiveReq>0)Then Begin
+    If Not SetActivePartition(ActiveReq)Then Success:=False;
    End;
   End;
   Close(ImgFile);
