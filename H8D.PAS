@@ -103,13 +103,28 @@ End;
 Procedure ReadSectors(Var Buff;I,N:Integer);
 Var
  Err:Integer;
+ FSize:LongInt;
 Begin
+ FSize:=FileSize(Channel);
+ If (LongInt(I)*SECSIZE+LongInt(N)*SECSIZE)>FSize Then Begin
+  WriteLn('Erreur - lecture hors limites (secteur ',I,', ',N,' secteur(s), taille=',FSize,')');
+  Halt(1);
+ End;
+ {$I-}
  Seek(Channel,LongInt(I)*SECSIZE);
+ {$I+}
  If IOResult<>0 Then Begin
   WriteLn('Erreur de positionnement');
   Halt(1);
  End;
+ {$I-}
  BlockRead(Channel,Buff,N*SECSIZE);
+ {$I+}
+ Err:=IOResult;
+ If Err<>0 Then Begin
+  WriteLn('Erreur de lecture (code ',Err,') au secteur ',I);
+  Halt(1);
+ End;
 End;
 
 Procedure WriteSectors(Var Buff;I,N:Integer);
@@ -205,6 +220,10 @@ Begin
  NEntries:=0;
  Block:=0;
  WriteLn('Construction du r'+#130+'pertoire...');
+ If (NxtSector<=0) Or (LongInt(NxtSector+2)*SECSIZE>FileSize(Channel)) Then Begin
+  WriteLn('Erreur - DirSector invalide (',NxtSector,') : ce volume n''est pas un H8D HDOS valide.');
+  Exit;
+ End;
  Repeat
   ReadSectors(rwbuff,Nxtsector,2);
   Inc(block);
@@ -272,7 +291,11 @@ Begin
   If Not Done Then Begin
    { Le pointeur de prochain bloc repertoire est au offset 510-511 du bloc de 512 octets. }
    NxtSector:=Byte(rwbuff[510]) + Byte(rwbuff[511])*256;
-   If NxtSector=0 Then Done:=True;
+   If NxtSector=0 Then Done:=True
+   Else If (NxtSector<0) Or (LongInt(NxtSector+2)*SECSIZE>FileSize(Channel)) Then Begin
+    WriteLn('Erreur - prochain secteur r'+#130+'pertoire invalide (',NxtSector,'), arr'+#136+'t de la lecture.');
+    Done:=True;
+   End;
    If Block>200 Then Begin
     WriteLn('Erreur - cha'+#140+'ne du r'+#130+'pertoire trop longue (cycle?)');
     Done:=True;
@@ -509,6 +532,11 @@ Begin
  Sc:=DirEntries[ifile]^.Size;
  nsec:=0;
  While Sc>0 do Begin
+  If (LongInt(Clu)*dkbuff.spg+dkbuff.spg)*SECSIZE>FileSize(Channel) Then Begin
+   WriteLn;
+   WriteLn('Erreur - cluster ',Clu,' hors limites pour ',DirEntries[ifile]^.DName,', extraction interrompue.');
+   Break;
+  End;
   ReadSectors(rwbuff,LongInt(Clu)*dkbuff.spg,dkbuff.spg);
   For i:=0 to dkbuff.spg - 1 do Begin
    If Sc<=0 Then Break;
