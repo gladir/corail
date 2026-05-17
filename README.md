@@ -1107,6 +1107,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer un interpréteur BASIC étant un clone du GWBASIC.</td>
 		</tr>
 		<tr>
+			<td><b>H8D.PAS</b></td>
+			<td>Cette commande permet de lancer l'utilitaire de gestion d'images disque Heath/Zenith H8D (HDOS).</td>
+		</tr>
+		<tr>
 			<td><b>HALT.PAS</b></td>
 			<td>Cette commande permet d'arrêter l'ordinateur.</td>
 		</tr>
