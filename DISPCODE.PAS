@@ -96,6 +96,7 @@ Var
  InName:String;
  StartOff:LongInt;
  MaxBytes:LongInt;
+ NoOpcode:Boolean;
  Buf:Array[0..16383]Of Byte;
  BufLen:LongInt;
  BufBase:LongInt;     { offset fichier du d'but de Buf }
@@ -126,21 +127,30 @@ Begin
  WriteLn('DISPCODE - Cette commande permet de lancer le ',
          'd'+#130+'sassembleur de p-Code UCSD p-System');
  WriteLn;
- WriteLn('Syntaxe: DISPCODE FICHIER [/S=offset] [/N=nb] [/H]');
+ WriteLn('Syntaxe: DISPCODE FICHIER [/S=offset] [/N=nb] [/NOOPCODE] [/H]');
  WriteLn;
  WriteLn('  /S=offset   Offset de d'+#130+'but (d'+#130+'cimal ou $hex)');
  WriteLn('  /N=nb       Nombre max d''octets '+#133+' d'+#130+'sassembler');
+ WriteLn('  /NOOPCODE   N''affiche pas les adresses ni les octets hexa');
  WriteLn('  /H          Affiche cette aide');
+End;
+
+Function UpStr(S:String):String;
+Var I:Integer;
+Begin
+ For I:=1 To Length(S) Do S[I]:=UpCase(S[I]);
+ UpStr:=S;
 End;
 
 Procedure ParseCmd;
 Var I:Integer; S:String; V:LongInt;
 Begin
- InName:=''; StartOff:=0; MaxBytes:=-1;
+ InName:=''; StartOff:=0; MaxBytes:=-1; NoOpcode:=False;
  For I:=1 To ParamCount Do Begin
   S:=ParamStr(I);
   If (S[1]='/') Or (S[1]='-') Then Begin
-   If (Length(S)>=2) And (UpCase(S[2])='H') Then Begin Usage; Halt(0); End
+   If UpStr(Copy(S,2,255))='NOOPCODE' Then NoOpcode:=True
+   Else If (Length(S)>=2) And (UpCase(S[2])='H') Then Begin Usage; Halt(0); End
    Else If (Length(S)>=3) And (UpCase(S[2])='S') And (S[3]='=') Then Begin
     V:=StrToLongHex(Copy(S,4,Length(S)-3));
     If V<0 Then Begin WriteLn('Offset invalide: ',S); Halt(2); End;
@@ -204,6 +214,27 @@ Begin
  While CurCol<Col Do Begin Write(' '); Inc(CurCol); End;
 End;
 
+Procedure HxAddr(L:LongInt);
+Begin
+ If Not NoOpcode Then Begin WrHex6(L); Write('  '); End;
+End;
+
+Procedure HxByte(B:Byte; Var Col:Integer);
+Begin
+ If Not NoOpcode Then Begin WrHex2(B); Write(' '); Inc(Col,3); End;
+End;
+
+Procedure HxDots(Var Col:Integer);
+Begin
+ If Not NoOpcode Then Begin Write('.. '); Inc(Col,3); End;
+End;
+
+Procedure HxPad(Col:Integer);
+Begin
+ If Not NoOpcode Then PadTo(30,Col)
+ Else Write(' ');
+End;
+
 { Lit BIG ' partir de Pos. Retourne valeur, met Used ' 1 ou 2. }
 Function ReadBig(Pos:LongInt; Var Used:Integer):LongInt;
 Var B1,B2:Byte;
@@ -227,16 +258,16 @@ Label DoneOps;
 Begin
  If Not GetByte(IPC,Op) Then Begin DisOne:=0; Exit; End;
  { Adresse + opcode hex. }
- WrHex6(IPC); Write('  ');
- WrHex2(Op); Write(' ');
- BytesShown:=1; HexCol:=6+2+3;
+ HxAddr(IPC);
+ HexCol:=0; HxByte(Op,HexCol);
+ BytesShown:=1;
  { On va d'abord pr'parer mn'monique et op'randes en m'moire ? Non, on
    imprime les octets d'op'rande, puis on PadTo une colonne, puis le texte. }
  { Premi'rement r'soudre la taille pour imprimer tous les octets en hex. }
  { Strat'gie simple: r'imprimer les octets via une 2e passe. }
  { Pour simplifier, on imprime le mn'monique apr's avoir lu les op'randes. }
  If Op<128 Then Begin
-  PadTo(30,HexCol);
+  HxPad(HexCol);
   Write('SLDC ',Op);
   WriteLn;
   DisOne:=1;
@@ -245,14 +276,14 @@ Begin
  Mn:=Mnem128[Op];
  Case Kind128[Op] Of
   OPK_NONE: Begin
-   PadTo(30,HexCol); Write(Mn);
+   HxPad(HexCol); Write(Mn);
    { CSP n'a pas d'op'rande dans Kind128? Si: OPK_UB pour 158. }
    WriteLn; DisOne:=1; Exit;
   End;
   OPK_UB: Begin
    If Not GetByte(IPC+1,B) Then Begin WriteLn(Mn,' ?'); DisOne:=1; Exit; End;
-   WrHex2(B); Write(' '); Inc(HexCol,3);
-   PadTo(30,HexCol); Write(Mn,' ',B);
+   HxByte(B,HexCol);
+   HxPad(HexCol); Write(Mn,' ',B);
    If Op=158 Then Begin { CSP }
     If B<=CSPMax Then Write('  ; ',CSPName[B])
     Else Write('  ; CSP#',B);
@@ -261,69 +292,72 @@ Begin
   End;
   OPK_SB: Begin
    If Not GetByte(IPC+1,B) Then Begin WriteLn(Mn,' ?'); DisOne:=1; Exit; End;
-   WrHex2(B); Write(' '); Inc(HexCol,3);
-   PadTo(30,HexCol); Write(Mn,' ');
-   If B<128 Then Write('+',B,'   ; -> $') Else Write(Integer(B)-256,'  ; -> $');
-   If B<128 Then WrHex6(IPC+2+B) Else WrHex6(IPC+2+B-256);
+   HxByte(B,HexCol);
+   HxPad(HexCol); Write(Mn,' ');
+   If B<128 Then Write('+',B) Else Write(Integer(B)-256);
+   If Not NoOpcode Then Begin
+    Write('  ; -> $');
+    If B<128 Then WrHex6(IPC+2+B) Else WrHex6(IPC+2+B-256);
+   End;
    WriteLn; DisOne:=2; Exit;
   End;
   OPK_W: Begin
    If Not GetByte(IPC+1,Lo) Then Begin WriteLn(Mn,' ?'); DisOne:=1; Exit; End;
    If Not GetByte(IPC+2,Hi) Then Begin WriteLn(Mn,' ?'); DisOne:=2; Exit; End;
-   WrHex2(Lo); Write(' '); WrHex2(Hi); Write(' '); Inc(HexCol,6);
+   HxByte(Lo,HexCol); HxByte(Hi,HexCol);
    W:=LongInt(Hi)*256+Lo;
    If W>=32768 Then W:=W-65536;
-   PadTo(30,HexCol); Write(Mn,' ',W); WriteLn; DisOne:=3; Exit;
+   HxPad(HexCol); Write(Mn,' ',W); WriteLn; DisOne:=3; Exit;
   End;
   OPK_BIG: Begin
    W:=ReadBig(IPC+1,Used);
    If Used=0 Then Begin WriteLn(Mn,' ?'); DisOne:=1; Exit; End;
    For I:=0 To Used-1 Do Begin
-    GetByte(IPC+1+I,B); WrHex2(B); Write(' '); Inc(HexCol,3);
+    GetByte(IPC+1+I,B); HxByte(B,HexCol);
    End;
-   PadTo(30,HexCol); Write(Mn,' ',W); WriteLn;
+   HxPad(HexCol); Write(Mn,' ',W); WriteLn;
    DisOne:=1+Used; Exit;
   End;
   OPK_UBUB: Begin
    If Not GetByte(IPC+1,B) Then Begin WriteLn(Mn,' ?'); DisOne:=1; Exit; End;
    If Not GetByte(IPC+2,B2) Then Begin WriteLn(Mn,' ?'); DisOne:=2; Exit; End;
-   WrHex2(B); Write(' '); WrHex2(B2); Write(' '); Inc(HexCol,6);
-   PadTo(30,HexCol); Write(Mn,' ',B,',',B2); WriteLn;
+   HxByte(B,HexCol); HxByte(B2,HexCol);
+   HxPad(HexCol); Write(Mn,' ',B,',',B2); WriteLn;
    DisOne:=3; Exit;
   End;
   OPK_UBBIG: Begin
    If Not GetByte(IPC+1,B) Then Begin WriteLn(Mn,' ?'); DisOne:=1; Exit; End;
-   WrHex2(B); Write(' '); Inc(HexCol,3);
+   HxByte(B,HexCol);
    W:=ReadBig(IPC+2,Used);
-   If Used=0 Then Begin PadTo(30,HexCol); WriteLn(Mn,' ',B,',?'); DisOne:=2; Exit; End;
+   If Used=0 Then Begin HxPad(HexCol); WriteLn(Mn,' ',B,',?'); DisOne:=2; Exit; End;
    For I:=0 To Used-1 Do Begin
-    GetByte(IPC+2+I,B2); WrHex2(B2); Write(' '); Inc(HexCol,3);
+    GetByte(IPC+2+I,B2); HxByte(B2,HexCol);
    End;
-   PadTo(30,HexCol); Write(Mn,' ',B,',',W); WriteLn;
+   HxPad(HexCol); Write(Mn,' ',B,',',W); WriteLn;
    DisOne:=2+Used; Exit;
   End;
   OPK_DBBIG: Begin
    If Not GetByte(IPC+1,B) Then Begin WriteLn(Mn,' ?'); DisOne:=1; Exit; End;
-   WrHex2(B); Write(' '); Inc(HexCol,3);
+   HxByte(B,HexCol);
    W:=ReadBig(IPC+2,Used);
-   If Used=0 Then Begin PadTo(30,HexCol); WriteLn(Mn,' L',B,',?'); DisOne:=2; Exit; End;
+   If Used=0 Then Begin HxPad(HexCol); WriteLn(Mn,' L',B,',?'); DisOne:=2; Exit; End;
    For I:=0 To Used-1 Do Begin
-    GetByte(IPC+2+I,B2); WrHex2(B2); Write(' '); Inc(HexCol,3);
+    GetByte(IPC+2+I,B2); HxByte(B2,HexCol);
    End;
-   PadTo(30,HexCol); Write(Mn,' L',B,',',W); WriteLn;
+   HxPad(HexCol); Write(Mn,' L',B,',',W); WriteLn;
    DisOne:=2+Used; Exit;
   End;
   OPK_LSA: Begin
    If Not GetByte(IPC+1,B) Then Begin WriteLn(Mn,' ?'); DisOne:=1; Exit; End;
-   WrHex2(B); Write(' '); Inc(HexCol,3);
+   HxByte(B,HexCol);
    N:=B;
    { Affiche au plus 6 octets de chars en hex pour la colonne. }
    For I:=0 To N-1 Do Begin
     If Not GetByte(IPC+2+I,B2) Then Begin N:=I; Break; End;
-    If I<6 Then Begin WrHex2(B2); Write(' '); Inc(HexCol,3); End;
+    If I<6 Then HxByte(B2,HexCol);
    End;
-   If N>6 Then Begin Write('.. '); Inc(HexCol,3); End;
-   PadTo(30,HexCol); Write(Mn,' ',B,',"');
+   If N>6 Then HxDots(HexCol);
+   HxPad(HexCol); Write(Mn,' ',B,',"');
    For I:=0 To N-1 Do Begin
     GetByte(IPC+2+I,B2);
     If (B2>=32)And(B2<127) Then Begin C:=Chr(B2); Write(C); End
@@ -334,27 +368,31 @@ Begin
   End;
   OPK_LDC: Begin
    If Not GetByte(IPC+1,B) Then Begin WriteLn(Mn,' ?'); DisOne:=1; Exit; End;
-   WrHex2(B); Write(' '); Inc(HexCol,3);
+   HxByte(B,HexCol);
    N:=B*2;
    For I:=0 To N-1 Do Begin
     If Not GetByte(IPC+2+I,B2) Then Begin N:=I; Break; End;
-    If I<4 Then Begin WrHex2(B2); Write(' '); Inc(HexCol,3); End;
+    If I<4 Then HxByte(B2,HexCol);
    End;
-   If N>4 Then Begin Write('.. '); Inc(HexCol,3); End;
-   PadTo(30,HexCol); Write(Mn,' ',B,' words');
+   If N>4 Then HxDots(HexCol);
+   HxPad(HexCol); Write(Mn,' ',B);
+   For I:=0 To B-1 Do Begin
+    GetByte(IPC+2+I*2,Lo); GetByte(IPC+2+I*2+1,Hi);
+    Write(',$'); WrHex2(Hi); WrHex2(Lo);
+   End;
    WriteLn;
    DisOne:=2+N; Exit;
   End;
   OPK_XJP: Begin
    { XJP: tableau de cas. Trop complexe pour analyse statique sans
      contexte de proc. On affiche juste l'instruction. }
-   PadTo(30,HexCol); Write(Mn,' (table de cas)'); WriteLn;
+   HxPad(HexCol); Write(Mn,' (table de cas)'); WriteLn;
    DisOne:=1; Exit;
   End;
  End;
  { Fallback inattendu. }
 DoneOps:
- PadTo(30,HexCol); Write(Mn); WriteLn;
+ HxPad(HexCol); Write(Mn); WriteLn;
  DisOne:=1;
 End;
 
@@ -375,11 +413,13 @@ Begin
   EndPC:=StartOff+MaxBytes;
   If EndPC>FSize Then EndPC:=FSize;
  End;
- Write('Fichier   : ',InName,'  (',FSize,' octets)'); WriteLn;
- Write('D'+#130+'but     : $'); WrHex6(StartOff);
- Write('   Fin: $'); WrHex6(EndPC); WriteLn;
- WriteLn('Addr     Hex                       Instruction');
- WriteLn('------   -----------------------   -----------------------');
+ If Not NoOpcode Then Begin
+  Write('Fichier   : ',InName,'  (',FSize,' octets)'); WriteLn;
+  Write('D'+#130+'but     : $'); WrHex6(StartOff);
+  Write('   Fin: $'); WrHex6(EndPC); WriteLn;
+  WriteLn('Addr     Hex                       Instruction');
+  WriteLn('------   -----------------------   -----------------------');
+ End;
  PC:=StartOff;
  While PC<EndPC Do Begin
   Sz:=DisOne(PC);
