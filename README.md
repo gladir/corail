@@ -870,6 +870,11 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td><b>DISKPC.PAS</b></td>
 			<td>Cette commande permet de copier des fichiers dans une image disque PC FAT.</td>
 		</tr>
+		<tr>
+			<td><b>DISPCODE.PAS</b></td>
+			<td>Cette commande permet de lancer le désassembleur de p-Code UCSD p-System.</td>
+		</tr>
+		</td>
 	        <tr>
 			<td><b>DISPLAY.PAS</b></td>
 			<td>Cette commande permet d'afficher un message encodée en hexadécimal. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/OS9/display.htm">DISPLAY</a> de <a href="https://www.gladir.com/OS/OS9/intro.htm">OS-9</a>.</td>
