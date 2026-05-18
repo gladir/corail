@@ -223,6 +223,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer le compilateur de langage de programmation assembleur pour les microprocesseur 8086. Cette commande est inspiré de la commande <a href="https://www.gladir.com/OS/CPM86/asm86.htm">ASM86</a> du système d'exploitation CP/M 86.</td>
 		</tr>	
 		<tr>
+			<td><b>ASMPCODE.PAS</b></td>
+			<td>Cette commande permet de lancer l'assembleur p-Code UCSD p-System.</td>
+		</tr>
+		<tr>
 			<td><b>ASMZ80.PAS</b></td>
 			<td>Cette commande permet de lancer le compilateur de langage de programmation assembleur pour les microprocesseur Z80.</td>
 		</tr>
