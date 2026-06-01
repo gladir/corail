@@ -28,7 +28,7 @@ Type
  TIntArray=Array[0..MaxLines]of Integer;
  PIntArray=^TIntArray;
  TOpKind=(_Equal,_Delete,_Insert);
- TOutMode=(_Normal,_Unified,_Context,_SideBySide);
+ TOutMode=(_Normal,_Unified,_Context,_SideBySide,_Ed,_ForwardEd,_RCS);
  TOption=(_IgnoreCase,_IgnoreAllSpace,_IgnoreSpaceChange,
           _IgnoreTrailingSpace,_IgnoreBlankLines,_StripTrailingCR,
           _Brief,_ReportSame,_NewFile,_Recursive);
@@ -47,6 +47,11 @@ Type
   First,Last:POpNode;
   Count:Integer;
   Index:TOpIndex;
+ End;
+ PEditGroup=^TEditGroup;
+ TEditGroup=Record
+  StartOp,EndOp,OldStart,DelCnt:Integer;
+  Prev,Next:PEditGroup;
  End;
 
 Var
@@ -539,6 +544,139 @@ Begin
    For K:=I to J-1 do
     If OpKindAt(K)=_Insert Then WriteLn('> ',LineText(B^,OpBIndex(K)));
    I:=J;
+ End;
+End;
+End;
+
+Procedure PrintEdGroup(I,J,OldStart,DelCnt:Integer);
+Var
+ K:Integer;
+ HasInsert:Boolean;
+Begin
+ HasInsert:=False;
+ For K:=I to J-1 do
+  If OpKindAt(K)=_Insert Then HasInsert:=True;
+ If DelCnt>0 Then Begin
+  Write(RangeText(OldStart,DelCnt));
+  If HasInsert Then Begin
+   WriteLn('c');
+   For K:=I to J-1 do
+    If OpKindAt(K)=_Insert Then WriteLn(LineText(B^,OpBIndex(K)));
+   WriteLn('.');
+  End
+   Else
+  WriteLn('d');
+ End
+  Else
+ Begin
+  WriteLn(OldStart-1,'a');
+  For K:=I to J-1 do
+   If OpKindAt(K)=_Insert Then WriteLn(LineText(B^,OpBIndex(K)));
+  WriteLn('.');
+ End;
+End;
+
+Procedure PrintEd(ReverseOrder:Boolean);
+Var
+ GroupStart,GroupEnd,OldLine,NewLine,OldStart,DelCnt,InsCnt:Integer;
+ FirstGroup,LastGroup,Group,NextGroup:PEditGroup;
+ I,J:Integer;
+Begin
+ FirstGroup:=Nil;
+ LastGroup:=Nil;
+ I:=1;
+ OldLine:=1;
+ NewLine:=1;
+ While I<=OpCount do Begin
+  If OpKindAt(I)=_Equal Then Begin
+   Inc(OldLine);
+   Inc(NewLine);
+   Inc(I);
+  End
+   Else
+  Begin
+   GroupStart:=I;
+   OldStart:=OldLine;
+   DelCnt:=0;
+   InsCnt:=0;
+   J:=I;
+   While(J<=OpCount)and(OpKindAt(J)<>_Equal)do Begin
+    If OpKindAt(J)=_Delete Then Begin Inc(DelCnt);Inc(OldLine);End
+                            Else Begin Inc(InsCnt);Inc(NewLine);End;
+    Inc(J);
+   End;
+   GroupEnd:=J;
+   New(Group);
+   If Group=Nil Then Begin
+    WriteLn('DIFF: memoire insuffisante.');
+    Halt(2);
+   End;
+   Group^.StartOp:=GroupStart;
+   Group^.EndOp:=GroupEnd;
+   Group^.OldStart:=OldStart;
+   Group^.DelCnt:=DelCnt;
+   Group^.Prev:=LastGroup;
+   Group^.Next:=Nil;
+   If FirstGroup=Nil Then FirstGroup:=Group
+                     Else LastGroup^.Next:=Group;
+   LastGroup:=Group;
+   I:=J;
+  End;
+ End;
+ If ReverseOrder Then Begin
+  Group:=LastGroup;
+  While Group<>Nil do Begin
+   PrintEdGroup(Group^.StartOp,Group^.EndOp,Group^.OldStart,Group^.DelCnt);
+   Group:=Group^.Prev;
+  End;
+ End
+  Else
+ Begin
+  Group:=FirstGroup;
+  While Group<>Nil do Begin
+   PrintEdGroup(Group^.StartOp,Group^.EndOp,Group^.OldStart,Group^.DelCnt);
+   Group:=Group^.Next;
+  End;
+ End;
+ Group:=FirstGroup;
+ While Group<>Nil do Begin
+  NextGroup:=Group^.Next;
+  Dispose(Group);
+  Group:=NextGroup;
+ End;
+End;
+
+Procedure PrintRCS;
+Var
+ I,J,K,OldLine,NewLine,OldStart,DelCnt,InsCnt:Integer;
+Begin
+ I:=1;
+ OldLine:=1;
+ NewLine:=1;
+ While I<=OpCount do Begin
+  If OpKindAt(I)=_Equal Then Begin
+   Inc(OldLine);
+   Inc(NewLine);
+   Inc(I);
+  End
+   Else
+  Begin
+   OldStart:=OldLine;
+   DelCnt:=0;
+   InsCnt:=0;
+   J:=I;
+   While(J<=OpCount)and(OpKindAt(J)<>_Equal)do Begin
+    If OpKindAt(J)=_Delete Then Begin Inc(DelCnt);Inc(OldLine);End
+                            Else Begin Inc(InsCnt);Inc(NewLine);End;
+    Inc(J);
+   End;
+   If DelCnt>0 Then WriteLn('d',OldStart,' ',DelCnt);
+   If InsCnt>0 Then Begin
+    WriteLn('a',OldStart+DelCnt-1,' ',InsCnt);
+    For K:=I to J-1 do
+     If OpKindAt(K)=_Insert Then WriteLn(LineText(B^,OpBIndex(K)));
+   End;
+   I:=J;
   End;
  End;
 End;
@@ -685,6 +823,9 @@ Begin
    _Unified:PrintUnified;
    _Context:PrintContext;
    _SideBySide:PrintSideBySide;
+   _Ed:PrintEd(True);
+   _ForwardEd:PrintEd(False);
+   _RCS:PrintRCS;
    Else PrintNormal;
   End;
  End;
@@ -773,6 +914,9 @@ Procedure Usage;Begin
  WriteLn('  -U N                          Format unifie avec N lignes de contexte');
  WriteLn('  -c, --context[=N]             Format contexte');
  WriteLn('  -C N                          Format contexte avec N lignes de contexte');
+ WriteLn('  -e, --ed                      Produit un script ed');
+ WriteLn('  -f, --forward-ed              Produit un script ed en ordre avant');
+ WriteLn('  -n, --rcs                     Produit un diff au format RCS');
  WriteLn('  -y, --side-by-side            Affichage cote a cote');
  WriteLn('  -W N, --width=N               Largeur du format cote a cote');
  WriteLn('  -q, --brief                   Indique seulement si les fichiers different');
@@ -790,7 +934,7 @@ Procedure Usage;Begin
  WriteLn('      --version, -v             Affiche la version');
  WriteLn;
  WriteLn('Notes : cette version implemente le coeur texte de diff. Les formats');
- WriteLn('programmables GNU, scripts ed/RCS et couleurs ne sont pas inclus.');
+ WriteLn('programmables GNU et couleurs ne sont pas inclus.');
 End;
 
 Function GetNum(S:String;Default:Integer):Integer;
@@ -887,6 +1031,12 @@ Begin
    ContextLines:=GetNum(Copy(P,11,20),3);
    OutMode:=_Context;
   End
+  Else
+  If(Q='-e')or(Q='--ed')Then OutMode:=_Ed
+  Else
+  If(Q='-f')or(Q='--forward-ed')Then OutMode:=_ForwardEd
+  Else
+  If(Q='-n')or(Q='--rcs')Then OutMode:=_RCS
   Else
   If(Q='-y')or(Q='--side-by-side')Then OutMode:=_SideBySide
   Else
