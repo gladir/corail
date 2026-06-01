@@ -1155,6 +1155,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet de lancer le générateur HTML.</td>
 		</tr>
 		<tr>
+			<td><b>HTML2RTF.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier HTML en format RTF.</td>
+		</tr>
+		<tr>
 			<td><b>HTML2TXT.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier en HTML en texte seulement (enlève le code HTML).</td>
 		</tr>
