@@ -31,7 +31,7 @@ Type
  TOutMode=(_Normal,_Unified,_Context,_SideBySide);
  TOption=(_IgnoreCase,_IgnoreAllSpace,_IgnoreSpaceChange,
           _IgnoreTrailingSpace,_IgnoreBlankLines,_StripTrailingCR,
-          _Brief,_ReportSame,_NewFile);
+          _Brief,_ReportSame,_NewFile,_Recursive);
  TOptions=Set of TOption;
  TOp=Record
   Kind:TOpKind;
@@ -142,13 +142,41 @@ End;
 
 Function FileExists(Name:String):Boolean;
 Var
- F:File;
- R:Integer;
+ Rec:SearchRec;
 Begin
- {$I-}Assign(F,Name);Reset(F,1);{$I+}
- R:=IOResult;
- If R=0 Then Close(F);
- FileExists:=R=0;
+ FindFirst(Name,AnyFile,Rec);
+ FileExists:=(DosError=0)and((Rec.Attr and Directory)=0);
+End;
+
+Function DirectoryExists(Name:String):Boolean;
+Var
+ Rec:SearchRec;
+Begin
+ FindFirst(Name,Directory,Rec);
+ DirectoryExists:=(DosError=0)and((Rec.Attr and Directory)=Directory);
+End;
+
+Function AddSlash(Path:String):String;
+Begin
+ If Path=''Then AddSlash:=''
+ Else
+ If Path[Length(Path)]in['\','/',':']Then AddSlash:=Path
+                                 Else AddSlash:=Path+'\';
+End;
+
+Function JoinPath(Path,Name:String):String;
+Begin
+ JoinPath:=AddSlash(Path)+Name;
+End;
+
+Function BaseName(Path:String):String;
+Var
+ D:DirStr;
+ N:NameStr;
+ E:ExtStr;
+Begin
+ FSplit(Path,D,N,E);
+ BaseName:=N+E;
 End;
 
 Procedure InitLineList(Var List:TLineList);
@@ -625,7 +653,112 @@ Begin
    _Delete:Begin L:=LineText(A^,OpAIndex(I));M:='<';End;
    _Insert:Begin R:=LineText(B^,OpBIndex(I));M:='>';End;
   End;
-  WriteLn(PadRight(L,W),' ',M,' ',R);
+ WriteLn(PadRight(L,W),' ',M,' ',R);
+ End;
+End;
+
+Function CompareFiles(Name1,Name2,Lab1,Lab2:String;ShowHeader:Boolean):Byte;
+Var
+ R:Byte;
+Begin
+ Label1:=Lab1;
+ Label2:=Lab2;
+ InitFilesLists;
+ ReadTextFile(Name1,A^);
+ ReadTextFile(Name2,B^);
+ ACount:=A^.Count;
+ BCount:=B^.Count;
+ InitOpList(OpList);
+ InitScores;
+ DiffRange(1,ACount,1,BCount);
+ If HasDiff Then R:=1 Else R:=0;
+ If _Brief in Options Then Begin
+  If R=1 Then WriteLn('Les fichiers ',Name1,' et ',Name2,' sont differents');
+ End
+  Else
+ If(R=0)and(_ReportSame in Options)Then
+  WriteLn('Les fichiers ',Name1,' et ',Name2,' sont identiques')
+ Else
+ If R=1 Then Begin
+  If ShowHeader Then WriteLn('diff ',Name1,' ',Name2);
+  Case OutMode of
+   _Unified:PrintUnified;
+   _Context:PrintContext;
+   _SideBySide:PrintSideBySide;
+   Else PrintNormal;
+  End;
+ End;
+ FreeScores;
+ FreeOpList(OpList);
+ FreeFilesLists;
+ CompareFiles:=R;
+End;
+
+Procedure MarkDifferent;
+Begin
+ If ExitCode=0 Then ExitCode:=1;
+End;
+
+Procedure CompareDirs(Dir1,Dir2:String); Forward;
+
+Procedure ComparePath(Path1,Path2:String);
+Var
+ D1,D2,F1,F2:Boolean;
+ R:Byte;
+Begin
+ D1:=DirectoryExists(Path1);
+ D2:=DirectoryExists(Path2);
+ F1:=FileExists(Path1);
+ F2:=FileExists(Path2);
+ If D1 and D2 Then Begin
+  If _Recursive in Options Then CompareDirs(Path1,Path2)
+  Else WriteLn('Sous-repertoires communs: ',Path1,' et ',Path2);
+ End
+  Else
+ If F1 and F2 Then Begin
+  R:=CompareFiles(Path1,Path2,Path1,Path2,True);
+  If R<>0 Then MarkDifferent;
+ End
+  Else
+ If D1 and F2 Then Begin
+  WriteLn('Le fichier ',Path1,' est un repertoire tandis que ',Path2,' est un fichier normal');
+  MarkDifferent;
+ End
+  Else
+ If F1 and D2 Then Begin
+  WriteLn('Le fichier ',Path1,' est un fichier normal tandis que ',Path2,' est un repertoire');
+  MarkDifferent;
+ End;
+End;
+
+Procedure CompareDirs(Dir1,Dir2:String);
+Var
+ Rec:SearchRec;
+ Path1,Path2:String;
+Begin
+ FindFirst(JoinPath(Dir1,'*.*'),AnyFile,Rec);
+ While DosError=0 do Begin
+  If(Rec.Name<>'.')and(Rec.Name<>'..')Then Begin
+   Path1:=JoinPath(Dir1,Rec.Name);
+   Path2:=JoinPath(Dir2,Rec.Name);
+   If FileExists(Path2)or DirectoryExists(Path2)Then ComparePath(Path1,Path2)
+   Else Begin
+    WriteLn('Seulement dans ',Dir1,': ',Rec.Name);
+    MarkDifferent;
+   End;
+  End;
+  FindNext(Rec);
+ End;
+ FindFirst(JoinPath(Dir2,'*.*'),AnyFile,Rec);
+ While DosError=0 do Begin
+  If(Rec.Name<>'.')and(Rec.Name<>'..')Then Begin
+   Path1:=JoinPath(Dir1,Rec.Name);
+   If Not(FileExists(Path1)or DirectoryExists(Path1))Then Begin
+    WriteLn('Seulement dans ',Dir2,': ',Rec.Name);
+    MarkDifferent;
+   End;
+  End;
+  FindNext(Rec);
  End;
 End;
 
@@ -652,12 +785,12 @@ Procedure Usage;Begin
  WriteLn('      --strip-trailing-cr       Retire CR en fin de ligne');
  WriteLn('  -L, --label=LIBELLE           Libelle pour formats -u et -c');
  WriteLn('  -N, --new-file                Fichier manquant considere vide');
+ WriteLn('  -r, --recursive               Compare recursivement les repertoires');
  WriteLn('      --help, -h, /?            Affiche cette aide');
  WriteLn('      --version, -v             Affiche la version');
  WriteLn;
  WriteLn('Notes : cette version implemente le coeur texte de diff. Les formats');
- WriteLn('programmables GNU, scripts ed/RCS, couleurs et comparaison recursive de');
- WriteLn('repertoires ne sont pas inclus.');
+ WriteLn('programmables GNU, scripts ed/RCS et couleurs ne sont pas inclus.');
 End;
 
 Function GetNum(S:String;Default:Integer):Integer;
@@ -783,6 +916,8 @@ Begin
   Else
   If(P='-N')or(Q='--new-file')Then Include(Options,_NewFile)
   Else
+  If(Q='-r')or(Q='--recursive')Then Include(Options,_Recursive)
+  Else
   If(Q='-a')or(Q='--text')or(Q='--binary')Then Begin
   End
   Else
@@ -809,32 +944,15 @@ BEGIN
   Halt;
  End;
  ParseArgs;
- InitFilesLists;
- ReadTextFile(File1,A^);
- ReadTextFile(File2,B^);
- ACount:=A^.Count;
- BCount:=B^.Count;
- InitOpList(OpList);
- InitScores;
- DiffRange(1,ACount,1,BCount);
- If HasDiff Then ExitCode:=1 Else ExitCode:=0;
- If _Brief in Options Then Begin
-  If ExitCode=1 Then WriteLn('Les fichiers ',File1,' et ',File2,' sont differents');
- End
-  Else
- If(ExitCode=0)and(_ReportSame in Options)Then
-  WriteLn('Les fichiers ',File1,' et ',File2,' sont identiques')
+ ExitCode:=0;
+ If DirectoryExists(File1)and DirectoryExists(File2)Then CompareDirs(File1,File2)
  Else
- If ExitCode=1 Then Begin
-  Case OutMode of
-   _Unified:PrintUnified;
-   _Context:PrintContext;
-   _SideBySide:PrintSideBySide;
-   Else PrintNormal;
-  End;
- End;
- FreeScores;
- FreeOpList(OpList);
- FreeFilesLists;
+ If DirectoryExists(File1)and FileExists(File2)Then
+  ComparePath(JoinPath(File1,BaseName(File2)),File2)
+ Else
+ If FileExists(File1)and DirectoryExists(File2)Then
+  ComparePath(File1,JoinPath(File2,BaseName(File1)))
+ Else
+  ExitCode:=CompareFiles(File1,File2,Label1,Label2,False);
  Halt(ExitCode);
 END.
