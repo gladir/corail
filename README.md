@@ -811,6 +811,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'afficher le contenu d'un répertoire plus rapidement.</td>
 		</tr>
 		<tr>
+			<td><b>DIFF.PAS</b></td>
+			<td>Cette commande permet de comparer des fichiers ligne par ligne.</td>
+		</tr>
+		<tr>
 			<td><b>DIR.PAS</b></td>
 			<td>Cette commande permet d'afficher les fichiers contenu dans un répertoire. Cette commande est un équivalent du DOS.</td>
 		</tr>
