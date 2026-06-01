@@ -1591,6 +1591,10 @@ Voici la liste des différents fichiers proposés dans Corail :
 			<td>Cette commande permet d'effectuer une rotation de 13 lettres de l'alphabet latin et une rotation de 5 chiffres sur les chiffres.</td>
 		</tr>
 		<tr>
+			<td><b>RTF2HTML.PAS</b></td>
+			<td>Cette commande permet de convertir un fichier RTF en format HTML.</td>
+		</tr>
+		<tr>
 			<td><b>RTF2TXT.PAS</b></td>
 			<td>Cette commande permet de convertir un fichier RTF en format TXT.</td>
 		</tr>
