@@ -30,6 +30,7 @@ Type
  TOpKind=(_Equal,_Delete,_Insert);
  TOutMode=(_Normal,_Unified,_Context,_SideBySide,_Ed,_ForwardEd,_RCS,
            _Program);
+ TColorMode=(_ColorNever,_ColorAuto,_ColorAlways);
  TOption=(_IgnoreCase,_IgnoreAllSpace,_IgnoreSpaceChange,
           _IgnoreTrailingSpace,_IgnoreBlankLines,_StripTrailingCR,
           _Brief,_ReportSame,_NewFile,_Recursive);
@@ -64,6 +65,7 @@ Var
  Score1,Score2:PIntArray;
  Options:TOptions;
  OutMode:TOutMode;
+ ColorMode:TColorMode;
  OldLineFmt,NewLineFmt,UnchangedLineFmt:String;
  OldGroupFmt,NewGroupFmt,ChangedGroupFmt,UnchangedGroupFmt:String;
  ContextLines,OutputWidth:Integer;
@@ -93,6 +95,23 @@ Var
 Begin
  Str(N,S);
  IntToStr:=S;
+End;
+
+Procedure DiffColor(C:Byte);
+Begin
+ If ColorMode<>_ColorNever Then Begin
+  Case C of
+   1:Write(#27,'[31m');
+   2:Write(#27,'[32m');
+   3:Write(#27,'[33m');
+   4:Write(#27,'[36m');
+  End;
+ End;
+End;
+
+Procedure DiffReset;
+Begin
+ If ColorMode<>_ColorNever Then Write(#27,'[0m');
 End;
 
 Function TrimRight(S:String):String;
@@ -542,10 +561,22 @@ Begin
    Else
     WriteLn(OldStart-1,'a',RangeText(NewStart,InsCnt));
    For K:=I to J-1 do
-    If OpKindAt(K)=_Delete Then WriteLn('< ',LineText(A^,OpAIndex(K)));
-   If(DelCnt>0)and(InsCnt>0)Then WriteLn('---');
+    If OpKindAt(K)=_Delete Then Begin
+     DiffColor(1);
+     WriteLn('< ',LineText(A^,OpAIndex(K)));
+     DiffReset;
+    End;
+   If(DelCnt>0)and(InsCnt>0)Then Begin
+    DiffColor(4);
+    WriteLn('---');
+    DiffReset;
+   End;
    For K:=I to J-1 do
-    If OpKindAt(K)=_Insert Then WriteLn('> ',LineText(B^,OpBIndex(K)));
+    If OpKindAt(K)=_Insert Then Begin
+     DiffColor(2);
+     WriteLn('> ',LineText(B^,OpBIndex(K)));
+     DiffReset;
+    End;
    I:=J;
  End;
 End;
@@ -877,16 +908,26 @@ Procedure PrintUnified;
 Var
  I,S,E,OS,OC,NS,NC:Integer;
 Begin
+ DiffColor(4);
  WriteLn('--- ',Label1);
  WriteLn('+++ ',Label2);
  HunkOps(S,E);
  UnifiedRange(S,E,OS,OC,NS,NC);
  WriteLn('@@ -',OS,',',OC,' +',NS,',',NC,' @@');
+ DiffReset;
  For I:=S to E do
   Case OpKindAt(I) of
    _Equal:WriteLn(' ',LineText(A^,OpAIndex(I)));
-   _Delete:WriteLn('-',LineText(A^,OpAIndex(I)));
-   _Insert:WriteLn('+',LineText(B^,OpBIndex(I)));
+   _Delete:Begin
+    DiffColor(1);
+    WriteLn('-',LineText(A^,OpAIndex(I)));
+    DiffReset;
+   End;
+   _Insert:Begin
+    DiffColor(2);
+    WriteLn('+',LineText(B^,OpBIndex(I)));
+    DiffReset;
+   End;
   End;
 End;
 
@@ -896,22 +937,34 @@ Var
 Begin
  HunkOps(S,E);
  UnifiedRange(S,E,OS,OC,NS,NC);
+ DiffColor(4);
  WriteLn('*** ',Label1);
  WriteLn('--- ',Label2);
  WriteLn('***************');
  WriteLn('*** ',RangeText(OS,OC),' ****');
+ DiffReset;
  For I:=S to E do
   If OpKindAt(I)<>_Insert Then Begin
-   If OpKindAt(I)=_Delete Then Write('! ')
-                            Else Write('  ');
+   If OpKindAt(I)=_Delete Then Begin
+    DiffColor(1);
+    Write('! ');
+   End
+    Else Write('  ');
    WriteLn(LineText(A^,OpAIndex(I)));
+   DiffReset;
   End;
+ DiffColor(4);
  WriteLn('--- ',RangeText(NS,NC),' ----');
+ DiffReset;
  For I:=S to E do
   If OpKindAt(I)<>_Delete Then Begin
-   If OpKindAt(I)=_Insert Then Write('! ')
-                            Else Write('  ');
+   If OpKindAt(I)=_Insert Then Begin
+    DiffColor(2);
+    Write('! ');
+   End
+    Else Write('  ');
    WriteLn(LineText(B^,OpBIndex(I)));
+   DiffReset;
   End;
 End;
 
@@ -936,7 +989,11 @@ Begin
    _Delete:Begin L:=LineText(A^,OpAIndex(I));M:='<';End;
    _Insert:Begin R:=LineText(B^,OpBIndex(I));M:='>';End;
   End;
- WriteLn(PadRight(L,W),' ',M,' ',R);
+  If OpKindAt(I)=_Delete Then DiffColor(1)
+  Else
+  If OpKindAt(I)=_Insert Then DiffColor(2);
+  WriteLn(PadRight(L,W),' ',M,' ',R);
+  DiffReset;
  End;
 End;
 
@@ -963,7 +1020,11 @@ Begin
   WriteLn('Les fichiers ',Name1,' et ',Name2,' sont identiques')
  Else
  If R=1 Then Begin
-  If ShowHeader Then WriteLn('diff ',Name1,' ',Name2);
+  If ShowHeader Then Begin
+   DiffColor(3);
+   WriteLn('diff ',Name1,' ',Name2);
+   DiffReset;
+  End;
   Case OutMode of
    _Unified:PrintUnified;
    _Context:PrintContext;
@@ -999,7 +1060,11 @@ Begin
  F2:=FileExists(Path2);
  If D1 and D2 Then Begin
   If _Recursive in Options Then CompareDirs(Path1,Path2)
-  Else WriteLn('Sous-repertoires communs: ',Path1,' et ',Path2);
+  Else Begin
+   DiffColor(3);
+   WriteLn('Sous-repertoires communs: ',Path1,' et ',Path2);
+   DiffReset;
+  End;
  End
   Else
  If F1 and F2 Then Begin
@@ -1008,12 +1073,16 @@ Begin
  End
   Else
  If D1 and F2 Then Begin
+  DiffColor(3);
   WriteLn('Le fichier ',Path1,' est un repertoire tandis que ',Path2,' est un fichier normal');
+  DiffReset;
   MarkDifferent;
  End
   Else
  If F1 and D2 Then Begin
+  DiffColor(3);
   WriteLn('Le fichier ',Path1,' est un fichier normal tandis que ',Path2,' est un repertoire');
+  DiffReset;
   MarkDifferent;
  End;
 End;
@@ -1030,7 +1099,9 @@ Begin
    Path2:=JoinPath(Dir2,Rec.Name);
    If FileExists(Path2)or DirectoryExists(Path2)Then ComparePath(Path1,Path2)
    Else Begin
+    DiffColor(3);
     WriteLn('Seulement dans ',Dir1,': ',Rec.Name);
+    DiffReset;
     MarkDifferent;
    End;
   End;
@@ -1041,7 +1112,9 @@ Begin
   If(Rec.Name<>'.')and(Rec.Name<>'..')Then Begin
    Path1:=JoinPath(Dir1,Rec.Name);
    If Not(FileExists(Path1)or DirectoryExists(Path1))Then Begin
+    DiffColor(3);
     WriteLn('Seulement dans ',Dir2,': ',Rec.Name);
+    DiffReset;
     MarkDifferent;
    End;
   End;
@@ -1081,6 +1154,7 @@ Procedure Usage;Begin
  WriteLn('  -B, --ignore-blank-lines      Ignore les lignes blanches');
  WriteLn('  -Z, --ignore-trailing-space   Ignore les espaces de fin de ligne');
  WriteLn('      --strip-trailing-cr       Retire CR en fin de ligne');
+ WriteLn('      --color[=WHEN]            Colore la sortie: never, auto, always');
  WriteLn('  -L, --label=LIBELLE           Libelle pour formats -u et -c');
  WriteLn('  -N, --new-file                Fichier manquant considere vide');
  WriteLn('  -r, --recursive               Compare recursivement les repertoires');
@@ -1088,8 +1162,7 @@ Procedure Usage;Begin
  WriteLn('      --version, -v             Affiche la version');
  WriteLn;
  WriteLn('Formats FMT: lignes %l/%L/%n/%N, groupes %< %> %= %F %L %N %f %l %n.');
- WriteLn('Notes : cette version implemente le coeur texte de diff; les couleurs');
- WriteLn('ne sont pas incluses.');
+ WriteLn('Notes : cette version implemente le coeur texte de diff.');
 End;
 
 Function GetNum(S:String;Default:Integer):Integer;
@@ -1131,6 +1204,7 @@ Var
 Begin
  Options:=[];
  OutMode:=_Normal;
+ ColorMode:=_ColorNever;
  ContextLines:=3;
  OutputWidth:=130;
  OldLineFmt:='%L';
@@ -1280,6 +1354,24 @@ Begin
   If(P='-N')or(Q='--new-file')Then Include(Options,_NewFile)
   Else
   If(Q='-r')or(Q='--recursive')Then Include(Options,_Recursive)
+  Else
+  If Q='--color'Then ColorMode:=_ColorAuto
+  Else
+  If Copy(Q,1,8)='--color='Then Begin
+   If AfterEqual(Q)='never'Then ColorMode:=_ColorNever
+   Else
+   If AfterEqual(Q)='always'Then ColorMode:=_ColorAlways
+   Else ColorMode:=_ColorAuto;
+  End
+  Else
+  If Q='--colour'Then ColorMode:=_ColorAuto
+  Else
+  If Copy(Q,1,9)='--colour='Then Begin
+   If AfterEqual(Q)='never'Then ColorMode:=_ColorNever
+   Else
+   If AfterEqual(Q)='always'Then ColorMode:=_ColorAlways
+   Else ColorMode:=_ColorAuto;
+  End
   Else
   If(Q='-a')or(Q='--text')or(Q='--binary')Then Begin
   End
