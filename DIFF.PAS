@@ -28,7 +28,8 @@ Type
  TIntArray=Array[0..MaxLines]of Integer;
  PIntArray=^TIntArray;
  TOpKind=(_Equal,_Delete,_Insert);
- TOutMode=(_Normal,_Unified,_Context,_SideBySide,_Ed,_ForwardEd,_RCS);
+ TOutMode=(_Normal,_Unified,_Context,_SideBySide,_Ed,_ForwardEd,_RCS,
+           _Program);
  TOption=(_IgnoreCase,_IgnoreAllSpace,_IgnoreSpaceChange,
           _IgnoreTrailingSpace,_IgnoreBlankLines,_StripTrailingCR,
           _Brief,_ReportSame,_NewFile,_Recursive);
@@ -63,6 +64,8 @@ Var
  Score1,Score2:PIntArray;
  Options:TOptions;
  OutMode:TOutMode;
+ OldLineFmt,NewLineFmt,UnchangedLineFmt:String;
+ OldGroupFmt,NewGroupFmt,ChangedGroupFmt,UnchangedGroupFmt:String;
  ContextLines,OutputWidth:Integer;
  ExitCode:Byte;
 
@@ -677,6 +680,148 @@ Begin
      If OpKindAt(K)=_Insert Then WriteLn(LineText(B^,OpBIndex(K)));
    End;
    I:=J;
+ End;
+End;
+End;
+
+Procedure PrintFormat(Fmt,OldText,NewText:String;OldNo,NewNo:Integer);
+Var
+ I:Integer;
+ C:Char;
+ Text:String;
+Begin
+ If OldText<>''Then Text:=OldText Else Text:=NewText;
+ I:=1;
+ While I<=Length(Fmt)do Begin
+  If Fmt[I]='%'Then Begin
+   Inc(I);
+   If I>Length(Fmt)Then Break;
+   C:=Fmt[I];
+   Case C of
+    '%':Write('%');
+    'l':Write(Text);
+    'L':WriteLn(Text);
+    'n':Write(NewText);
+    'N':WriteLn(NewText);
+    'o':Write(OldNo);
+    'm':Write(NewNo);
+    'c':Begin
+     If(I+2<=Length(Fmt))and(Fmt[I+1]='''')Then Begin
+      Write(Fmt[I+2]);
+      Inc(I,2);
+     End;
+    End;
+    Else Write(C);
+   End;
+  End
+   Else
+  Write(Fmt[I]);
+  Inc(I);
+ End;
+End;
+
+Procedure PrintProgramLines(S,E:Integer);
+Var
+ I:Integer;
+Begin
+ For I:=S to E do Begin
+  Case OpKindAt(I)of
+   _Equal:PrintFormat(UnchangedLineFmt,LineText(A^,OpAIndex(I)),
+                      LineText(B^,OpBIndex(I)),OpAIndex(I),OpBIndex(I));
+   _Delete:PrintFormat(OldLineFmt,LineText(A^,OpAIndex(I)),'',
+                       OpAIndex(I),0);
+   _Insert:PrintFormat(NewLineFmt,'',LineText(B^,OpBIndex(I)),
+                       0,OpBIndex(I));
+  End;
+ End;
+End;
+
+Procedure PrintGroupFormat(Fmt:String;S,E,OldStart,NewStart,DelCnt,
+                           InsCnt:Integer);
+Var
+ I,K:Integer;
+Begin
+ I:=1;
+ While I<=Length(Fmt)do Begin
+  If Fmt[I]='%'Then Begin
+   Inc(I);
+   If I>Length(Fmt)Then Break;
+   Case Fmt[I]of
+    '%':Write('%');
+    '<':For K:=S to E do
+         If OpKindAt(K)=_Delete Then
+          PrintFormat(OldLineFmt,LineText(A^,OpAIndex(K)),'',
+                      OpAIndex(K),0);
+    '>':For K:=S to E do
+         If OpKindAt(K)=_Insert Then
+          PrintFormat(NewLineFmt,'',LineText(B^,OpBIndex(K)),
+                      0,OpBIndex(K));
+    '=':For K:=S to E do
+         If OpKindAt(K)=_Equal Then
+          PrintFormat(UnchangedLineFmt,LineText(A^,OpAIndex(K)),
+                      LineText(B^,OpBIndex(K)),OpAIndex(K),OpBIndex(K));
+    'F':Write(OldStart);
+    'L':Write(OldStart+DelCnt-1);
+    'N':Write(DelCnt);
+    'f':Write(NewStart);
+    'l':Write(NewStart+InsCnt-1);
+    'n':Write(InsCnt);
+    'c':Begin
+     If(I+2<=Length(Fmt))and(Fmt[I+1]='''')Then Begin
+      Write(Fmt[I+2]);
+      Inc(I,2);
+     End;
+    End;
+    Else Write(Fmt[I]);
+   End;
+  End
+   Else
+  Write(Fmt[I]);
+  Inc(I);
+ End;
+End;
+
+Procedure PrintProgram;
+Var
+ I,J,OldLine,NewLine,OldStart,NewStart,DelCnt,InsCnt:Integer;
+ Fmt:String;
+Begin
+ I:=1;
+ OldLine:=1;
+ NewLine:=1;
+ While I<=OpCount do Begin
+  If OpKindAt(I)=_Equal Then Begin
+   J:=I;
+   OldStart:=OldLine;
+   NewStart:=NewLine;
+   While(J<=OpCount)and(OpKindAt(J)=_Equal)do Begin
+    Inc(OldLine);
+    Inc(NewLine);
+    Inc(J);
+   End;
+   If UnchangedGroupFmt<>''Then
+    PrintGroupFormat(UnchangedGroupFmt,I,J-1,OldStart,NewStart,
+                     J-I,J-I);
+   I:=J;
+  End
+   Else
+  Begin
+   OldStart:=OldLine;
+   NewStart:=NewLine;
+   DelCnt:=0;
+   InsCnt:=0;
+   J:=I;
+   While(J<=OpCount)and(OpKindAt(J)<>_Equal)do Begin
+    If OpKindAt(J)=_Delete Then Begin Inc(DelCnt);Inc(OldLine);End
+                            Else Begin Inc(InsCnt);Inc(NewLine);End;
+    Inc(J);
+   End;
+   If(DelCnt>0)and(InsCnt>0)Then Fmt:=ChangedGroupFmt
+   Else If DelCnt>0 Then Fmt:=OldGroupFmt
+                    Else Fmt:=NewGroupFmt;
+   If Fmt<>''Then
+    PrintGroupFormat(Fmt,I,J-1,OldStart,NewStart,DelCnt,InsCnt);
+   I:=J;
   End;
  End;
 End;
@@ -826,6 +971,7 @@ Begin
    _Ed:PrintEd(True);
    _ForwardEd:PrintEd(False);
    _RCS:PrintRCS;
+   _Program:PrintProgram;
    Else PrintNormal;
   End;
  End;
@@ -917,6 +1063,14 @@ Procedure Usage;Begin
  WriteLn('  -e, --ed                      Produit un script ed');
  WriteLn('  -f, --forward-ed              Produit un script ed en ordre avant');
  WriteLn('  -n, --rcs                     Produit un diff au format RCS');
+ WriteLn('      --line-format=FMT         Format programmable des lignes');
+ WriteLn('      --old-line-format=FMT     Format des lignes supprimees');
+ WriteLn('      --new-line-format=FMT     Format des lignes ajoutees');
+ WriteLn('      --unchanged-line-format=FMT Format des lignes communes');
+ WriteLn('      --old-group-format=FMT    Format des groupes supprimes');
+ WriteLn('      --new-group-format=FMT    Format des groupes ajoutes');
+ WriteLn('      --changed-group-format=FMT Format des groupes changes');
+ WriteLn('      --unchanged-group-format=FMT Format des groupes communs');
  WriteLn('  -y, --side-by-side            Affichage cote a cote');
  WriteLn('  -W N, --width=N               Largeur du format cote a cote');
  WriteLn('  -q, --brief                   Indique seulement si les fichiers different');
@@ -933,8 +1087,9 @@ Procedure Usage;Begin
  WriteLn('      --help, -h, /?            Affiche cette aide');
  WriteLn('      --version, -v             Affiche la version');
  WriteLn;
- WriteLn('Notes : cette version implemente le coeur texte de diff. Les formats');
- WriteLn('programmables GNU et couleurs ne sont pas inclus.');
+ WriteLn('Formats FMT: lignes %l/%L/%n/%N, groupes %< %> %= %F %L %N %f %l %n.');
+ WriteLn('Notes : cette version implemente le coeur texte de diff; les couleurs');
+ WriteLn('ne sont pas incluses.');
 End;
 
 Function GetNum(S:String;Default:Integer):Integer;
@@ -947,6 +1102,15 @@ Begin
   If Code=0 Then GetNum:=N
             Else GetNum:=Default;
  End;
+End;
+
+Function AfterEqual(S:String):String;
+Var
+ P:Integer;
+Begin
+ P:=Pos('=',S);
+ If P=0 Then AfterEqual:=''
+        Else AfterEqual:=Copy(S,P+1,255);
 End;
 
 Procedure AddFileName(S:String);
@@ -969,6 +1133,13 @@ Begin
  OutMode:=_Normal;
  ContextLines:=3;
  OutputWidth:=130;
+ OldLineFmt:='%L';
+ NewLineFmt:='%L';
+ UnchangedLineFmt:='%L';
+ OldGroupFmt:='%<';
+ NewGroupFmt:='%>';
+ ChangedGroupFmt:='%<%>';
+ UnchangedGroupFmt:='%=';
  File1:='';File2:='';
  Label1:='';Label2:='';
  LabelCount:=0;
@@ -1039,6 +1210,48 @@ Begin
   If(Q='-n')or(Q='--rcs')Then OutMode:=_RCS
   Else
   If(Q='-y')or(Q='--side-by-side')Then OutMode:=_SideBySide
+  Else
+  If Copy(Q,1,14)='--line-format='Then Begin
+   OldLineFmt:=AfterEqual(P);
+   NewLineFmt:=OldLineFmt;
+   UnchangedLineFmt:=OldLineFmt;
+   OutMode:=_Program;
+  End
+  Else
+  If Copy(Q,1,18)='--old-line-format='Then Begin
+   OldLineFmt:=AfterEqual(P);
+   OutMode:=_Program;
+  End
+  Else
+  If Copy(Q,1,18)='--new-line-format='Then Begin
+   NewLineFmt:=AfterEqual(P);
+   OutMode:=_Program;
+  End
+  Else
+  If Copy(Q,1,24)='--unchanged-line-format='Then Begin
+   UnchangedLineFmt:=AfterEqual(P);
+   OutMode:=_Program;
+  End
+  Else
+  If Copy(Q,1,19)='--old-group-format='Then Begin
+   OldGroupFmt:=AfterEqual(P);
+   OutMode:=_Program;
+  End
+  Else
+  If Copy(Q,1,19)='--new-group-format='Then Begin
+   NewGroupFmt:=AfterEqual(P);
+   OutMode:=_Program;
+  End
+  Else
+  If Copy(Q,1,23)='--changed-group-format='Then Begin
+   ChangedGroupFmt:=AfterEqual(P);
+   OutMode:=_Program;
+  End
+  Else
+  If Copy(Q,1,25)='--unchanged-group-format='Then Begin
+   UnchangedGroupFmt:=AfterEqual(P);
+   OutMode:=_Program;
+  End
   Else
   If Copy(Q,1,8)='--width='Then OutputWidth:=GetNum(Copy(P,9,20),130)
   Else
