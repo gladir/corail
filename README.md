@@ -2124,7 +2124,310 @@ Voici la liste des différents fichiers proposés dans Corail :
 		</tr>
 	</table>
 	
-<h2>Langage humain</h3>
+<h2>Manuel d'utilisation</h2>
+
+Cette section explique, sans jargon, ce que fait Corail, comment s'en servir et donne des exemples concrets que vous pouvez recopier.
+
+<h3>Corail, c'est quoi en clair ?</h3>
+
+Corail est une **boîte à outils** de plus de 500 petits programmes. Chaque fichier `.PAS` du projet est **un programme complet et indépendant** : `DIR.PAS` donne le programme `DIR`, `CAL.PAS` donne le programme `CAL`, et ainsi de suite. Vous n'êtes pas obligé de tout prendre : vous prenez seulement les programmes qui vous intéressent.
+
+Ces programmes se lancent dans une **fenêtre de commandes** (aussi appelée « terminal », « console » ou « invite de commandes ») : on tape le nom du programme, éventuellement suivi de quelques informations (les **paramètres**), puis on appuie sur Entrée.
+
+On peut les regrouper en grandes familles :
+
+| Famille | À quoi ça sert | Exemples |
+|---|---|---|
+| Interpréteurs de commandes | Ouvrir une « fausse » invite de commandes qui imite un ancien système (MS-DOS, AmigaDOS, OS-9, Unix,...) | `COMMAND`, `4DOS`, `AMIGADOS`, `OS9`, `BASH`, `TRSDOS` |
+| Fichiers et répertoires | Lister, copier, déplacer, supprimer, renommer des fichiers ou des répertoires | `DIR`, `LS`, `TREE`, `CP`, `MV`, `RM`, `XCOPY`, `ATTRIB` |
+| Traitement de texte en ligne | Afficher, chercher, trier, compter ou comparer le contenu de fichiers texte | `TYPE`, `CAT`, `MORE`, `FIND`, `GREP`, `SORT`, `WC`, `DIFF` |
+| Convertisseurs | Transformer un fichier d'un format vers un autre | `CSV2JSON`, `CSV2HTML`, `BMP2PNG`, `DOS2UNIX`, `ASC2C` |
+| Générateurs et petits calculs | Produire des données, des identifiants, des calculs rapides | `CSVFAKER`, `GUID`, `MD5`, `EVAL`, `CAL`, `SEQ`, `BANNER` |
+| Applications plein écran | De vrais logiciels avec menus et écran complet | `123` (chiffrier), `NC` (gestionnaire de fichiers), `EDIT`, `VI`, `CHECKIT`, `CV` |
+| Langages de programmation | Exécuter ou écrire des programmes dans un ancien langage | `BASIC`, `GWBASIC`, `LOGO`, `PYTHON`, `PERL`, `ASM86` |
+| Disques et images disques | Formater, partitionner, copier des disquettes ou des fichiers d'images disques | `FORMAT`, `FDISK`, `SYS`, `VOL`, `DISKCOPY` |
+
+La liste complète, avec une phrase d'explication pour chacun, se trouve dans la section « Liste des fichiers » ci-dessus.
+
+<h3>Étape 1 : obtenir le programme</h3>
+
+Vous avez deux possibilités :
+
+1. **Utiliser un programme déjà compilé** (le plus simple) :
+   * le répertoire `WIN32` contient les programmes pour **Windows** (par exemple `WIN32/dir.exe`) ;
+   * le répertoire `BIN16` contient les programmes pour **MS-DOS** (par exemple `BIN16/DIR.EXE`). Ils fonctionnent sur un vrai DOS, dans une machine virtuelle ou dans un émulateur comme DOSBox, mais **pas** directement sur un Windows 64 bits.
+2. **Compiler vous-même le fichier `.PAS`** avec Free Pascal ou Turbo Pascal (voir la section « Compilation » plus bas). C'est la méthode à utiliser sous **Linux** ou macOS, ou si le programme voulu n'est pas dans les répertoires précompilés.
+
+<h3>Étape 2 : lancer le programme</h3>
+
+1. Ouvrez une fenêtre de commandes :
+   * Windows : touche Windows, tapez `cmd`, puis Entrée ;
+   * Linux ou macOS : ouvrez l'application « Terminal » ;
+   * DOS ou DOSBox : vous y êtes déjà.
+2. Placez-vous dans le répertoire où se trouve le programme, avec la commande `cd`, par exemple :
+
+```
+cd C:\CORAIL\WIN32
+```
+
+3. Tapez le nom du programme suivi de ses paramètres, puis Entrée.
+
+**Attention aux noms identiques.** Certains programmes de Corail portent le même nom qu'une commande déjà intégrée à votre système (`DIR`, `TYPE`, `ECHO`, `VOL`,...). Si vous tapez seulement `dir`, c'est la commande de votre système qui sera lancée, pas celle de Corail. Pour être certain de lancer celle de Corail, indiquez le chemin :
+
+| Système | Comment lancer le `DIR` de Corail |
+|---|---|
+| Windows | `.\dir.exe` |
+| DOS / DOSBox | `C:\CORAIL\BIN16\DIR.EXE` (chemin complet) |
+| Linux / macOS | `./DIR` (après compilation avec `fpc DIR.PAS`) |
+
+Dans le reste de ce manuel, les exemples sont écrits avec le nom court (`DIR`, `CAL`,...) pour rester lisibles.
+
+<h3>Étape 3 : demander de l'aide à un programme</h3>
+
+Presque tous les programmes affichent leur propre mode d'emploi quand on leur passe le paramètre `/?` :
+
+```
+DIR /?
+```
+
+Les programmes inspirés d'Unix ou de Linux (`CAT`, `LS`, `DU`, `TR`, `CURL`,...) acceptent aussi `--help`, et beaucoup acceptent `--version` pour afficher leur numéro de version :
+
+```
+CAT --help
+TYPE --version
+```
+
+Sous Linux ou macOS, mettez `/?` entre apostrophes (`./DIR '/?'`), sinon le terminal risque de l'interpréter avant de le transmettre au programme.
+
+<h3>Comment lire une syntaxe</h3>
+
+L'aide de chaque programme commence par une ligne « Syntaxe ». Par exemple, celle de `DIR` est :
+
+```
+DIR [/?] [/2|/W] [/B] [/P] [chemin] [/FORMAT:format]
+```
+
+Voici comment la lire :
+
+| Notation | Signification | Exemple |
+|---|---|---|
+| `[ ... ]` | Ce qui est entre crochets est **facultatif** : on peut l'omettre. Ne tapez pas les crochets. | `DIR` tout court fonctionne |
+| `a\|b` | Une barre verticale veut dire « **l'un ou l'autre** ». | `/2` **ou** `/W`, pas les deux |
+| mot en minuscules (`chemin`, `fichier`, `nomdufichier`) | À **remplacer** par votre propre valeur. | `DIR C:\DOCUMENTS` |
+| `/X` | Une **option** de style DOS, commençant par une barre oblique. | `DIR /W` |
+| `-x` ou `--mot` | Une **option** de style Unix, commençant par un ou deux tirets. | `CAT -n lettre.txt` |
+| `/NOM:valeur` | Une option qui attend une valeur, collée après le deux-points. | `DIR /FORMAT:JSON` |
+
+Les options de style DOS ne font généralement pas de différence entre majuscules et minuscules (`/w` et `/W` sont équivalents). Pour les options de style Unix, respectez exactement les majuscules et minuscules indiquées dans l'aide.
+
+<h3>Rediriger le résultat dans un fichier</h3>
+
+Par défaut, un programme affiche son résultat à l'écran. Avec le symbole `>` vous pouvez l'enregistrer dans un fichier à la place, et avec `>>` l'ajouter à la fin d'un fichier existant. Ceci fonctionne sous DOS, Windows et Linux :
+
+```
+DIR /FORMAT:HTML > liste.html
+CAL >> agenda.txt
+```
+
+<h3>Exemples par thème</h3>
+
+Les exemples ci-dessous peuvent être recopiés tels quels ; remplacez simplement les noms de fichiers par les vôtres.
+
+<h4>Explorer et gérer ses fichiers</h4>
+
+| Je veux... | Commande |
+|---|---|
+| Voir le contenu du répertoire courant | `DIR` |
+| Le voir sur plusieurs colonnes, page par page | `DIR /W /P` |
+| Obtenir la liste des fichiers en JSON (ou CSV, HTML, SQL, XML, PASCAL) | `DIR /FORMAT:JSON` |
+| La même chose à la façon Unix, avec les détails | `LS -l` |
+| Voir l'arborescence des sous-répertoires | `TREE` ou `TREE C:\PROJETS\` |
+| Créer un répertoire | `MAKDIR RAPPORTS` |
+| Copier un fichier | `CP lettre.txt copie.txt` |
+| Copier des fichiers en demandant une confirmation pour chacun | `XCOPY *.TXT A:\ /P` |
+| Déplacer ou renommer un fichier | `MV ancien.txt nouveau.txt` |
+| Renommer un répertoire | `RENDIR VIEUX NOUVEAU` |
+| Supprimer un fichier en demandant une confirmation | `RM -i brouillon.txt` |
+| Supprimer un répertoire et tout son contenu (**sans retour possible**) | `DELTREE TEMPO` |
+| Protéger un fichier en écriture | `ATTRIB contrat.txt +R` |
+| Savoir combien d'espace prend un répertoire, en format lisible | `DU -h -s` |
+| Changer la date d'un fichier (ou le créer s'il n'existe pas) | `TOUCH abcd.txt -t 20100101235910` |
+
+<h4>Lire et analyser des fichiers texte</h4>
+
+| Je veux... | Commande |
+|---|---|
+| Afficher un fichier texte | `TYPE lettre.txt` |
+| L'afficher avec les numéros de ligne | `CAT -n lettre.txt` |
+| L'afficher un écran à la fois | `MORE lettre.txt` |
+| Voir seulement les 10 premières ou dernières lignes | `HEAD lettre.txt --lines 10` ou `TAIL --lines 10 lettre.txt` |
+| Trouver les lignes contenant un mot, sans tenir compte des majuscules | `FIND "facture" clients.txt /I /N` |
+| Chercher avec une expression régulière | `GREP "^Total" rapport.txt /I` |
+| Trier un fichier dans l'ordre inverse et garder le résultat | `SORT /R noms.txt > noms-tries.txt` |
+| Retirer les lignes en double | `UNIQ noms.txt` |
+| Compter les lignes, les mots et les octets | `WC lettre.txt -l -w -c` |
+| Comparer deux fichiers texte | `DIFF -u ancien.txt nouveau.txt` ou `FC ancien.txt nouveau.txt` |
+| Comparer deux fichiers binaires | `COMP programme1.exe programme2.exe` |
+| Mettre tout un texte en majuscules | `CAT --upper lettre.txt` |
+| Remplacer des caractères (ici les minuscules par des majuscules) | `TR [:lower:] [:upper:] < lettre.txt` |
+| Convertir les fins de ligne Windows vers Linux | `DOS2UNIX lettre.txt` |
+| Examiner un fichier octet par octet, en hexadécimal | `HEXDUMP image.bin` ou, en plein écran, `VIEWHEX image.bin` |
+
+<h4>Convertir des données</h4>
+
+Les convertisseurs suivent presque toujours le même modèle de nom : **`FORMATSOURCE2FORMATDESTINATION`** (le « 2 » se lit « to », c'est-à-dire « vers »). Par exemple, `CSV2JSON` convertit du CSV **vers** du JSON, `BMP2PNG` convertit une image BMP **vers** PNG.
+
+| Je veux... | Commande |
+|---|---|
+| Transformer un tableau Excel exporté en CSV en page Web | `CSV2HTML ventes.csv ventes.html` |
+| ... en fichier JSON | `CSV2JSON ventes.csv ventes.json` |
+| ... en script SQL prêt à importer dans une base de données | `CSV2SQL ventes.csv ventes.sql` |
+| ... en tableau Markdown | `CSV2MD ventes.csv ventes.md` |
+| Voir un fichier CSV joliment, en plein écran | `VIEWCSV ventes.csv` |
+| Dessiner un graphique SVG à partir d'un CSV | `WEBGRAPH /FORMAT:SVG ventes.csv graphique.svg` |
+| Convertir une image BMP en PNG (le résultat porte le même nom en `.PNG`) | `BMP2PNG photo.bmp` |
+| Transformer un fichier texte en chaîne utilisable dans un programme C | `ASC2C texte.asc texte.c` |
+| Encoder un fichier texte en Base64, puis le décoder | `BASE64 note.txt > note.b64` puis `BASE64 note.b64 -d` |
+| Chiffrer (ou déchiffrer) un message avec ROT13 | `ROT13 "Bonjour le monde"` |
+| Traduire un message en code Morse, puis l'inverse | `MORSE "SOS"` puis `MORSE /DECODE "... --- ..."` |
+
+<h4>Générer des données et faire de petits calculs</h4>
+
+| Je veux... | Commande |
+|---|---|
+| Calculer une formule | `EVAL 8*8+2` |
+| Décomposer un nombre en facteurs premiers | `FACTOR 360` |
+| Afficher le calendrier du mois, ou d'une année complète | `CAL` ou `CAL /y2026` |
+| Obtenir une suite de nombres de 1 à 10 | `SEQ 10` |
+| Créer un faux fichier CSV de 50 personnes pour faire des tests | `CSVFAKER firstname lastname city job -R 50 > test.csv` |
+| Même chose en XML | `XMLFAKER name city price > test.xml` |
+| Générer un identifiant unique (GUID) | `GUID` |
+| Calculer l'empreinte MD5 d'un texte | `MD5 "motdepasse"` |
+| Écrire un texte en grosses lettres | `BANNER BONJOUR` |
+| Répondre « oui » automatiquement et sans fin à un autre programme | `YES` (arrêt avec Ctrl+C) |
+
+<h4>Utiliser un interpréteur de commandes rétro</h4>
+
+Un interpréteur de commandes ouvre sa propre invite, dans laquelle on tape ensuite des commandes du système imité. Par exemple, `COMMAND` imite l'invite de MS-DOS et comprend notamment `DIR`, `CD`, `COPY`, `DEL`, `REN`, `MD`, `RD`, `TYPE`, `SET`, `PATH`, `PROMPT`, `ECHO`, `VER`, `VOL`, `DATE` et `TIME`.
+
+```
+COMMAND
+C:\> VER
+C:\> DIR
+C:\> EXIT
+```
+
+| Pour imiter... | Lancez | Pour quitter, tapez |
+|---|---|---|
+| MS-DOS / PC-DOS | `COMMAND` | `EXIT` |
+| 4DOS / NDOS | `4DOS` ou `NDOS` | `EXIT` |
+| DR-DOS | `DRDOS` | `EXIT` |
+| Invite de Windows / OS/2 | `CMD` ou `OS2CMD` | `EXIT` |
+| AmigaDOS | `AMIGADOS` | `ENDCLI` |
+| OS-9 | `OS9` | `EXIT` |
+| Unix / Linux | `SH`, `BASH`, `CSH` ou `KSH` | `exit` |
+| TRS-80 TRSDOS, FLEX, MSX-DOS, CP/M-86 | `TRSDOS`, `FLEX`, `MSXDOS`, `CPM86` | `EXIT` |
+| Apple DOS | `APPLEDOS` | `BYE` |
+
+Dans plusieurs de ces interpréteurs (`OS9`, `MSXDOS`, `4DOS`, `NDOS`, `OS2CMD`, `BASH`, `SH`,...), la commande `HELP` (ou `help`) affiche la liste des commandes disponibles.
+
+<h4>Lancer une application plein écran</h4>
+
+| Application | Commande | Remarques |
+|---|---|---|
+| Chiffrier façon Lotus 1-2-3 | `123` ou `123 budget.wk1` | La touche `/` ouvre le menu ; l'option « Quitte » permet de sortir. |
+| Gestionnaire de fichiers à deux panneaux (North Commander) | `NC` | La touche F10 permet de quitter. |
+| Éditeurs de texte | `EDIT lettre.txt`, `VI lettre.txt`, `EDLIN lettre.txt` | `EDIT` est le plus simple pour débuter. |
+| Diagnostic du matériel (CheckIt) | `CHECKIT` | |
+| Informations sur le système | `SYSINFO` | |
+| Débogueur façon CodeView | `CV programme.exe` | |
+| Base de données façon dBase | `DBASE` | |
+
+Si les cadres et les lignes de ces applications s'affichent avec des caractères bizarres (fréquent dans les terminaux modernes), ajoutez le paramètre `/ASCII128` lorsqu'il est disponible, par exemple `NC /ASCII128`, `CHECKIT /ASCII128` ou `SYSINFO /ASCII128`.
+
+<h4>Programmer dans un langage d'autrefois</h4>
+
+| Langage | Commande |
+|---|---|
+| BASIC, GW-BASIC, BASICA, BASIC MSX | `BASIC`, `GWBASIC jeu.bas`, `BASICA`, `MSXBASIC` |
+| LOGO (la tortue qui dessine) | `LOGO dessin.lgo` |
+| Python, Perl, REXX, AWK (versions simplifiées) | `PYTHON script.py`, `PERL script.pl`, `REXX`, `AWK` |
+| Assembleurs 6502, 8080, Z80, 8086 | `ASM6502`, `ASM8080`, `ASMZ80`, `ASM86` |
+
+Lancé sans nom de fichier, un interpréteur BASIC ouvre une invite où l'on peut taper directement :
+
+```
+GWBASIC
+PRINT 2+2
+ 4
+SYSTEM
+```
+
+La commande `SYSTEM` permet de quitter le BASIC et de revenir à la fenêtre de commandes.
+
+<h4>Travailler avec des disques et des images disques</h4>
+
+Les commandes `FORMAT`, `FDISK`, `SYS`, `VOL` et `DISKCOPY` de Corail savent travailler sur un **fichier d'image disque** (un fichier `.IMG` qui contient une disquette ou un disque dur complet) plutôt que sur un vrai disque. C'est très pratique pour préparer une disquette virtuelle destinée à DOSBox, VirtualBox ou VMWare, **sans aucun risque pour votre ordinateur**.
+
+> **Prudence :** utilisées sur une vraie unité de disque (`A:`, `C:`,...), ces commandes effacent les données. Préférez toujours les fichiers d'images disques si vous n'êtes pas certain de ce que vous faites.
+
+| Je veux... | Commande |
+|---|---|
+| Créer une image de disquette de 1,44 Mo formatée | `FORMAT disquette.img 1440 /V:MADISQUETTE` |
+| Créer une image de disque dur de 64 Mo avec une partition FAT16 | `FORMAT disque.img /CREATE:64 /FS:FAT16` |
+| Créer une image vide de 100 Mo puis y ajouter une partition FAT32 | `FDISK image disk.img 100` puis `FDISK disk.img create 64 4` |
+| Voir les partitions d'une image disque | `FDISK disk.img list` |
+| Rendre une image démarrable avec FreeDOS | `SYS /IMG:disk.img /DOS:FreeDOS` |
+| Lire le nom de volume d'une image | `VOL /IMG:disquette.img` |
+| Copier une vraie disquette dans un fichier image | `DISKCOPY A: disquette.img` |
+
+<h3>Recettes complètes</h3>
+
+**Publier un tableau sur le Web.** Vous avez un fichier `ventes.csv` exporté d'un tableur et vous voulez une page Web et un graphique :
+
+```
+CSV2HTML ventes.csv ventes.html
+WEBGRAPH /FORMAT:SVG ventes.csv ventes.svg
+```
+
+Ouvrez ensuite `ventes.html` et `ventes.svg` dans votre navigateur.
+
+**Faire l'inventaire d'un répertoire.** Pour obtenir la liste de vos fichiers dans un format que d'autres logiciels peuvent relire :
+
+```
+DIR /FORMAT:CSV > inventaire.csv
+VIEWCSV inventaire.csv
+```
+
+**Fabriquer une disquette virtuelle démarrable pour DOSBox.**
+
+```
+FORMAT boot.img 1440 /V:DEMARRAGE
+SYS /IMG:boot.img /DOS:FreeDOS
+VOL /IMG:boot.img
+```
+
+(`SYS` copie les fichiers de démarrage du système choisi ; ceux-ci doivent se trouver dans le répertoire courant ou dans le lecteur source indiqué.)
+
+**Préparer des données de test.** Pour un développeur qui a besoin d'un fichier de 100 clients fictifs en JSON :
+
+```
+CSVFAKER firstname lastname city price -R 100 > clients.csv
+CSV2JSON clients.csv clients.json
+```
+
+<h3>Problèmes fréquents</h3>
+
+| Problème | Solution |
+|---|---|
+| « Commande introuvable » ou « n'est pas reconnu en tant que commande » | Vous n'êtes pas dans le bon répertoire, ou le programme n'est pas compilé. Utilisez `cd` pour aller dans le répertoire du programme, ou indiquez son chemin complet. |
+| C'est la commande de mon système qui s'exécute, pas celle de Corail | Indiquez le chemin du programme (`.\dir.exe`, `./DIR`,...), voir « Étape 2 ». |
+| Les programmes de `BIN16` ne démarrent pas sous Windows | Ce sont des programmes DOS 16 bits : utilisez ceux du répertoire `WIN32`, ou lancez-les dans DOSBox. |
+| Les accents ou les cadres s'affichent mal | Utilisez `/ASCII128` quand l'application le propose, ou une police/page de code compatible DOS (page de code 437 ou 850). |
+| Le programme affiche ses messages dans une autre langue | Fixez la variable d'environnement `LANGUAGE`, voir la section « Langage humain » ci-dessous. |
+| Je ne me souviens plus des paramètres | Tapez le nom du programme suivi de `/?` (ou `--help`). |
+
+<h2>Langage humain</h2>
 
 Pour changer la langue des commandes, vous devez fixer la valeur de la variable d'environnement LANGUAGE, par exemple, pour passer à l'allemand :
 
