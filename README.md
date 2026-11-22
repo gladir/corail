@@ -2427,7 +2427,7 @@ CSV2JSON clients.csv clients.json
 | Le programme affiche ses messages dans une autre langue | Fixez la variable d'environnement `LANGUAGE`, voir la section « Langage humain » ci-dessous. |
 | Je ne me souviens plus des paramètres | Tapez le nom du programme suivi de `/?` (ou `--help`). |
 
-<h2>Langage humain</h3>
+<h2>Langage humain</h2>
 
 Pour changer la langue des commandes, vous devez fixer la valeur de la variable d'environnement LANGUAGE, par exemple, pour passer à l'allemand :
 

@@ -679,7 +679,11 @@ BEGIN
    (ParamStr(1)='/h')or(ParamStr(1)='/H')Then Begin
   WriteLn('GREP : Cette commande permet de rechercher une chaine de caractŠres dans des fichiers.');
   WriteLn;
-  WriteLn('Syntaxe : GREP "chaine" [fichier] [-I]');
+  WriteLn('Syntaxe : GREP "chaine" [fichier] [/I|-I]');
+  WriteLn;
+  WriteLn(' "chaine"  Expression r‚guliŠre … rechercher');
+  WriteLn(' fichier   Nom du fichier dans lequel effectuer la recherche');
+  WriteLn(' /I ou -I  Ne pas tenir compte des majuscules et minuscules');
  End
   Else
  If ParamCount>0Then Begin
@@ -687,7 +691,7 @@ BEGIN
   FindStr:='';
   FindInFile:='';
   For I:=1 to ParamCount do Begin
-   If StrToUpper(ParamStr(I))='/I'Then Include(Option,NoCaseSensitive) Else
+   If(StrToUpper(ParamStr(I))='/I')or(StrToUpper(ParamStr(I))='-I')Then Include(Option,NoCaseSensitive) Else
    If Copy(ParamStr(I),1,1)='"'Then FindStr:=Copy(ParamStr(I),2,Length(ParamStr(I))-2)
     Else
    Begin
