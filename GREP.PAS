@@ -677,11 +677,11 @@ End;
 BEGIN
  If(ParamStr(1)='/?')or(ParamStr(1)='--help')or(ParamStr(1)='-h')or
    (ParamStr(1)='/h')or(ParamStr(1)='/H')Then Begin
-  WriteLn('GREP : Cette commande permet de rechercher une chaine de caractäres dans des fichiers.');
+  WriteLn('GREP : Cette commande permet de rechercher une chaine de caract'+#138+'res dans des fichiers.');
   WriteLn;
   WriteLn('Syntaxe : GREP "chaine" [fichier] [/I|-I]');
   WriteLn;
-  WriteLn(' "chaine"  Expression rÇguliäre Ö rechercher');
+  WriteLn(' "chaine"  Expression r'+#130+'guli'+#138+'re '+#133+' rechercher');
   WriteLn(' fichier   Nom du fichier dans lequel effectuer la recherche');
   WriteLn(' /I ou -I  Ne pas tenir compte des majuscules et minuscules');
  End
